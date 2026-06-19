@@ -108,7 +108,7 @@ export default function RegisterPage() {
         className="mt-6 text-center text-sm text-muted-foreground"
       >
         Already have an account?{" "}
-        <Link href="/auth/login" className="text-primary hover:underline font-medium">
+        <Link href="/login" className="text-primary hover:underline font-medium">
           Sign In
         </Link>
       </motion.p>

@@ -59,7 +59,7 @@ export default function LandingPage() {
           transition={{ delay: 0.55, duration: 0.6 }}
           className="flex flex-col items-center gap-3 w-full max-w-xs"
         >
-          <Link href="/auth/login" className="w-full">
+          <Link href="/login" className="w-full">
             <Button size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow">
               <span>Get Started</span>
               <ArrowRight className="ml-2 h-4 w-4" />

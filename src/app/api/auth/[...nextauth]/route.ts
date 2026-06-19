@@ -1,7 +1,10 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 
+const secret = process.env.NEXTAUTH_SECRET || "access-fallback-secret-for-development-only"
+
 const handler = NextAuth({
+  secret,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -34,7 +37,7 @@ const handler = NextAuth({
       return session
     },
   },
-  pages: { signIn: "/auth/login", error: "/auth/login" },
+  pages: { signIn: "/login", error: "/login" },
   session: { strategy: "jwt" },
 })
 

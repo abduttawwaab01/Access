@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
         transition={{ duration: 0.5 }}
         className="mb-8 text-center"
       >
-        <Link href="/auth/login" className="mb-6 inline-flex">
+        <Link href="/login" className="mb-6 inline-flex">
           <div className="animated-gradient mb-4 inline-flex rounded-xl p-3">
             <Mail className="h-6 w-6 text-white" />
           </div>
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
               If an account with <strong className="text-foreground">{email}</strong> exists, you'll receive a password reset link shortly.
             </p>
           </div>
-          <Link href="/auth/login">
+          <Link href="/login">
             <Button variant="outline" className="w-full">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Sign In
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           <Button type="submit" size="lg" className="animated-gradient mt-2 w-full border-0 text-white shadow-lg shadow-primary/25">
             Send Reset Link
           </Button>
-          <Link href="/auth/login">
+          <Link href="/login">
             <Button variant="ghost" type="button" className="w-full text-muted-foreground">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Sign In
