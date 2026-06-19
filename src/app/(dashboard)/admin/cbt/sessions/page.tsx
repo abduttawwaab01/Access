@@ -1,0 +1,121 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
+import { Clock, User, AlertTriangle, CheckCircle, Eye } from "lucide-react"
+import { PageHeader } from "@/components/admin/PageHeader"
+import { EmptyState } from "@/components/admin/EmptyState"
+import { useRouter } from "next/navigation"
+
+export default function ExamSessionsPage() {
+  const [sessions, setSessions] = useState<any[]>([])
+  const [exams, setExams] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filterExam, setFilterExam] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const router = useRouter()
+
+  const fetchData = async () => {
+    const [sRes, eRes] = await Promise.all([
+      fetch("/api/exam-sessions"),
+      fetch("/api/exams"),
+    ])
+    setSessions(await sRes.json())
+    setExams(await eRes.json())
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const getExamTitle = (id: string) => exams.find((e) => e.id === id)?.title || "Unknown"
+  const getScorePercent = (s: any) => s.maxScore > 0 ? Math.round((s.totalScore || 0) / s.maxScore * 100) : 0
+
+  const filtered = sessions.filter((s) => {
+    if (filterExam !== "all" && s.examId !== filterExam) return false
+    if (filterStatus !== "all" && s.status !== filterStatus) return false
+    return true
+  })
+
+  return (
+    <div className="p-4 md:p-6">
+      <PageHeader title="Exam Sessions" description="Monitor and grade exam attempts" />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Select value={filterExam} onValueChange={(v) => { if (v) setFilterExam(v) }}>
+          <SelectTrigger className="h-10 w-[180px]"><SelectValue placeholder="All exams" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Exams</SelectItem>
+            {exams.map((e) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
+          <SelectTrigger className="h-10 w-[140px]"><SelectValue placeholder="All status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No sessions found" description="Sessions appear when students take exams" />
+      ) : (
+        <div className="space-y-3">
+          <AnimatePresence>
+            {filtered.map((item, i) => (
+              <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                <Card className="glass-card border-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className={
+                            item.status === "completed" ? "bg-green-500/15 text-green-600" :
+                            item.status === "active" ? "bg-blue-500/15 text-blue-600" :
+                            item.status === "cancelled" ? "bg-red-500/15 text-red-600" :
+                            "bg-amber-500/15 text-amber-600"
+                          }>{item.status}</Badge>
+                          {item.flagged && <Badge variant="outline" className="text-danger border-danger/30"><AlertTriangle className="h-3 w-3 mr-1" />Flagged</Badge>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="font-medium text-sm">{item.studentName}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{getExamTitle(item.examId)}</p>
+                        <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.startTime ? new Date(item.startTime).toLocaleDateString() : "N/A"}</span>
+                          {item.status === "completed" && (
+                            <span className="font-medium text-foreground">{item.totalScore ?? "-"} / {item.maxScore} ({getScorePercent(item)}%)</span>
+                          )}
+                          {item.tabSwitches > 0 && <span className="text-danger">{item.tabSwitches} tab switches</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {item.status === "completed" && !item.flagged && (
+                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-0"><CheckCircle className="h-3 w-3 mr-1" />Graded</Badge>
+                        )}
+                        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => router.push(`/admin/cbt/sessions/${item.id}`)}>
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Review
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  )
+}
