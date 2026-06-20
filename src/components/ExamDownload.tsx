@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Download, FileText, FileDown } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Download, FileText, FileDown, School } from "lucide-react"
 import { jsPDF } from "jspdf"
 
 interface Question {
@@ -18,6 +18,15 @@ interface ExamDownloadProps {
   questions: Question[]
 }
 
+interface SchoolData {
+  name: string
+  motto?: string
+  address?: string
+  phone?: string
+  email?: string
+  logo?: string | null
+}
+
 const questionTypeLabels: Record<string, string> = {
   mcq: "Multiple Choice",
   true_false: "True / False",
@@ -27,13 +36,48 @@ const questionTypeLabels: Record<string, string> = {
 
 export function ExamDownload({ exam, questions }: ExamDownloadProps) {
   const [loading, setLoading] = useState<string | null>(null)
+  const [school, setSchool] = useState<SchoolData | null>(null)
+
+  useEffect(() => {
+    fetch("/api/school")
+      .then((r) => r.json())
+      .then((data: SchoolData) => setSchool(data))
+      .catch(() => {})
+  }, [])
+
+  const schoolHeaderHtml = () => {
+    if (!school) return ""
+    const parts: string[] = []
+    if (school.logo) {
+      parts.push(
+        `<div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;">`,
+        `<img src="${school.logo}" alt="School Logo" style="height:60px;width:auto;object-fit:contain;" />`,
+        `<div>`
+      )
+    } else {
+      parts.push(`<div style="text-align:center;margin-bottom:15px;">`)
+    }
+    parts.push(`<h1 style="font-size:22px;font-weight:bold;margin:0;color:#1a1a2e;">${school.name}</h1>`)
+    if (school.motto) {
+      parts.push(`<p style="font-style:italic;margin:3px 0 0;color:#666;font-size:13px;">${school.motto}</p>`)
+    }
+    const contactLine = [school.address, school.phone, school.email].filter(Boolean).join(" &nbsp;|&nbsp; ")
+    if (contactLine) {
+      parts.push(`<p style="margin:4px 0 0;color:#888;font-size:11px;">${contactLine}</p>`)
+    }
+    parts.push(`</div>`)
+    if (school.logo) parts.push(`</div>`)
+    return parts.join("")
+  }
 
   const downloadPDF = async () => {
     setLoading("pdf")
     const element = document.createElement("div")
-    element.style.cssText = "padding: 40px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; background: white; color: #111;"
+    element.style.cssText = "padding:40px;font-family:Arial,sans-serif;max-width:800px;margin:0 auto;background:white;color:#111;"
     element.innerHTML = `
-      <div style="text-align:center;margin-bottom:30px;border-bottom:3px solid #6366f1;padding-bottom:20px;">
+      ${schoolHeaderHtml()}
+      <hr style="border:none;border-top:3px solid #6366f1;margin:0 0 20px;" />
+      <div style="text-align:center;margin-bottom:20px;">
         <h1 style="font-size:24px;font-weight:bold;margin:0 0 5px;color:#1a1a2e;">${exam.title}</h1>
         ${exam.description ? `<p style="color:#666;margin:0 0 10px;font-size:14px;">${exam.description}</p>` : ""}
         <p style="color:#888;margin:0;font-size:12px;">Duration: ${exam.duration || 0} minutes &nbsp;|&nbsp; Total Questions: ${questions.length}</p>
@@ -95,6 +139,27 @@ export function ExamDownload({ exam, questions }: ExamDownloadProps) {
 
   const downloadDOCX = () => {
     setLoading("docx")
+    const schoolHeaderDocx = () => {
+      if (!school) return ""
+      let html = ""
+      if (school.logo) {
+        html += `<div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;">`
+        html += `<img src="${school.logo}" alt="School Logo" style="height:60px;width:auto;" />`
+        html += `<div style="flex:1;">`
+      }
+      html += `<h1 style="font-size:22pt;font-weight:bold;margin:0;color:#1a1a2e;text-align:${school.logo ? 'left' : 'center'};">${school.name}</h1>`
+      if (school.motto) {
+        html += `<p style="font-style:italic;margin:3px 0 0;color:#666;font-size:12pt;text-align:${school.logo ? 'left' : 'center'};">${school.motto}</p>`
+      }
+      const contactLine = [school.address, school.phone, school.email].filter(Boolean).join("  |  ")
+      if (contactLine) {
+        html += `<p style="margin:4px 0 0;color:#888;font-size:10pt;text-align:${school.logo ? 'left' : 'center'};">${contactLine}</p>`
+      }
+      if (school.logo) {
+        html += `</div></div>`
+      }
+      return html
+    }
     const optionsHtml = (options?: string[]) => {
       if (!options || options.length === 0) return ""
       return options.map((o, i) => `<span style="display:inline-block;margin-right:20px;margin-bottom:4px;font-size:12pt;">${String.fromCharCode(65 + i)}. ${o}</span>`).join("")
@@ -107,9 +172,14 @@ export function ExamDownload({ exam, questions }: ExamDownloadProps) {
         <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
         <style>
           body { font-family: 'Calibri', 'Arial', sans-serif; padding: 30px; color: #1a1a2e; }
-          .header { text-align: center; border-bottom: 3px solid #6366f1; padding-bottom: 15px; margin-bottom: 25px; }
+          .header { text-align: center; padding-bottom: 15px; margin-bottom: 10px; }
           .header h1 { font-size: 22pt; margin: 0 0 5px; }
-          .header p { color: #666; font-size: 11pt; margin: 0; }
+          .header .motto { font-style: italic; color: #666; font-size: 12pt; margin: 3px 0 0; }
+          .header .contact { color: #888; font-size: 10pt; margin: 4px 0 0; }
+          .exam-header { text-align: center; margin-bottom: 25px; }
+          .exam-header h2 { font-size: 18pt; margin: 0 0 5px; }
+          .exam-header p { color: #666; font-size: 11pt; margin: 0; }
+          hr.divider { border: none; border-top: 3px solid #6366f1; margin: 0 0 15px; }
           .question { margin-bottom: 20px; padding: 10px 0; }
           .q-title { font-weight: bold; font-size: 12pt; margin-bottom: 6px; }
           .q-text { font-size: 12pt; margin-bottom: 8px; line-height: 1.5; }
@@ -120,7 +190,11 @@ export function ExamDownload({ exam, questions }: ExamDownloadProps) {
   </head>
   <body>
     <div class="header">
-      <h1>${exam.title}</h1>
+      ${schoolHeaderDocx()}
+    </div>
+    <hr class="divider" />
+    <div class="exam-header">
+      <h2>${exam.title}</h2>
       ${exam.description ? `<p>${exam.description}</p>` : ""}
       <p>Duration: ${exam.duration || 0} minutes &nbsp;|&nbsp; Total Questions: ${questions.length}</p>
     </div>

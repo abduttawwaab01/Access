@@ -1,5 +1,8 @@
 "use client"
 
+import { useEffect } from "react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/layout/AppShell"
 import type { NavItem } from "@/types"
 
@@ -11,6 +14,8 @@ const adminNav: NavItem[] = [
   { label: "Students", href: "/admin/students", icon: "Users" },
   { label: "Teachers", href: "/admin/teachers", icon: "GraduationCap" },
   { label: "CBT Engine", href: "/admin/cbt/exams", icon: "ClipboardCheck" },
+  { label: "Question Bank", href: "/admin/question-bank", icon: "HelpCircle" },
+  { label: "Scheme of Work", href: "/admin/scheme-of-work", icon: "BookOpen" },
   { label: "Attendance", href: "/admin/attendance", icon: "Calendar" },
   { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
   { label: "Salary", href: "/admin/salary", icon: "Wallet" },
@@ -25,6 +30,7 @@ const adminNav: NavItem[] = [
 const teacherNav: NavItem[] = [
   { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
   { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: "FileText" },
+  { label: "Scheme of Work", href: "/teacher/scheme-of-work", icon: "BookOpen" },
   { label: "Assignments", href: "/teacher/assignments", icon: "ClipboardCheck" },
   { label: "Timetable", href: "/teacher/timetable", icon: "Calendar" },
   { label: "Communication", href: "/teacher/communication", icon: "Bell" },
@@ -32,6 +38,7 @@ const teacherNav: NavItem[] = [
   { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
   { label: "Analytics", href: "/teacher/analytics", icon: "BarChart3" },
   { label: "CBT Engine", href: "/teacher/cbt/exams", icon: "ClipboardCheck" },
+  { label: "Question Bank", href: "/teacher/question-bank", icon: "HelpCircle" },
   { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
 ]
 
@@ -56,8 +63,20 @@ const studentNav: NavItem[] = [
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const role = "student"
+  const { data: session, status } = useSession()
+  const router = useRouter()
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [status, router])
+
+  if (status === "loading" || status === "unauthenticated") {
+    return null
+  }
+
+  const role = (session?.user as any)?.role || "student"
   const navMap: Record<string, NavItem[]> = { admin: adminNav, teacher: teacherNav, parent: parentNav, student: studentNav }
   const navItems = navMap[role] || adminNav
 
@@ -65,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <AppShell
       title="Dashboard"
       navItems={navItems}
-      user={{ id: "1", name: "Alice Johnson", email: "alice@school.com", role }}
+      user={{ id: (session?.user as any)?.id || "", name: session?.user?.name || "", email: session?.user?.email || "", role }}
       schoolName="Access School"
       role={role as "admin" | "teacher" | "parent" | "student"}
     >

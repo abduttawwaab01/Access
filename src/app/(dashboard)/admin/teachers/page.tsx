@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Search, X } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, X, BookOpen, Check } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -27,13 +28,92 @@ export default function TeachersPage() {
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", role: "teacher", department: "" })
 
+  const [assignSheetOpen, setAssignSheetOpen] = useState(false)
+  const [assignTarget, setAssignTarget] = useState<any | null>(null)
+  const [classes, setClasses] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [existingAssign, setExistingAssign] = useState<any | null>(null)
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([])
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([])
+  const [isClassTeacher, setIsClassTeacher] = useState(false)
+  const [savingAssign, setSavingAssign] = useState(false)
+
   const fetchItems = async () => {
     const res = await fetch("/api/staff")
     setItems(await res.json())
     setLoading(false)
   }
 
-  useEffect(() => { fetchItems() }, [])
+  const fetchClassesAndSubjects = async () => {
+    const [cRes, sRes] = await Promise.all([fetch("/api/classes"), fetch("/api/subjects")])
+    setClasses(await cRes.json())
+    setSubjects(await sRes.json())
+  }
+
+  useEffect(() => { fetchItems(); fetchClassesAndSubjects() }, [])
+
+  const openAssign = async (item: any) => {
+    setAssignTarget(item)
+    setSelectedClassIds([])
+    setSelectedSubjectIds([])
+    setIsClassTeacher(false)
+    setExistingAssign(null)
+    try {
+      const res = await fetch("/api/teacher-assignments")
+      const all = await res.json()
+      const found = all.find((a: any) => a.teacherId === item.id)
+      if (found) {
+        setExistingAssign(found)
+        setSelectedClassIds(found.classIds || [])
+        setSelectedSubjectIds(found.subjectIds || [])
+        setIsClassTeacher(found.isClassTeacher || false)
+      }
+    } catch {}
+    setAssignSheetOpen(true)
+  }
+
+  const handleSaveAssign = async () => {
+    if (!assignTarget) return
+    setSavingAssign(true)
+    try {
+      const res = await fetch("/api/teacher-assignments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teacherId: assignTarget.id, classIds: selectedClassIds, subjectIds: selectedSubjectIds, isClassTeacher }),
+      })
+      if (res.ok) {
+        toast.success("Assignments saved")
+        setAssignSheetOpen(false)
+      } else toast.error("Failed to save assignments")
+    } catch { toast.error("Failed to save assignments") }
+    setSavingAssign(false)
+  }
+
+  const filteredSubjects = selectedClassIds.length
+    ? subjects.filter((s) => selectedClassIds.includes(s.classId))
+    : subjects
+
+  const toggleClassId = (id: string) => {
+    const wasSelected = selectedClassIds.includes(id)
+    const next = wasSelected
+      ? selectedClassIds.filter((c) => c !== id)
+      : [...selectedClassIds, id]
+    setSelectedClassIds(next)
+    if (wasSelected) {
+      setSelectedSubjectIds((prev) =>
+        prev.filter((sid) => {
+          const sub = subjects.find((s) => s.id === sid)
+          return sub && next.includes(sub.classId)
+        })
+      )
+    }
+  }
+
+  const toggleSubjectId = (id: string) => {
+    setSelectedSubjectIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    )
+  }
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 
@@ -113,6 +193,9 @@ export default function TeachersPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Assign classes & subjects" onClick={() => openAssign(item)}>
+                          <BookOpen className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -169,6 +252,63 @@ export default function TeachersPage() {
             {editing ? "Update Staff" : "Create Staff"}
           </Button>
         </form>
+      </FormSheet>
+
+      <FormSheet open={assignSheetOpen} onOpenChange={setAssignSheetOpen} title={assignTarget ? `Assign: ${assignTarget.firstName} ${assignTarget.lastName}` : "Class & Subject Assignments"}>
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label>Classes</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {classes.map((c) => {
+                const active = selectedClassIds.includes(c.id)
+                return (
+                  <button key={c.id} type="button" onClick={() => toggleClassId(c.id)}
+                    className={cn("flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-all", active ? "border-primary bg-primary/5 text-primary font-medium" : "border-border hover:border-primary/30")}>
+                    <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", active ? "border-primary bg-primary text-white" : "border-muted-foreground/30")}>
+                      {active && <Check className="h-3 w-3" />}
+                    </div>
+                    {c.name} {c.arm && <span className="text-muted-foreground">- {c.arm}</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Subjects</Label>
+            {filteredSubjects.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Select at least one class to see available subjects.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {filteredSubjects.map((s) => {
+                  const active = selectedSubjectIds.includes(s.id)
+                  return (
+                    <button key={s.id} type="button" onClick={() => toggleSubjectId(s.id)}
+                      className={cn("flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-all", active ? "border-primary bg-primary/5 text-primary font-medium" : "border-border hover:border-primary/30")}>
+                      <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", active ? "border-primary bg-primary text-white" : "border-muted-foreground/30")}>
+                        {active && <Check className="h-3 w-3" />}
+                      </div>
+                      <span>{s.name}</span>
+                      <span className="text-xs text-muted-foreground ml-auto">{s.code}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+            <div>
+              <Label className="text-sm font-medium">Class Teacher</Label>
+              <p className="text-xs text-muted-foreground">Mark as homeroom teacher for selected classes</p>
+            </div>
+            <Switch checked={isClassTeacher} onCheckedChange={setIsClassTeacher} />
+          </div>
+
+          <Button onClick={handleSaveAssign} disabled={savingAssign} size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">
+            {savingAssign ? "Saving..." : "Save Assignments"}
+          </Button>
+        </div>
       </FormSheet>
 
     </div>

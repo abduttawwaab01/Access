@@ -16,6 +16,7 @@ import {
   Settings,
   CreditCard,
   Calendar,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react"
 
@@ -32,6 +33,7 @@ const iconMap: Record<string, LucideIcon> = {
   Settings,
   CreditCard,
   Calendar,
+  HelpCircle,
 }
 
 interface NavItem {

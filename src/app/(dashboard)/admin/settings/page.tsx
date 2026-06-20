@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Save, Palette, Building2, Mail, Phone, MapPin } from "lucide-react"
+import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info } from "lucide-react"
 
 export default function SchoolSettingsPage() {
   const [form, setForm] = useState({
@@ -16,23 +17,47 @@ export default function SchoolSettingsPage() {
     email: "",
     phone: "",
     address: "",
+    motto: "",
+    logo: "",
+    aboutText: "",
+    exportDefaultExamHeader: "",
     primaryColor: "#6366f1",
     secondaryColor: "#06b6d4",
     accentColor: "#f59e0b",
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch("/api/school")
       .then((r) => r.json())
       .then((data) => {
         setForm(data)
+        if (data.logo) setLogoPreview(data.logo)
         setLoading(false)
       })
   }, [])
 
   const update = (field: string, value: string) => setForm((prev) => ({ ...prev, [field]: value }))
+
+  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string
+      setLogoPreview(dataUrl)
+      update("logo", dataUrl)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleLogoUrl = (value: string) => {
+    update("logo", value)
+    if (value) setLogoPreview(value)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,7 +79,7 @@ export default function SchoolSettingsPage() {
     }
   }
 
-  if (loading) return <div className="p-4 space-y-4"><Skeleton /><Skeleton /><Skeleton /></div>
+  if (loading) return <div className="p-4 space-y-4"><Skeleton /><Skeleton /><Skeleton /><Skeleton /></div>
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
@@ -97,6 +122,62 @@ export default function SchoolSettingsPage() {
                   <Input id="address" value={form.address} onChange={(e) => update("address", e.target.value)} className="h-12" />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="motto" className="flex items-center gap-1">
+                  <Quote className="h-3.5 w-3.5 text-muted-foreground" />
+                  School Motto
+                </Label>
+                <Input id="motto" value={form.motto} onChange={(e) => update("motto", e.target.value)} placeholder="e.g. Excellence in Education" className="h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="aboutText" className="flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  About School
+                </Label>
+                <Textarea id="aboutText" value={form.aboutText} onChange={(e) => update("aboutText", e.target.value)} rows={4} placeholder="Brief description of your school..." />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card className="glass-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ImageIcon className="h-4 w-4 text-primary" />
+                School Logo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 shrink-0 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30">
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="School Logo" className="h-full w-full object-contain" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                  )}
+                </div>
+                <div className="space-y-2 flex-1">
+                  <Label htmlFor="logoUpload" className="cursor-pointer">
+                    <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium transition-all hover:bg-muted">
+                      Upload Image
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      id="logoUpload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoFile}
+                    />
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Upload a PNG or JPG (will be converted to base64)</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="logoUrl">Or use a logo URL</Label>
+                <Input id="logoUrl" value={form.logo?.startsWith("data:") ? "" : form.logo} onChange={(e) => handleLogoUrl(e.target.value)} placeholder="https://example.com/logo.png" className="h-12" />
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -130,6 +211,32 @@ export default function SchoolSettingsPage() {
                 <div className="flex-1 h-8 rounded-lg" style={{ background: form.primaryColor }} />
                 <div className="flex-1 h-8 rounded-lg" style={{ background: form.secondaryColor }} />
                 <div className="flex-1 h-8 rounded-lg" style={{ background: form.accentColor }} />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Card className="glass-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="h-4 w-4 text-primary" />
+                Export Defaults
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="exportDefaultExamHeader">Default Exam Header Template</Label>
+                <Textarea
+                  id="exportDefaultExamHeader"
+                  value={form.exportDefaultExamHeader}
+                  onChange={(e) => update("exportDefaultExamHeader", e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Answer all questions. Time allowed: {duration} minutes. Total: {questions} questions."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Available placeholders: <code className="text-xs bg-muted px-1 rounded">{`{examTitle}, {duration}, {questions}, {schoolName}`}</code>
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -18,6 +18,7 @@ import {
   Calendar,
   ChevronLeft,
   LogOut,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,7 @@ const iconMap: Record<string, LucideIcon> = {
   Settings,
   CreditCard,
   Calendar,
+  HelpCircle,
 }
 
 interface NavItem {
