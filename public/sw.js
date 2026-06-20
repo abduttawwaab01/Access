@@ -1,6 +1,6 @@
-const CACHE_NAME = "access-v2"
-const STATIC_CACHE = "access-static-v2"
-const API_CACHE = "access-api-v2"
+const CACHE_NAME = "access-v3"
+const STATIC_CACHE = "access-static-v3"
+const API_CACHE = "access-api-v3"
 
 const staticAssets = [
   "/",
@@ -26,26 +26,22 @@ self.addEventListener("activate", (event) => {
 })
 
 self.addEventListener("fetch", (event) => {
-  const { request } = event
-  const url = new URL(request.url)
+  const url = new URL(event.request.url)
 
-  // API requests: network-first with offline fallback
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(networkFirstWithFallback(request, API_CACHE))
+    event.respondWith(networkFirst(event.request, API_CACHE))
     return
   }
 
-  // Static assets / page navigations: cache-first
-  if (request.mode === "navigate" || staticAssets.includes(url.pathname)) {
-    event.respondWith(cacheFirstWithNetworkRefresh(request))
+  if (event.request.mode === "navigate" || staticAssets.includes(url.pathname)) {
+    event.respondWith(cacheFirst(event.request))
     return
   }
 
-  // Everything else: network-first
-  event.respondWith(networkFirstWithFallback(request, STATIC_CACHE))
+  event.respondWith(networkFirst(event.request, STATIC_CACHE))
 })
 
-async function networkFirstWithFallback(request, cacheName) {
+async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request)
     if (response.ok) {
@@ -63,18 +59,28 @@ async function networkFirstWithFallback(request, cacheName) {
   }
 }
 
-async function cacheFirstWithNetworkRefresh(request) {
+async function cacheFirst(request) {
   const cached = await caches.match(request)
-  const fetchPromise = fetch(request).then((response) => {
+  if (cached) {
+    fetch(request).then((response) => {
+      if (response.ok) {
+        caches.open(STATIC_CACHE).then((cache) => cache.put(request, response))
+      }
+    }).catch(() => {})
+    return cached
+  }
+  try {
+    const response = await fetch(request)
     if (response.ok) {
-      caches.open(STATIC_CACHE).then((cache) => cache.put(request, response.clone()))
+      const cache = await caches.open(STATIC_CACHE)
+      cache.put(request, response.clone())
     }
     return response
-  }).catch(() => cached)
-  return cached || fetchPromise
+  } catch {
+    return caches.match("/")
+  }
 }
 
-// Background sync for offline actions
 self.addEventListener("sync", (event) => {
   if (event.tag === "sync-payments") {
     event.waitUntil(syncPayments())
@@ -92,7 +98,6 @@ async function syncPayments() {
   }
 }
 
-// Push notification
 self.addEventListener("push", (event) => {
   const data = event.data?.json() || { title: "Access School", body: "New update available" }
   event.waitUntil(
@@ -110,7 +115,6 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(clients.openWindow(event.notification.data || "/"))
 })
 
-// IndexedDB for offline queue
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("AccessOffline", 1)

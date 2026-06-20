@@ -217,6 +217,15 @@ let documents: any[] = [
   { id: "d3", studentId: "1", type: "acceptance_letter", title: "Acceptance Letter - 2024/2025", reference: "ACC-2024-001", generatedAt: "2024-08-15T09:00:00", status: "final" },
 ]
 
+let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superAdminPassword: "super@admin123", schoolName: "Access School Academy", schoolMotto: "Excellence in Education", schoolAddress: "123 Education Street, Lagos, Nigeria", schoolPhone: "+234 800 000 0000", schoolEmail: "info@accessschool.edu", aboutText: "Access School Academy is a premier educational institution dedicated to nurturing the next generation of leaders through innovative teaching methods and comprehensive student development programs." }
+
+let admissionApplications: any[] = [
+  { id: "aa1", firstName: "James", lastName: "Wilson", email: "james.wilson@email.com", phone: "+234 801 234 5678", dateOfBirth: "2008-05-12", gender: "Male", classApplyingFor: "1", previousSchool: "Greenfield Academy", address: "15 Peace Avenue, Lagos", parentName: "Mr. Wilson", parentPhone: "+234 802 345 6789", status: "pending", entranceExamScore: null, entranceExamPassed: null, appliedAt: "2025-06-01T10:00:00Z" },
+  { id: "aa2", firstName: "Olivia", lastName: "Martins", email: "olivia.m@email.com", phone: "+234 803 456 7890", dateOfBirth: "2009-02-28", gender: "Female", classApplyingFor: "2", previousSchool: "Royal Children School", address: "7 Garden Road, Lagos", parentName: "Mrs. Martins", parentPhone: "+234 804 567 8901", status: "pending", entranceExamScore: null, entranceExamPassed: null, appliedAt: "2025-06-05T14:30:00Z" },
+  { id: "aa3", firstName: "Ethan", lastName: "Okonkwo", email: "ethan.o@email.com", phone: "+234 805 678 9012", dateOfBirth: "2007-11-03", gender: "Male", classApplyingFor: "3", previousSchool: "Rising Star Academy", address: "22 Peace Avenue, Lagos", parentName: "Chief Okonkwo", parentPhone: "+234 806 789 0123", status: "accepted", entranceExamScore: 85, entranceExamPassed: true, appliedAt: "2025-05-15T09:00:00Z" },
+  { id: "aa4", firstName: "Sophia", lastName: "Adeyemi", email: "sophia.a@email.com", phone: "+234 807 890 1234", dateOfBirth: "2008-09-17", gender: "Female", classApplyingFor: "1", previousSchool: "Bright Future School", address: "10 Freedom Road, Lagos", parentName: "Dr. Adeyemi", parentPhone: "+234 808 901 2345", status: "rejected", entranceExamScore: 45, entranceExamPassed: false, appliedAt: "2025-04-20T11:00:00Z" },
+]
+
 export const store = {
   sessions: {
     getAll: () => sessions,
@@ -645,5 +654,17 @@ export const store = {
     getById: (id: string) => documents.find((d) => d.id === id),
     getByType: (type: string) => documents.filter((d) => d.type === type),
     create: (data: any) => { const item = { id: String(Date.now()), ...data, generatedAt: new Date().toISOString(), status: "final" }; documents.push(item); return item },
+  },
+  schoolSettings: {
+    get: () => schoolSettingsData,
+    update: (data: any) => { schoolSettingsData = { ...schoolSettingsData, ...data }; return schoolSettingsData },
+  },
+  admissionApplications: {
+    getAll: () => admissionApplications,
+    getById: (id: string) => admissionApplications.find((a) => a.id === id),
+    getByStatus: (status: string) => admissionApplications.filter((a) => a.status === status),
+    create: (data: any) => { const item = { id: String(Date.now()), ...data, status: "pending", appliedAt: new Date().toISOString() }; admissionApplications.push(item); return item },
+    update: (id: string, data: any) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return null; admissionApplications[idx] = { ...admissionApplications[idx], ...data }; return admissionApplications[idx] },
+    delete: (id: string) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return false; admissionApplications.splice(idx, 1); return true },
   },
 }

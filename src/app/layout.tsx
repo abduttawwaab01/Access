@@ -6,6 +6,7 @@ import { PWARegister } from "@/components/PWARegister"
 import { PWAInstallBanner } from "@/components/PWAInstallBanner"
 import { OfflineIndicator } from "@/components/OfflineIndicator"
 import { SkipToContent } from "@/components/SkipToContent"
+import { SessionProvider } from "@/components/SessionProvider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,12 +61,14 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col">
-        <SkipToContent />
-        <OfflineIndicator />
-        <div id="main-content">{children}</div>
-        <PWAInstallBanner />
-        <PWARegister />
-        <Toaster richColors position="top-center" />
+        <SessionProvider>
+          <SkipToContent />
+          <OfflineIndicator />
+          <div id="main-content">{children}</div>
+          <PWAInstallBanner />
+          <PWARegister />
+          <Toaster richColors position="top-center" />
+        </SessionProvider>
       </body>
     </html>
   )

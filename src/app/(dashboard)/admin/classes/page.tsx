@@ -11,7 +11,6 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Users, BookOpen } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
-import { DeleteConfirm } from "@/components/admin/DeleteConfirm"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 const sections = ["Science", "Arts", "Commerce", "Technology", "General"]
@@ -20,7 +19,6 @@ export default function ClassesPage() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ name: "", arm: "", section: "" })
 
@@ -61,12 +59,10 @@ export default function ClassesPage() {
     }
   }
 
-  const handleDelete = async () => {
-    if (!editing) return
-    const res = await fetch(`/api/classes/${editing.id}`, { method: "DELETE" })
+  const handleDelete = async (item: any) => {
+    const res = await fetch(`/api/classes/${item.id}`, { method: "DELETE" })
     if (res.ok) {
       toast.success("Class deleted")
-      setDeleteOpen(false)
       fetchItems()
     }
   }
@@ -113,7 +109,7 @@ export default function ClassesPage() {
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => { setEditing(item); setDeleteOpen(true) }}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
@@ -156,7 +152,6 @@ export default function ClassesPage() {
         </form>
       </FormSheet>
 
-      <DeleteConfirm open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={handleDelete} title="Delete Class" description="This will remove the class and its associations." />
     </div>
   )
 }

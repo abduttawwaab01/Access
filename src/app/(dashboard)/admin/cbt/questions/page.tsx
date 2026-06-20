@@ -13,7 +13,6 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2, HelpCircle, Code, AlignLeft, CheckCircle } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
-import { DeleteConfirm } from "@/components/admin/DeleteConfirm"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 const typeIcons: Record<string, any> = { mcq: HelpCircle, true_false: CheckCircle, theory: AlignLeft, coding: Code }
@@ -25,7 +24,6 @@ export default function QuestionsPage() {
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [filterSubject, setFilterSubject] = useState("all")
@@ -89,12 +87,10 @@ export default function QuestionsPage() {
     }
   }
 
-  const handleDelete = async () => {
-    if (!editing) return
-    const res = await fetch(`/api/questions/${editing.id}`, { method: "DELETE" })
+  const handleDelete = async (item: any) => {
+    const res = await fetch(`/api/questions/${item.id}`, { method: "DELETE" })
     if (res.ok) {
       toast.success("Question deleted")
-      setDeleteOpen(false)
       fetchData()
     }
   }
@@ -173,7 +169,7 @@ export default function QuestionsPage() {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => { setEditing(item); setDeleteOpen(true) }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </div>
                       </div>
                     </CardContent>
@@ -251,7 +247,6 @@ export default function QuestionsPage() {
         </form>
       </FormSheet>
 
-      <DeleteConfirm open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={handleDelete} title="Delete Question" description="This will remove the question from the bank." />
     </div>
   )
 }

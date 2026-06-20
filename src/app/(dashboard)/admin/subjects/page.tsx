@@ -12,7 +12,6 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2, BookOpen } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
-import { DeleteConfirm } from "@/components/admin/DeleteConfirm"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function SubjectsPage() {
@@ -20,7 +19,6 @@ export default function SubjectsPage() {
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
   const [filterClass, setFilterClass] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ name: "", code: "", classId: "" })
@@ -65,12 +63,10 @@ export default function SubjectsPage() {
     }
   }
 
-  const handleDelete = async () => {
-    if (!editing) return
-    const res = await fetch(`/api/subjects/${editing.id}`, { method: "DELETE" })
+  const handleDelete = async (item: any) => {
+    const res = await fetch(`/api/subjects/${item.id}`, { method: "DELETE" })
     if (res.ok) {
       toast.success("Subject deleted")
-      setDeleteOpen(false)
       fetchData()
     }
   }
@@ -125,7 +121,7 @@ export default function SubjectsPage() {
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => { setEditing(item); setDeleteOpen(true) }}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -166,7 +162,6 @@ export default function SubjectsPage() {
         </form>
       </FormSheet>
 
-      <DeleteConfirm open={deleteOpen} onOpenChange={setDeleteOpen} onConfirm={handleDelete} title="Delete Subject" description="This will remove the subject and all associated data." />
     </div>
   )
 }
