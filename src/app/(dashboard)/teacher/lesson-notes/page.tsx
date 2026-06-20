@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, FileText, Sparkles, Search, X, Eye, EyeOff, CheckCircle2, Clock } from "lucide-react"
+import { Plus, Pencil, Trash2, FileText, Sparkles, Search, X, Eye, EyeOff, CheckCircle2, Clock, HelpCircle, ChevronDown, ChevronRight } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -29,6 +29,8 @@ export default function LessonNotesPage() {
   const [tab, setTab] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft" })
+  const [quiz, setQuiz] = useState<any[]>([])
+  const [quizOpen, setQuizOpen] = useState(true)
 
   const fetchData = async () => {
     const [notesRes, classesRes] = await Promise.all([
@@ -44,9 +46,28 @@ export default function LessonNotesPage() {
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 
+  const addQuestion = () => {
+    setQuiz([...quiz, { id: Math.random().toString(36).substring(2, 11), questionText: "", type: "MCQ", options: ["", "", "", ""], correctAnswer: "", points: 1 }])
+  }
+  const removeQuestion = (id: string) => setQuiz(quiz.filter((q) => q.id !== id))
+  const updateQuestion = (id: string, field: string, value: any) => {
+    setQuiz(quiz.map((q) => {
+      if (q.id !== id) return q
+      if (field === "type") {
+        const options = value === "True-False" ? ["True", "False"] : ["", "", "", ""]
+        return { ...q, type: value, options, correctAnswer: "" }
+      }
+      return { ...q, [field]: value }
+    }))
+  }
+  const updateOption = (id: string, index: number, value: string) => {
+    setQuiz(quiz.map((q) => q.id === id ? { ...q, options: q.options.map((o: string, i: number) => i === index ? value : o) } : q))
+  }
+
   const openCreate = () => {
     setEditing(null)
     setForm({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft" })
+    setQuiz([])
     setSheetOpen(true)
   }
 
@@ -63,6 +84,7 @@ export default function LessonNotesPage() {
       resources: item.resources || "",
       status: item.status,
     })
+    setQuiz(item.quiz || [])
     setSheetOpen(true)
   }
 
@@ -70,7 +92,7 @@ export default function LessonNotesPage() {
     e.preventDefault()
     const url = "/api/lesson-notes"
     const method = editing ? "PUT" : "POST"
-    const payload = { ...form, week: Number(form.week), createdBy: teacherId }
+    const payload = { ...form, week: Number(form.week), createdBy: teacherId, quiz }
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
     if (res.ok) {
       toast.success(editing ? "Lesson note updated" : "Lesson note created")
@@ -175,6 +197,11 @@ export default function LessonNotesPage() {
                                 <Clock className="h-3 w-3" /> Pending approval
                               </span>
                             )}
+                            {item.quiz && item.quiz.length > 0 && (
+                              <span className="flex items-center gap-1 text-primary">
+                                <HelpCircle className="h-3 w-3" /> Quiz: {item.quiz.length} question{item.quiz.length > 1 ? "s" : ""}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -265,6 +292,84 @@ export default function LessonNotesPage() {
           <div className="space-y-2">
             <Label>Resources</Label>
             <Input value={form.resources} onChange={(e) => update("resources", e.target.value)} placeholder="e.g. Textbook Ch. 3, Worksheet 1" className="h-12" />
+          </div>
+          <div className="space-y-2 border rounded-lg p-3">
+            <button type="button" onClick={() => setQuizOpen(!quizOpen)} className="flex items-center justify-between w-full text-left">
+              <div className="flex items-center gap-2">
+                {quizOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                <Label className="cursor-pointer">Quiz Questions</Label>
+                {quiz.length > 0 && <Badge variant="secondary" className="text-xs">{quiz.length} question{quiz.length > 1 ? "s" : ""}</Badge>}
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); addQuestion() }}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
+              </Button>
+            </button>
+            {quizOpen && (
+              <div className="space-y-3 pt-1">
+                {quiz.map((q, qi) => (
+                  <Card key={q.id} className="border p-3 space-y-2 shadow-none">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Question {qi + 1}</span>
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeQuestion(q.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Input value={q.questionText} onChange={(e) => updateQuestion(q.id, "questionText", e.target.value)} placeholder="Enter question text" className="h-10" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Type</Label>
+                          <Select value={q.type} onValueChange={(v) => updateQuestion(q.id, "type", v)}>
+                            <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MCQ">MCQ</SelectItem>
+                              <SelectItem value="True-False">True/False</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Points</Label>
+                          <Input type="number" value={q.points} onChange={(e) => updateQuestion(q.id, "points", Number(e.target.value))} className="h-10" min={1} />
+                        </div>
+                      </div>
+                      {q.type === "MCQ" && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Options</Label>
+                          {q.options.map((opt: string, oi: number) => (
+                            <div key={oi} className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground w-4">{String.fromCharCode(65 + oi)}.</span>
+                              <Input value={opt} onChange={(e) => updateOption(q.id, oi, e.target.value)} placeholder={`Option ${String.fromCharCode(65 + oi)}`} className="h-9 text-sm" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="space-y-1">
+                        <Label className="text-xs">Correct Answer</Label>
+                        {q.type === "MCQ" ? (
+                          <Select value={q.correctAnswer} onValueChange={(v) => updateQuestion(q.id, "correctAnswer", v)}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Select correct answer" /></SelectTrigger>
+                            <SelectContent>
+                              {q.options.map((_: string, oi: number) => (
+                                <SelectItem key={oi} value={String.fromCharCode(65 + oi)}>{String.fromCharCode(65 + oi)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Select value={q.correctAnswer} onValueChange={(v) => updateQuestion(q.id, "correctAnswer", v)}>
+                            <SelectTrigger className="h-10"><SelectValue placeholder="Select answer" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="True">True</SelectItem>
+                              <SelectItem value="False">False</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                {quiz.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">No questions added yet</p>}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2">

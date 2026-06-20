@@ -11,7 +11,7 @@ let students: any[] = []
 let parents: any[] = []
 
 let staff: any[] = [
-  { id: "1", firstName: "Admin", lastName: "User", staffId: "ADM001", email: "admin@school.com", password: "admin123", role: "admin", department: "Administration", status: "active", phone: "+234 800 000 0001" },
+  { id: "1", firstName: "Admin", lastName: "User", staffId: "ADM001", email: "admin@skoolar.org", password: "successor", role: "admin", department: "Administration", status: "active", phone: "+234 800 000 0001" },
 ]
 
 let teacherAssignments: any[] = []
@@ -29,6 +29,7 @@ let attendanceQRCodes: any[] = []
 let reportCards: any[] = []
 let topics: any[] = []
 
+let lessonQuizResults: any[] = []
 let questions: any[] = []
 let exams: any[] = []
 let examSessions: any[] = []
@@ -41,7 +42,7 @@ let salaryRecords: any[] = []
 let salaryStructures: any[] = []
 let documents: any[] = []
 
-let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superAdminPassword: "super@admin123", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "" }
+let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superAdminPassword: "successor", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "" }
 
 let admissionApplications: any[] = []
 let superAnnouncements: any[] = []
@@ -109,9 +110,10 @@ export const store = {
   },
   lessonNotes: {
     getAll: (classId?: string) => classId ? lessonNotes.filter((n) => n.classId === classId) : lessonNotes,
+    getAllPublished: (classId?: string) => classId ? lessonNotes.filter((n) => n.classId === classId && n.status === "published") : lessonNotes.filter((n) => n.status === "published"),
     getByTeacher: (teacherId: string) => { const ta = teacherAssignments.find((a) => a.teacherId === teacherId); if (!ta) return []; return lessonNotes.filter((n) => ta.classIds.includes(n.classId)) },
     getById: (id: string) => lessonNotes.find((n) => n.id === id),
-    create: (data: any) => { const item = { id: uid(), ...data, status: "draft", createdAt: new Date().toISOString().split("T")[0], approvedBy: null, approvedAt: null }; lessonNotes.push(item); return item },
+    create: (data: any) => { const item = { id: uid(), ...data, quiz: data.quiz || [], status: "draft", createdAt: new Date().toISOString().split("T")[0], approvedBy: null, approvedAt: null }; lessonNotes.push(item); return item },
     update: (id: string, data: any) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], ...data }; return lessonNotes[idx] },
     delete: (id: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return false; lessonNotes.splice(idx, 1); return true },
     approve: (id: string, approvedBy: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], status: "published", approvedBy, approvedAt: new Date().toISOString() }; return lessonNotes[idx] },
@@ -212,4 +214,57 @@ export const store = {
   admissionApplications: { getAll: () => admissionApplications, getById: (id: string) => admissionApplications.find((a) => a.id === id), getByStatus: (status: string) => admissionApplications.filter((a) => a.status === status), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", appliedAt: new Date().toISOString() }; admissionApplications.push(item); return item }, update: (id: string, data: any) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return null; admissionApplications[idx] = { ...admissionApplications[idx], ...data }; return admissionApplications[idx] }, delete: (id: string) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return false; admissionApplications.splice(idx, 1); return true } },
   superAnnouncements: { getAll: () => superAnnouncements, getActive: () => superAnnouncements.filter((a) => a.active), getById: (id: string) => superAnnouncements.find((a) => a.id === id), create: (data: any) => { const item = { id: uid(), ...data, createdAt: new Date().toISOString(), active: true }; superAnnouncements.push(item); return item }, update: (id: string, data: any) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return null; superAnnouncements[idx] = { ...superAnnouncements[idx], ...data }; return superAnnouncements[idx] }, delete: (id: string) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return false; superAnnouncements.splice(idx, 1); return true } },
   feedbackTickets: { getAll: () => feedbackTickets, getByStatus: (status: string) => feedbackTickets.filter((t) => t.status === status), getById: (id: string) => feedbackTickets.find((t) => t.id === id), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", createdAt: new Date().toISOString(), resolvedAt: null, resolution: null }; feedbackTickets.push(item); return item }, update: (id: string, data: any) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], ...data }; return feedbackTickets[idx] }, resolve: (id: string, resolution: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], status: "resolved", resolvedAt: new Date().toISOString(), resolution }; return feedbackTickets[idx] } },
+  lessonQuizResults: {
+    getAll: () => lessonQuizResults,
+    getByStudent: (studentId: string) => lessonQuizResults.filter((r) => r.studentId === studentId),
+    getByLessonNote: (lessonNoteId: string) => lessonQuizResults.filter((r) => r.lessonNoteId === lessonNoteId),
+    getByStudentAndLessonNote: (studentId: string, lessonNoteId: string) => lessonQuizResults.find((r) => r.studentId === studentId && r.lessonNoteId === lessonNoteId),
+    create: (data: any) => { const item = { id: uid(), ...data, attemptedAt: new Date().toISOString() }; lessonQuizResults.push(item); return item },
+    getAnalysis: (studentId: string) => {
+      const results = lessonQuizResults.filter((r) => r.studentId === studentId)
+      const totalAttempts = results.length
+      const totalQuestions = results.reduce((s: number, r: any) => s + (r.totalQuestions || 0), 0)
+      const totalCorrect = results.reduce((s: number, r: any) => s + (r.correctAnswers || 0), 0)
+      const masteryRate = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0
+      const subjectBreakdown: Record<string, { total: number; correct: number }> = {}
+      results.forEach((r: any) => {
+        const sub = r.subject || "General"
+        if (!subjectBreakdown[sub]) subjectBreakdown[sub] = { total: 0, correct: 0 }
+        subjectBreakdown[sub].total += r.totalQuestions || 0
+        subjectBreakdown[sub].correct += r.correctAnswers || 0
+      })
+      return { totalAttempts, totalQuestions, totalCorrect, masteryRate, subjectBreakdown }
+    },
+    getClassAnalysis: (classId: string) => {
+      const studentIds = students.filter((s) => s.classId === classId).map((s) => s.id)
+      const results = lessonQuizResults.filter((r) => studentIds.includes(r.studentId))
+      const studentMap: Record<string, { total: number; correct: number; subjectBreakdown: Record<string, { total: number; correct: number }> }> = {}
+      results.forEach((r: any) => {
+        if (!studentMap[r.studentId]) studentMap[r.studentId] = { total: 0, correct: 0, subjectBreakdown: {} }
+        studentMap[r.studentId].total += r.totalQuestions || 0
+        studentMap[r.studentId].correct += r.correctAnswers || 0
+        const sub = r.subject || "General"
+        if (!studentMap[r.studentId].subjectBreakdown[sub]) studentMap[r.studentId].subjectBreakdown[sub] = { total: 0, correct: 0 }
+        studentMap[r.studentId].subjectBreakdown[sub].total += r.totalQuestions || 0
+        studentMap[r.studentId].subjectBreakdown[sub].correct += r.correctAnswers || 0
+      })
+      const classTotalQ = results.reduce((s: number, r: any) => s + (r.totalQuestions || 0), 0)
+      const classTotalC = results.reduce((s: number, r: any) => s + (r.correctAnswers || 0), 0)
+      return {
+        studentCount: studentIds.length,
+        attemptedCount: Object.keys(studentMap).length,
+        totalQuestions: classTotalQ,
+        totalCorrect: classTotalC,
+        classMastery: classTotalQ > 0 ? Math.round((classTotalC / classTotalQ) * 100) : 0,
+        students: Object.entries(studentMap).map(([sid, data]) => ({
+          studentId: sid,
+          studentName: students.find((s) => s.id === sid) ? `${students.find((s) => s.id === sid).firstName} ${students.find((s) => s.id === sid).lastName}` : "Unknown",
+          masteryRate: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+          totalQuestions: data.total,
+          correctAnswers: data.correct,
+          subjectBreakdown: data.subjectBreakdown,
+        })),
+      }
+    },
+  },
 }

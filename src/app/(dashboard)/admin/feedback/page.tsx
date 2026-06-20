@@ -23,7 +23,7 @@ export default function AdminFeedbackPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, message, priority, from: "admin@school.com" }) })
+    await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, message, priority, from: "admin@skoolar.org" }) })
     setLoading(false)
     setSent(true)
     setSubject("")

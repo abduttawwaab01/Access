@@ -16,6 +16,8 @@ const adminNav: NavItem[] = [
   { label: "CBT Engine", href: "/admin/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/admin/question-bank", icon: "HelpCircle" },
   { label: "Scheme of Work", href: "/admin/scheme-of-work", icon: "BookOpen" },
+  { label: "Lesson Notes", href: "/admin/lesson-notes", icon: "FileText" },
+  { label: "Deep Analysis", href: "/admin/analytics/deep-analysis", icon: "BarChart3" },
   { label: "Attendance", href: "/admin/attendance", icon: "Calendar" },
   { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
   { label: "Salary", href: "/admin/salary", icon: "Wallet" },
@@ -58,6 +60,7 @@ const studentNav: NavItem[] = [
   { label: "Fees", href: "/student/fees", icon: "CreditCard" },
   { label: "Attendance", href: "/student/attendance", icon: "Calendar" },
   { label: "Timetable", href: "/student/timetable", icon: "BookOpen" },
+  { label: "Lesson Notes", href: "/student/lesson-notes", icon: "FileText" },
   { label: "My Exams", href: "/student/cbt", icon: "ClipboardCheck" },
   { label: "Report Card", href: "/student/report-card", icon: "FileText" },
 ]
