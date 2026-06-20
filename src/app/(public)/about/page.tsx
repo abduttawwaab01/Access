@@ -266,6 +266,9 @@ export default function AboutPage() {
           </motion.p>
         </motion.section>
       </motion.div>
+      <div className="mt-12 border-t border-border/40 px-4 py-4 text-center text-[10px] text-muted-foreground/50">
+        Built by Skoolar &mdash; Odebunmi Tawwab A
+      </div>
     </div>
   )
 }

@@ -79,6 +79,9 @@ export default function ApplyPage() {
             Back to Homepage <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </motion.div>
+        <div className="fixed bottom-0 left-0 right-0 border-t border-border/40 px-4 py-3 text-center text-[10px] text-muted-foreground/50 bg-background/80 backdrop-blur-sm">
+          Built by Skoolar &mdash; Odebunmi Tawwab A
+        </div>
       </div>
     )
   }
@@ -201,6 +204,9 @@ export default function ApplyPage() {
             {loading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting...</> : "Submit Application"}
           </Button>
         </motion.form>
+      </div>
+      <div className="mt-12 border-t border-border/40 px-4 py-4 text-center text-[10px] text-muted-foreground/50">
+        Built by Skoolar &mdash; Odebunmi Tawwab A
       </div>
     </div>
   )

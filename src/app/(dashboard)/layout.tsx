@@ -65,6 +65,39 @@ const studentNav: NavItem[] = [
   { label: "Report Card", href: "/student/report-card", icon: "FileText" },
 ]
 
+const adminBottomNav: NavItem[] = [
+  { label: "Dashboard", href: "/admin", icon: "LayoutDashboard" },
+  { label: "Students", href: "/admin/students", icon: "Users" },
+  { label: "Teachers", href: "/admin/teachers", icon: "GraduationCap" },
+  { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
+  { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
+  { label: "Settings", href: "/admin/settings", icon: "Settings" },
+]
+
+const teacherBottomNav: NavItem[] = [
+  { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
+  { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: "FileText" },
+  { label: "Classes", href: "/teacher/classes", icon: "BookOpen" },
+  { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
+  { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
+]
+
+const studentBottomNav: NavItem[] = [
+  { label: "Dashboard", href: "/student", icon: "LayoutDashboard" },
+  { label: "Results", href: "/student/results", icon: "BarChart3" },
+  { label: "Fees", href: "/student/fees", icon: "CreditCard" },
+  { label: "Lesson Notes", href: "/student/lesson-notes", icon: "FileText" },
+  { label: "My Exams", href: "/student/cbt", icon: "ClipboardCheck" },
+]
+
+const parentBottomNav: NavItem[] = [
+  { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
+  { label: "Results", href: "/parent/results", icon: "BarChart3" },
+  { label: "Fees", href: "/parent/fees", icon: "CreditCard" },
+  { label: "Attendance", href: "/parent/attendance", icon: "Calendar" },
+  { label: "Notifications", href: "/parent/notifications", icon: "Bell" },
+]
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -81,17 +114,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const role = (session?.user as any)?.role || "student"
   const navMap: Record<string, NavItem[]> = { admin: adminNav, teacher: teacherNav, parent: parentNav, student: studentNav }
+  const bottomNavMap: Record<string, NavItem[]> = { admin: adminBottomNav, teacher: teacherBottomNav, parent: parentBottomNav, student: studentBottomNav }
   const navItems = navMap[role] || adminNav
+  const bottomNavItems = bottomNavMap[role] || adminBottomNav
 
   return (
     <AppShell
       title="Dashboard"
       navItems={navItems}
+      bottomNavItems={bottomNavItems}
       user={{ id: (session?.user as any)?.id || "", name: session?.user?.name || "", email: session?.user?.email || "", role }}
       schoolName="Access School"
       role={role as "admin" | "teacher" | "parent" | "student"}
     >
       {children}
+      <div className="mt-8 border-t border-border/40 px-4 py-3 text-center text-[10px] text-muted-foreground/50">
+        Built by Skoolar — Odebunmi Tawwab A
+      </div>
     </AppShell>
   )
 }

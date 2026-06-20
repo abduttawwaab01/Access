@@ -61,6 +61,9 @@ export default function RootLayout({
         <link rel="mask-icon" href="/icons/icon-192.svg" color="#6366f1" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var e=localStorage.getItem("access-theme");if(e==="dark"||(e!="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`,
+        }} />
       </head>
       <body className="min-h-full flex flex-col">
         <SessionProvider>

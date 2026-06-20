@@ -73,8 +73,8 @@ async function main() {
     await prisma.$disconnect()
     await pool.end()
     console.log("  Auth users seeded successfully!\n")
-  } catch (e: any) {
-    console.error("  Auth seed error (may be non-critical):", e.message)
+  } catch (e: unknown) {
+    console.error("  Auth seed error (may be non-critical):", e instanceof Error ? e.message : e)
     console.log("  Continuing with app data seed...\n")
   }
 
@@ -91,6 +91,8 @@ async function main() {
   console.log("  Admin:   admin@school.com / admin123")
   console.log("  Teacher: chidi.okonkwo@royalkiddies.edu.ng / password123")
   console.log("  (Other teachers: aisha, folake, segun, ngozi)")
+  console.log("  Parent:  emeka.okafor@email.com / parent123")
+  console.log("  (Other parents: yetunde, musa, chioma, tunde, aisha, kelechi, folake, nnamdi, zainab)")
   console.log("========================================")
 }
 

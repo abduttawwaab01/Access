@@ -12,12 +12,13 @@ interface AppShellProps {
   children: React.ReactNode
   title?: string
   navItems: NavItem[]
+  bottomNavItems?: NavItem[]
   user?: User
   schoolName?: string
   role: "admin" | "teacher" | "parent" | "student"
 }
 
-export function AppShell({ children, title, navItems, user, schoolName, role }: AppShellProps) {
+export function AppShell({ children, title, navItems, bottomNavItems, user, schoolName, role }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { isMobile } = useMobile()
 
@@ -50,7 +51,7 @@ export function AppShell({ children, title, navItems, user, schoolName, role }: 
         </main>
       </div>
 
-      {isMobile && <BottomNav items={navItems} />}
+      {isMobile && <BottomNav items={bottomNavItems || navItems} />}
     </div>
   )
 }

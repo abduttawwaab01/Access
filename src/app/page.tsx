@@ -717,9 +717,10 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="border-t border-border/40 pt-6 text-center text-xs text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} Access International Academy. All rights reserved.
-            </div>
+          <div className="border-t border-border/40 pt-6 text-center text-xs text-muted-foreground/50">
+            &copy; {new Date().getFullYear()} Access International Academy. All rights reserved.
+            <br />Built by Skoolar &mdash; Odebunmi Tawwab A
+          </div>
           </div>
         </footer>
       </div>

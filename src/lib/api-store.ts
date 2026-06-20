@@ -143,6 +143,7 @@ export const store = {
   announcements: {
     getAll: () => announcements,
     getById: (id: string) => announcements.find((a) => a.id === id),
+    getByAudience: (audience: string) => audience === "all" ? announcements : announcements.filter((a) => a.audience === audience || a.audience === "all"),
     create: (data: any) => { const item = { id: uid(), ...data, createdAt: new Date().toISOString() }; announcements.push(item); return item },
     update: (id: string, data: any) => { const idx = announcements.findIndex((a) => a.id === id); if (idx === -1) return null; announcements[idx] = { ...announcements[idx], ...data }; return announcements[idx] },
     delete: (id: string) => { const idx = announcements.findIndex((a) => a.id === id); if (idx === -1) return false; announcements.splice(idx, 1); return true },
