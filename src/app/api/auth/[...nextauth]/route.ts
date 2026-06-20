@@ -14,40 +14,22 @@ const handler = NextAuth({
         const settings = store.schoolSettings.get()
         if (!settings.loginEnabled) throw new Error("School login is currently disabled")
         if (settings.expirationDate && new Date(settings.expirationDate) < new Date()) throw new Error("School access has expired")
-        const { role, email, password } = credentials as Record<string, string>
+        const { email, password } = credentials as Record<string, string>
+        if (!email) throw new Error("Email is required")
 
-        if (role === "admin") {
-          const found = store.staff.getByEmail(email || "admin@school.com")
-          if (found && found.role === "admin" && found.password === (password || "admin123")) {
-            return { id: found.id, name: `${found.firstName} ${found.lastName}`, email: found.email, role: "admin" }
-          }
-          if (!found && email === "admin@school.com" && password === "admin123") {
-            return { id: "1", name: "Admin User", email: "admin@school.com", role: "admin" }
-          }
+        const staff = store.staff.getByEmail(email)
+        if (staff && staff.password === password) {
+          return { id: staff.id, name: `${staff.firstName} ${staff.lastName}`, email: staff.email, role: staff.role }
         }
 
-        if (role === "teacher") {
-          if (!email) throw new Error("Email is required for teacher login")
-          const found = store.staff.getByEmail(email)
-          if (found && found.role === "teacher" && found.password === (password || "password123")) {
-            return { id: found.id, name: `${found.firstName} ${found.lastName}`, email: found.email, role: "teacher" }
-          }
+        const student = store.students.getByEmail(email)
+        if (student && student.password === password) {
+          return { id: student.id, name: `${student.firstName} ${student.lastName}`, email: student.email, role: "student" }
         }
 
-        if (role === "student") {
-          if (!email) throw new Error("Email is required for student login")
-          const found = store.students.getByEmail(email)
-          if (found && found.password === (password || "password123")) {
-            return { id: found.id, name: `${found.firstName} ${found.lastName}`, email: found.email, role: "student" }
-          }
-        }
-
-        if (role === "parent") {
-          if (!email) throw new Error("Email is required for parent login")
-          const found = store.parents.getByEmail(email)
-          if (found && found.password === (password || "password123")) {
-            return { id: found.id, name: `${found.firstName} ${found.lastName}`, email: found.email, role: "parent" }
-          }
+        const parent = store.parents.getByEmail(email)
+        if (parent && parent.password === password) {
+          return { id: parent.id, name: `${parent.firstName} ${parent.lastName}`, email: parent.email, role: "parent" }
         }
 
         throw new Error("Invalid credentials")
