@@ -7,6 +7,8 @@ import { PWAInstallBanner } from "@/components/PWAInstallBanner"
 import { OfflineIndicator } from "@/components/OfflineIndicator"
 import { SkipToContent } from "@/components/SkipToContent"
 import { SessionProvider } from "@/components/SessionProvider"
+import { SuperAdminAnnouncements } from "@/components/SuperAdminAnnouncements"
+import { ExpirationOverlay } from "@/components/ExpirationOverlay"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,7 +65,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <SessionProvider>
           <SkipToContent />
+          <SuperAdminAnnouncements />
           <OfflineIndicator />
+          <ExpirationOverlay />
           <div id="main-content">{children}</div>
           <PWAInstallBanner />
           <PWARegister />

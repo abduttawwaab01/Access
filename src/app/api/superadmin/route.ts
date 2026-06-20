@@ -10,11 +10,20 @@ export async function GET(request: NextRequest) {
     const exams = store.exams.getAll()
     const settings = store.schoolSettings.get()
     const pendingApplications = store.admissionApplications.getByStatus("pending")
+    const announcements = store.superAnnouncements.getAll()
+    const feedback = store.feedbackTickets.getAll()
     return NextResponse.json({
       stats: { students: students.length, staff: staff.length, classes: classes.length, exams: exams.length, pendingApplications: pendingApplications.length },
-      settings,
-      pendingApplications,
+      settings, pendingApplications, announcements,
+      feedbackTickets: feedback.filter((t: any) => t.status !== "resolved"),
+      allFeedback: feedback,
     })
+  }
+  if (action === "announcements") {
+    return NextResponse.json(store.superAnnouncements.getActive())
+  }
+  if (action === "feedback") {
+    return NextResponse.json(store.feedbackTickets.getAll())
   }
   return NextResponse.json({ error: "Unknown action" }, { status: 400 })
 }
@@ -59,13 +68,7 @@ export async function POST(request: NextRequest) {
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
       store.admissionApplications.update(body.id, { status: "accepted", entranceExamPassed: true, entranceExamScore: body.score || null })
       store.students.create({
-        firstName: app.firstName,
-        lastName: app.lastName,
-        email: app.email,
-        gender: app.gender,
-        classId: app.classApplyingFor,
-        phone: app.phone,
-        status: "active",
+        firstName: app.firstName, lastName: app.lastName, email: app.email, gender: app.gender, classId: app.classApplyingFor, phone: app.phone, status: "active",
       })
       const pendingApplications = store.admissionApplications.getByStatus("pending")
       return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application accepted" })
@@ -76,6 +79,36 @@ export async function POST(request: NextRequest) {
       store.admissionApplications.update(body.id, { status: "rejected" })
       const pendingApplications = store.admissionApplications.getByStatus("pending")
       return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application rejected" })
+    }
+    // Announcements
+    case "createAnnouncement": {
+      const ann = store.superAnnouncements.create({
+        title: body.title, content: body.content, type: body.type || "text", displayType: body.displayType || "banner",
+        targetAudience: body.targetAudience || "all",
+      })
+      return NextResponse.json({ success: true, message: "Announcement created", data: { announcements: store.superAnnouncements.getAll() } })
+    }
+    case "toggleAnnouncement": {
+      const ann = store.superAnnouncements.getById(body.id)
+      if (!ann) return NextResponse.json({ success: false, error: "Not found" })
+      store.superAnnouncements.update(body.id, { active: !ann.active })
+      return NextResponse.json({ success: true, message: "Toggled", data: { announcements: store.superAnnouncements.getAll() } })
+    }
+    case "deleteAnnouncement": {
+      store.superAnnouncements.delete(body.id)
+      return NextResponse.json({ success: true, message: "Deleted", data: { announcements: store.superAnnouncements.getAll() } })
+    }
+    // Feedback
+    case "resolveFeedback": {
+      if (!body.resolution) return NextResponse.json({ success: false, error: "Resolution required" })
+      store.feedbackTickets.resolve(body.id, body.resolution)
+      return NextResponse.json({ success: true, message: "Ticket resolved", data: { feedbackTickets: store.feedbackTickets.getAll().filter((t: any) => t.status !== "resolved") } })
+    }
+    // Renewal
+    case "renewSchool": {
+      if (!body.newExpirationDate) return NextResponse.json({ success: false, error: "Date required" })
+      const updated = store.schoolSettings.update({ expirationDate: body.newExpirationDate, loginEnabled: true })
+      return NextResponse.json({ success: true, message: "School renewed", data: { settings: updated } })
     }
     default:
       return NextResponse.json({ success: false, error: "Unknown action" })

@@ -15,6 +15,7 @@ const adminNav: NavItem[] = [
   { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
   { label: "Salary", href: "/admin/salary", icon: "Wallet" },
   { label: "Admissions", href: "/admin/admissions", icon: "ClipboardCheck" },
+  { label: "Feedback", href: "/admin/feedback", icon: "MessageSquare" },
   { label: "Documents", href: "/admin/documents", icon: "FileText" },
   { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
   { label: "Reports", href: "/admin/reports", icon: "FileText" },

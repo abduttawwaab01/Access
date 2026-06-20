@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { ArrowLeft, Plus, Trash2, HelpCircle, Code, AlignLeft, CheckCircle } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { ExamDownload } from "@/components/ExamDownload"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 
@@ -70,7 +71,7 @@ export default function TeacherExamDetailPage() {
         <Link href="/teacher/cbt/exams" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
-        <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-bold">{exam.title}</h2>
@@ -82,6 +83,7 @@ export default function TeacherExamDetailPage() {
               <span>{(exam.questions || []).length} questions</span>
               <span>{(exam.questions || []).reduce((s: number, q: any) => s + (q.points || 0), 0)} pts</span>
             </div>
+            <ExamDownload exam={exam} questions={(exam.questions || []).map((eq: any) => { const q = allQuestions.find((aq: any) => aq.id === eq.questionId); return q ? { ...q, points: eq.points } : null }).filter(Boolean)} />
           </div>
         </div>
       </div>

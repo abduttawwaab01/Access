@@ -226,6 +226,16 @@ let admissionApplications: any[] = [
   { id: "aa4", firstName: "Sophia", lastName: "Adeyemi", email: "sophia.a@email.com", phone: "+234 807 890 1234", dateOfBirth: "2008-09-17", gender: "Female", classApplyingFor: "1", previousSchool: "Bright Future School", address: "10 Freedom Road, Lagos", parentName: "Dr. Adeyemi", parentPhone: "+234 808 901 2345", status: "rejected", entranceExamScore: 45, entranceExamPassed: false, appliedAt: "2025-04-20T11:00:00Z" },
 ]
 
+let superAnnouncements: any[] = [
+  { id: "sa1", title: "Welcome to Access!", content: "We're excited to have you on board. Explore all the features available.", type: "text", displayType: "ticker", targetAudience: "all", createdAt: "2025-06-01T08:00:00Z", active: true },
+  { id: "sa2", title: "System Maintenance", content: "Scheduled maintenance this Sunday 2-4 AM. Expect brief downtime.", type: "text", displayType: "overlay", targetAudience: "all", createdAt: "2025-06-10T12:00:00Z", active: true },
+]
+
+let feedbackTickets: any[] = [
+  { id: "ft1", from: "admin@school.com", subject: "Unable to generate report cards", message: "The report card generation keeps timing out for large classes.", status: "pending", priority: "high", createdAt: "2025-06-15T09:30:00Z", resolvedAt: null, resolution: null },
+  { id: "ft2", from: "admin@school.com", subject: "Feature request: Bulk SMS", message: "It would be great to have bulk SMS notification for fees.", status: "in_progress", priority: "medium", createdAt: "2025-06-10T14:00:00Z", resolvedAt: null, resolution: null },
+]
+
 export const store = {
   sessions: {
     getAll: () => sessions,
@@ -666,5 +676,21 @@ export const store = {
     create: (data: any) => { const item = { id: String(Date.now()), ...data, status: "pending", appliedAt: new Date().toISOString() }; admissionApplications.push(item); return item },
     update: (id: string, data: any) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return null; admissionApplications[idx] = { ...admissionApplications[idx], ...data }; return admissionApplications[idx] },
     delete: (id: string) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return false; admissionApplications.splice(idx, 1); return true },
+  },
+  superAnnouncements: {
+    getAll: () => superAnnouncements,
+    getActive: () => superAnnouncements.filter((a) => a.active),
+    getById: (id: string) => superAnnouncements.find((a) => a.id === id),
+    create: (data: any) => { const item = { id: String(Date.now()), ...data, createdAt: new Date().toISOString(), active: true }; superAnnouncements.push(item); return item },
+    update: (id: string, data: any) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return null; superAnnouncements[idx] = { ...superAnnouncements[idx], ...data }; return superAnnouncements[idx] },
+    delete: (id: string) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return false; superAnnouncements.splice(idx, 1); return true },
+  },
+  feedbackTickets: {
+    getAll: () => feedbackTickets,
+    getByStatus: (status: string) => feedbackTickets.filter((t) => t.status === status),
+    getById: (id: string) => feedbackTickets.find((t) => t.id === id),
+    create: (data: any) => { const item = { id: String(Date.now()), ...data, status: "pending", createdAt: new Date().toISOString(), resolvedAt: null, resolution: null }; feedbackTickets.push(item); return item },
+    update: (id: string, data: any) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], ...data }; return feedbackTickets[idx] },
+    resolve: (id: string, resolution: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], status: "resolved", resolvedAt: new Date().toISOString(), resolution }; return feedbackTickets[idx] },
   },
 }

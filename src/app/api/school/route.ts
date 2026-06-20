@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { store } from "@/lib/api-store"
 
 let schoolSettings = {
   id: "1",
@@ -14,7 +15,8 @@ let schoolSettings = {
 }
 
 export async function GET() {
-  return NextResponse.json(schoolSettings)
+  const saSettings = store.schoolSettings.get()
+  return NextResponse.json({ ...schoolSettings, ...saSettings })
 }
 
 export async function PUT(request: Request) {
