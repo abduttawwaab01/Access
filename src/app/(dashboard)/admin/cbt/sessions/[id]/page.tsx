@@ -170,7 +170,7 @@ export default function SessionDetailPage() {
                   ) : (
                     <div className="flex items-center gap-2">
                       <Label className="text-xs">Score:</Label>
-                      <Input type="number" min={0} max={maxPts} value={scores[ans.questionId] ?? 0} onChange={(e) => handleScoreChange(ans.questionId, parseInt(e.target.value) || 0)} className="h-8 w-20 text-sm" />
+                      <Input type="number" min={0} max={maxPts} value={scores[ans.questionId] ?? 0} onChange={(e) => handleScoreChange(ans.questionId, parseInt(e.target.value) || 0)} className="h-10 w-20 text-sm" />
                       <span className="text-xs text-muted-foreground">/ {maxPts}</span>
                     </div>
                   )}

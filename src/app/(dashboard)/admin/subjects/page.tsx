@@ -109,8 +109,8 @@ export default function SubjectsPage() {
                 <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                   <Card className="glass-card border-0">
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                             <BookOpen className="h-5 w-5 text-primary" />
                           </div>
@@ -122,12 +122,12 @@ export default function SubjectsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
-                            <Pencil className="h-3.5 w-3.5" />
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                          <Button variant="ghost" size="icon" className="text-danger" onClick={() => handleDelete(item)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>

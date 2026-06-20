@@ -193,7 +193,7 @@ export default function LandingPage() {
 
             <button
               onClick={() => setNavOpen(!navOpen)}
-              className="flex items-center justify-center md:hidden"
+              className="flex items-center justify-center md:hidden p-2 min-h-[44px] min-w-[44px]"
               aria-label="Toggle menu"
             >
               {navOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

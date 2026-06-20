@@ -278,7 +278,7 @@ export default function AdminIDCardsPage() {
               </div>
             </div>
 
-            <div ref={cardRef} className={`flex justify-center p-4 bg-gray-50 rounded-2xl border border-border/40 overflow-auto ${orientation === "landscape" ? "rotate-90 scale-[0.7] origin-center" : ""}`}>
+            <div ref={cardRef} className="flex justify-center p-4 bg-gray-50 rounded-2xl border border-border/40 overflow-auto">
               {orientation === "portrait" ? (
                 selectedStudent && school ? (
                   showBack ? (
@@ -294,27 +294,45 @@ export default function AdminIDCardsPage() {
                   )
                 ) : null
               ) : (
-                selectedStudent && school ? (
-                  showBack ? (
-                    <div className="flex gap-4 items-center">
-                      <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
-                    </div>
-                  ) : (
-                    <div className="flex gap-4 items-center">
-                      <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
-                    </div>
-                  )
-                ) : selectedStaff && school ? (
-                  showBack ? (
-                    <div className="flex gap-4 items-center">
-                      <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
-                    </div>
-                  ) : (
-                    <div className="flex gap-4 items-center">
-                      <StaffIDCardFront staff={selectedStaff} school={school} />
-                    </div>
-                  )
-                ) : null
+                <div className="relative w-full max-w-[510px] aspect-[510/320] bg-white rounded-2xl shadow-xl border border-border/40 overflow-hidden flex">
+                  {selectedStudent && school ? (
+                    <>
+                      <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
+                        {showBack ? (
+                          <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
+                        ) : (
+                          <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
+                        )}
+                      </div>
+                      <div className="w-px bg-gray-200 self-stretch my-4" />
+                      <div className="flex-1 overflow-hidden flex items-center justify-center" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
+                        {showBack ? (
+                          <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
+                        ) : (
+                          <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
+                        )}
+                      </div>
+                    </>
+                  ) : selectedStaff && school ? (
+                    <>
+                      <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
+                        {showBack ? (
+                          <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
+                        ) : (
+                          <StaffIDCardFront staff={selectedStaff} school={school} />
+                        )}
+                      </div>
+                      <div className="w-px bg-gray-200 self-stretch my-4" />
+                      <div className="flex-1 overflow-hidden flex items-center justify-center" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
+                        {showBack ? (
+                          <StaffIDCardFront staff={selectedStaff} school={school} />
+                        ) : (
+                          <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
               )}
             </div>
           </div>
@@ -328,7 +346,7 @@ export default function AdminIDCardsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-xs text-muted-foreground">Configure what appears on the back of the ID card.</p>
+                <p className="text-xs text-muted-foreground">Configure what appears on the back of the ID card. Check a field to show it; type custom text to override the data.</p>
                 <div className="space-y-2">
                   <Label>Back Panel Title</Label>
                   <Input value={selectedStaff ? (staffIdCardConfig?.backTitle || "Staff Information") : (idCardConfig?.backTitle || "Student Information")}
@@ -337,25 +355,75 @@ export default function AdminIDCardsPage() {
                       else setIdCardConfig({ ...idCardConfig, backTitle: e.target.value })
                     }} />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {selectedStaff
-                    ? (["showDepartment", "showEmergencyContact"] as const).map((field) => (
-                        <label key={field} className="flex items-center gap-3 cursor-pointer">
-                          <input type="checkbox" checked={(staffIdCardConfig as any)?.[field] ?? true}
-                            onChange={(e) => setStaffIdCardConfig({ ...staffIdCardConfig, [field]: e.target.checked })}
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-                          <span className="text-sm capitalize">{field.replace("show", "").replace(/([A-Z])/g, " $1").trim()}</span>
-                        </label>
+                    ? ([
+                        { key: "showDepartment", label: "Department", customKey: "customDepartment" },
+                        { key: "showEmergencyContact", label: "Emergency Contact", customKey: "customEmergencyContact" },
+                      ] as const).map(({ key, label, customKey }) => (
+                        <div key={key} className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked={(staffIdCardConfig as any)?.[key] ?? true}
+                              onChange={(e) => setStaffIdCardConfig({ ...staffIdCardConfig, [key]: e.target.checked })}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                            <span className="text-sm font-medium">{label}</span>
+                          </label>
+                          <Input placeholder={`Custom ${label.toLowerCase()} (overrides data)`}
+                            value={(staffIdCardConfig as any)?.[customKey] || ""}
+                            onChange={(e) => setStaffIdCardConfig({ ...staffIdCardConfig, [customKey]: e.target.value })}
+                            className="h-9 text-xs" />
+                        </div>
                       ))
-                    : (["showAddress", "showBloodGroup", "showEmergencyContact", "showMedicalNotes"] as const).map((field) => (
-                        <label key={field} className="flex items-center gap-3 cursor-pointer">
-                          <input type="checkbox" checked={(idCardConfig as any)?.[field] ?? true}
-                            onChange={(e) => setIdCardConfig({ ...idCardConfig, [field]: e.target.checked })}
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-                          <span className="text-sm capitalize">{field.replace("show", "").replace(/([A-Z])/g, " $1").trim()}</span>
-                        </label>
+                    : ([
+                        { key: "showAddress", label: "Address", customKey: "customAddress" },
+                        { key: "showBloodGroup", label: "Blood Group", customKey: "customBloodGroup" },
+                        { key: "showEmergencyContact", label: "Emergency Contact", customKey: "customEmergencyContact" },
+                        { key: "showMedicalNotes", label: "Medical Notes", customKey: "customMedicalNotes" },
+                      ] as const).map(({ key, label, customKey }) => (
+                        <div key={key} className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked={(idCardConfig as any)?.[key] ?? true}
+                              onChange={(e) => setIdCardConfig({ ...idCardConfig, [key]: e.target.checked })}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                            <span className="text-sm font-medium">{label}</span>
+                          </label>
+                          <Input placeholder={`Custom ${label.toLowerCase()} (overrides data)`}
+                            value={(idCardConfig as any)?.[customKey] || ""}
+                            onChange={(e) => setIdCardConfig({ ...idCardConfig, [customKey]: e.target.value })}
+                            className="h-9 text-xs" />
+                        </div>
                       ))
                   }
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Custom Fields (label:value)</Label>
+                  {((selectedStaff ? staffIdCardConfig : idCardConfig)?.customFields || []).map((f: any, i: number) => (
+                    <div key={i} className="flex gap-2">
+                      <Input placeholder="Label" value={f.label} onChange={(e) => {
+                        const fields = [...((selectedStaff ? staffIdCardConfig : idCardConfig)?.customFields || [])]
+                        fields[i] = { ...fields[i], label: e.target.value }
+                        if (selectedStaff) setStaffIdCardConfig({ ...staffIdCardConfig, customFields: fields })
+                        else setIdCardConfig({ ...idCardConfig, customFields: fields })
+                      }} className="h-9 text-xs flex-1" />
+                      <Input placeholder="Value" value={f.value} onChange={(e) => {
+                        const fields = [...((selectedStaff ? staffIdCardConfig : idCardConfig)?.customFields || [])]
+                        fields[i] = { ...fields[i], value: e.target.value }
+                        if (selectedStaff) setStaffIdCardConfig({ ...staffIdCardConfig, customFields: fields })
+                        else setIdCardConfig({ ...idCardConfig, customFields: fields })
+                      }} className="h-9 text-xs flex-1" />
+                      <button onClick={() => {
+                        const fields = [...((selectedStaff ? staffIdCardConfig : idCardConfig)?.customFields || [])]
+                        fields.splice(i, 1)
+                        if (selectedStaff) setStaffIdCardConfig({ ...staffIdCardConfig, customFields: fields })
+                        else setIdCardConfig({ ...idCardConfig, customFields: fields })
+                      }} className="text-red-500 hover:text-red-700 px-2 text-sm">✕</button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const fields = [...((selectedStaff ? staffIdCardConfig : idCardConfig)?.customFields || []), { label: "", value: "" }]
+                    if (selectedStaff) setStaffIdCardConfig({ ...staffIdCardConfig, customFields: fields })
+                    else setIdCardConfig({ ...idCardConfig, customFields: fields })
+                  }} className="w-full text-xs">+ Add Custom Field</Button>
                 </div>
                 <Button onClick={handleSaveConfig} className="w-full animated-gradient border-0 text-white shadow-lg shadow-primary/25">
                   <RefreshCw className="h-4 w-4 mr-1" /> Save Settings

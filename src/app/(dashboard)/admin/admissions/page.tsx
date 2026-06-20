@@ -27,7 +27,7 @@ export default function AdminAdmissionsPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <PageHeader title="Admissions Management" description="Review and process admission applications" />
 
       <div className="flex items-center gap-4">
@@ -37,7 +37,7 @@ export default function AdminAdmissionsPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+      <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit overflow-x-auto">
         {tabs.map((t) => (
           <button key={t} onClick={() => setActiveTab(t)} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{t}</button>
         ))}

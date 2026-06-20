@@ -49,7 +49,7 @@ export default function AdminLessonNotes() {
   })
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 md:p-6 space-y-4">
       <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-bold flex items-center gap-2">
         <FileText className="w-6 h-6" /> Lesson Notes
       </motion.h1>
@@ -75,7 +75,7 @@ export default function AdminLessonNotes() {
             <motion.div key={note.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="bg-card/80 backdrop-blur-sm">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between flex-wrap gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold">{note.title}</h3>
@@ -90,12 +90,12 @@ export default function AdminLessonNotes() {
                     </div>
                     <div className="flex items-center gap-1">
                       {note.status !== "approved" && (
-                        <Button size="sm" variant="ghost" className="text-green-500" onClick={() => approve(note.id)}><CheckCircle className="w-4 h-4" /></Button>
+                        <Button variant="ghost" className="text-green-500" onClick={() => approve(note.id)}><CheckCircle className="w-4 h-4" /></Button>
                       )}
                       {note.status !== "rejected" && (
-                        <Button size="sm" variant="ghost" className="text-red-500" onClick={() => reject(note.id)}><XCircle className="w-4 h-4" /></Button>
+                        <Button variant="ghost" className="text-red-500" onClick={() => reject(note.id)}><XCircle className="w-4 h-4" /></Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => setExpanded(expanded === note.id ? null : note.id)}>
+                      <Button variant="ghost" onClick={() => setExpanded(expanded === note.id ? null : note.id)}>
                         {expanded === note.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </Button>
                     </div>

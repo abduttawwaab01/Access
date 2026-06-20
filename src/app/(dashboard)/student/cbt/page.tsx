@@ -72,7 +72,7 @@ export default function StudentCbtPage() {
                     <div className="flex items-center gap-2">
                       <Badge className={s.status === "completed" ? "bg-green-500/15 text-green-600" : "bg-blue-500/15 text-blue-600"}>{s.status}</Badge>
                       {s.status === "completed" && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => router.push(`/student/cbt/analysis/${s.id}`)}>
+                        <Button variant="ghost" size="icon" onClick={() => router.push(`/student/cbt/analysis/${s.id}`)}>
                           <BarChart3 className="h-4 w-4 text-primary" />
                         </Button>
                       )}
@@ -111,7 +111,7 @@ export default function StudentCbtPage() {
                           </div>
                         </div>
                         {!done && (
-                          <Button size="sm" className="animated-gradient border-0 text-white shrink-0" onClick={() => startExam(exam.id)}>
+                          <Button className="animated-gradient border-0 text-white shrink-0 min-h-[44px]" onClick={() => startExam(exam.id)}>
                             <Play className="h-4 w-4 mr-1" /> Start
                           </Button>
                         )}

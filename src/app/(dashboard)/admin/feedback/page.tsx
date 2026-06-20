@@ -34,7 +34,7 @@ export default function AdminFeedbackPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="p-4 md:p-6 space-y-8">
       <PageHeader title="Feedback & Support" description="Report issues or request features to the Portal Administrator" />
 
       <div className="glass-card max-w-xl rounded-xl p-6">

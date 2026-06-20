@@ -196,7 +196,7 @@ export default function AdminAttendancePage() {
       </motion.div>
 
       {/* Today's Stats */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-3 gap-3">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Present Today", value: todayStats.present, icon: CheckCircle2, color: "bg-green-500/15 text-green-600" },
           { label: "Late Today", value: todayStats.late, icon: Clock, color: "bg-amber-500/15 text-amber-600" },

@@ -176,7 +176,7 @@ export default function QuestionBankPage() {
 
   const filterBar = (
     <div className="mb-4 flex flex-wrap gap-2">
-      <div className="relative flex-1 min-w-[200px] max-w-xs">
+      <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search topic..."
@@ -186,7 +186,7 @@ export default function QuestionBankPage() {
         />
       </div>
       <Select value={filterClass} onValueChange={(v) => { if (v) setFilterClass(v) }}>
-        <SelectTrigger className="h-10 w-[150px]"><SelectValue placeholder="All classes" /></SelectTrigger>
+        <SelectTrigger className="h-10 w-full sm:w-[150px]"><SelectValue placeholder="All classes" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Classes</SelectItem>
           {assignedClasses.map((c) => (
@@ -195,7 +195,7 @@ export default function QuestionBankPage() {
         </SelectContent>
       </Select>
       <Select value={filterSubject} onValueChange={(v) => { if (v) setFilterSubject(v) }}>
-        <SelectTrigger className="h-10 w-[150px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
+        <SelectTrigger className="h-10 w-full sm:w-[150px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Subjects</SelectItem>
           {assignedSubjects.map((s) => (
@@ -204,7 +204,7 @@ export default function QuestionBankPage() {
         </SelectContent>
       </Select>
       <Select value={filterDifficulty} onValueChange={(v) => { if (v) setFilterDifficulty(v) }}>
-        <SelectTrigger className="h-10 w-[130px]"><SelectValue placeholder="Difficulty" /></SelectTrigger>
+        <SelectTrigger className="h-10 w-full sm:w-[130px]"><SelectValue placeholder="Difficulty" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Levels</SelectItem>
           {difficulties.map((d) => (
@@ -213,7 +213,7 @@ export default function QuestionBankPage() {
         </SelectContent>
       </Select>
       <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
-        <SelectTrigger className="h-10 w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+        <SelectTrigger className="h-10 w-full sm:w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
           {statuses.map((s) => (

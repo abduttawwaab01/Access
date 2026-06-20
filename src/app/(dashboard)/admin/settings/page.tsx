@@ -26,8 +26,8 @@ export default function SchoolSettingsPage() {
     primaryColor: "#6366f1",
     secondaryColor: "#06b6d4",
     accentColor: "#f59e0b",
-    studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] },
-    staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] },
+    studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customAddress: "", customBloodGroup: "", customEmergencyContact: "", customMedicalNotes: "", customFields: [] },
+    staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customDepartment: "", customEmergencyContact: "", customFields: [] },
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -177,7 +177,7 @@ export default function SchoolSettingsPage() {
                 </div>
                 <div className="space-y-2 flex-1">
                   <Label htmlFor="logoUpload" className="cursor-pointer">
-                    <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium transition-all hover:bg-muted">
+                    <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium transition-all hover:bg-muted min-h-[44px]">
                       {logoUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Compressing...</> : <><ImageIcon className="h-4 w-4" /> Upload Image</>}
                     </span>
                     <input
@@ -270,22 +270,33 @@ export default function SchoolSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">Configure what appears on the back of student ID cards.</p>
+              <p className="text-xs text-muted-foreground">Configure what appears on the back of student ID cards. Type custom text to override student data.</p>
               <div className="space-y-2">
                 <Label>Back Panel Title</Label>
                 <Input value={form.studentIdCardConfig?.backTitle || "Student Information"} onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, backTitle: e.target.value } })} />
               </div>
-              <div className="space-y-3">
-                {(["showAddress", "showBloodGroup", "showEmergencyContact", "showMedicalNotes"] as const).map((field) => (
-                  <label key={field} className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(form.studentIdCardConfig as any)?.[field] ?? true}
-                      onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, [field]: e.target.checked } })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm capitalize">{field.replace("show", "").replace(/([A-Z])/g, " $1").trim()}</span>
-                  </label>
+              <div className="space-y-4">
+                {[
+                  { key: "showAddress", label: "Address", customKey: "customAddress" },
+                  { key: "showBloodGroup", label: "Blood Group", customKey: "customBloodGroup" },
+                  { key: "showEmergencyContact", label: "Emergency Contact", customKey: "customEmergencyContact" },
+                  { key: "showMedicalNotes", label: "Medical Notes", customKey: "customMedicalNotes" },
+                ].map(({ key, label, customKey }) => (
+                  <div key={key} className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(form.studentIdCardConfig as any)?.[key] ?? true}
+                        onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, [key]: e.target.checked } })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm font-medium">{label}</span>
+                    </label>
+                    <Input placeholder={`Custom ${label.toLowerCase()} (overrides student data)`}
+                      value={(form.studentIdCardConfig as any)?.[customKey] || ""}
+                      onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, [customKey]: e.target.value } })}
+                      className="h-9 text-xs" />
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -301,22 +312,31 @@ export default function SchoolSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-xs text-muted-foreground">Configure what appears on the back of staff ID cards.</p>
+              <p className="text-xs text-muted-foreground">Configure what appears on the back of staff ID cards. Type custom text to override staff data.</p>
               <div className="space-y-2">
                 <Label>Back Panel Title</Label>
                 <Input value={form.staffIdCardConfig?.backTitle || "Staff Information"} onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, backTitle: e.target.value } })} />
               </div>
-              <div className="space-y-3">
-                {(["showDepartment", "showEmergencyContact"] as const).map((field) => (
-                  <label key={field} className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={(form.staffIdCardConfig as any)?.[field] ?? true}
-                      onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, [field]: e.target.checked } })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm capitalize">{field.replace("show", "").replace(/([A-Z])/g, " $1").trim()}</span>
-                  </label>
+              <div className="space-y-4">
+                {[
+                  { key: "showDepartment", label: "Department", customKey: "customDepartment" },
+                  { key: "showEmergencyContact", label: "Emergency Contact", customKey: "customEmergencyContact" },
+                ].map(({ key, label, customKey }) => (
+                  <div key={key} className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(form.staffIdCardConfig as any)?.[key] ?? true}
+                        onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, [key]: e.target.checked } })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm font-medium">{label}</span>
+                    </label>
+                    <Input placeholder={`Custom ${label.toLowerCase()} (overrides staff data)`}
+                      value={(form.staffIdCardConfig as any)?.[customKey] || ""}
+                      onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, [customKey]: e.target.value } })}
+                      className="h-9 text-xs" />
+                  </div>
                 ))}
               </div>
             </CardContent>

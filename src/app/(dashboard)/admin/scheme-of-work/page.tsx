@@ -250,7 +250,7 @@ export default function SchemeOfWorkPage() {
                 <Card className="glass-card border-0 overflow-hidden">
                   <CardContent className="p-0">
                     <div className="p-4 cursor-pointer" onClick={() => toggleExpand(item.id)}>
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                             <BookOpen className="h-5 w-5 text-primary" />
@@ -269,25 +269,25 @@ export default function SchemeOfWorkPage() {
                         <div className="flex items-center gap-1 shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                           {item.status === "pending" && (
                             <>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleApprove(item)} title="Approve">
+                              <Button variant="ghost" size="icon" className="text-green-600" onClick={() => handleApprove(item)} title="Approve">
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleReject(item)} title="Reject">
+                              <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleReject(item)} title="Reject">
                                 <XCircle className="h-4 w-4" />
                               </Button>
                             </>
                           )}
                           {item.status === "draft" && (
                             <>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)} title="Edit">
-                                <Edit className="h-3.5 w-3.5" />
+                              <Button variant="ghost" size="icon" onClick={() => openEdit(item)} title="Edit">
+                                <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)} title="Delete">
-                                <Trash2 className="h-3.5 w-3.5" />
+                              <Button variant="ghost" size="icon" className="text-danger" onClick={() => handleDelete(item)} title="Delete">
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
                           )}
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                          <Button variant="ghost" size="icon" className="text-muted-foreground">
                             {expandedId === item.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </Button>
                         </div>

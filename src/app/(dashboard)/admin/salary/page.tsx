@@ -110,15 +110,15 @@ export default function AdminSalaryPage() {
                 return (
                   <Card key={s.id} className="border border-border/50">
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10"><AvatarFallback>{s.firstName[0]}{s.lastName[0]}</AvatarFallback></Avatar>
-                          <div>
-                            <p className="font-medium">{s.firstName} {s.lastName}</p>
-                            <p className="text-xs text-muted-foreground">{s.role} • {s.department}</p>
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Avatar className="h-10 w-10 shrink-0"><AvatarFallback>{s.firstName[0]}{s.lastName[0]}</AvatarFallback></Avatar>
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{s.firstName} {s.lastName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{s.role} • {s.department}</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => startEdit(s.id)}><Edit3 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => startEdit(s.id)} className="shrink-0"><Edit3 className="h-4 w-4" /></Button>
                       </div>
                       {isEditing ? (
                         <div className="mt-4 space-y-3">
@@ -151,7 +151,7 @@ export default function AdminSalaryPage() {
         <TabsContent value="payroll" className="mt-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">{currentMonth} {currentYear} Payroll</h3>
-            <Button size="sm" onClick={initializeMonthlyPayroll}><Plus className="h-4 w-4 mr-1" /> Initialize Payroll</Button>
+            <Button onClick={initializeMonthlyPayroll}><Plus className="h-4 w-4 mr-1" /> Initialize Payroll</Button>
           </div>
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
@@ -172,7 +172,7 @@ export default function AdminSalaryPage() {
                           {rec.status === "paid" ? (
                             <Badge className="bg-green-500/15 text-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Paid</Badge>
                           ) : (
-                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white h-8" onClick={() => markPaid(rec.id)}><CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid</Button>
+                            <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={() => markPaid(rec.id)}><CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid</Button>
                           )}
                         </div>
                       </div>

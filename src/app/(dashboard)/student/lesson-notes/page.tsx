@@ -190,11 +190,11 @@ export default function StudentLessonNotesPage() {
               </div>
             )}
             <div className="flex gap-2">
-              <Button size="sm" className="animated-gradient border-0 text-white shadow-lg shadow-primary/25" onClick={beginQuiz}>
-                {existingResult ? "Retake Quiz" : "Take Quiz"} <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              <Button className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]" onClick={beginQuiz}>
+                {existingResult ? "Retake Quiz" : "Take Quiz"} <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
               {existingResult && (
-                <Button size="sm" variant="outline" onClick={() => { setQuizStep("results"); setQuizResult(existingResult) }}>
+                <Button variant="outline" onClick={() => { setQuizStep("results"); setQuizResult(existingResult) }}>
                   View Previous
                 </Button>
               )}
@@ -257,16 +257,15 @@ export default function StudentLessonNotesPage() {
               <div className="flex justify-end">
                 {isLast ? (
                   <Button
-                    size="sm"
                     disabled={!hasAnswer || submitting}
                     onClick={submitQuiz}
-                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25"
+                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]"
                   >
                     {submitting ? "Submitting..." : "Submit"}
                   </Button>
                 ) : (
-                  <Button size="sm" disabled={!hasAnswer} onClick={nextQuestion}>
-                    Next <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  <Button disabled={!hasAnswer} onClick={nextQuestion}>
+                    Next <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 )}
               </div>
@@ -426,11 +425,10 @@ export default function StudentLessonNotesPage() {
                               {hasQuiz && (
                                 <div className="mt-3">
                                   <Button
-                                    size="sm"
-                                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25"
+                                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]"
                                     onClick={() => handleStartQuiz(note)}
                                   >
-                                    <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                                    <HelpCircle className="h-4 w-4 mr-1" />
                                     {existingResult?.lessonNoteId === note.id ? "View Quiz" : "Take Quiz"}
                                   </Button>
                                 </div>

@@ -100,7 +100,7 @@ export default function TeacherQuestionsPage() {
       <div className="mb-4 flex flex-wrap gap-2">
         <Input placeholder="Search questions..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 max-w-xs" />
         <Select value={filterType} onValueChange={(v) => { if (v) setFilterType(v) }}>
-          <SelectTrigger className="h-10 w-[140px]"><SelectValue placeholder="All types" /></SelectTrigger>
+          <SelectTrigger className="h-10 w-full sm:w-[140px]"><SelectValue placeholder="All types" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="mcq">Multiple Choice</SelectItem>
@@ -110,7 +110,7 @@ export default function TeacherQuestionsPage() {
           </SelectContent>
         </Select>
         <Select value={filterSubject} onValueChange={(v) => { if (v) setFilterSubject(v) }}>
-          <SelectTrigger className="h-10 w-[160px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
+          <SelectTrigger className="h-10 w-full sm:w-[160px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Subjects</SelectItem>
             {subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}

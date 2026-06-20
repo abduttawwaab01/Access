@@ -83,14 +83,14 @@ export default function TeacherExamsPage() {
         title="Delete Exam" description={`Permanently delete ${confirmDelete?.title}?`} />
       <div className="mb-4 flex flex-wrap gap-2">
         <Select value={filterSubject} onValueChange={(v) => { if (v) setFilterSubject(v) }}>
-          <SelectTrigger className="h-10 w-[160px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
+          <SelectTrigger className="h-10 w-full sm:w-[160px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Subjects</SelectItem>
             {subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
-          <SelectTrigger className="h-10 w-[130px]"><SelectValue placeholder="All status" /></SelectTrigger>
+          <SelectTrigger className="h-10 w-full sm:w-[130px]"><SelectValue placeholder="All status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>

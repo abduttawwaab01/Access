@@ -133,15 +133,15 @@ export default function ExamAnalysisPage() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-5 w-5" /></Button>
+          <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px]" onClick={() => router.back()}><ArrowLeft className="h-5 w-5" /></Button>
           <div>
             <h2 className="text-2xl font-bold">Exam Analysis</h2>
             <p className="text-xs text-muted-foreground">{exam.title}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}>
-          <DownloadCloud className="h-4 w-4 mr-1" /> {exporting ? "Exporting..." : "Export"}
-        </Button>
+          <Button variant="outline" onClick={handleExportPNG} disabled={exporting}>
+            <DownloadCloud className="h-4 w-4 mr-1" /> {exporting ? "Exporting..." : "Export"}
+          </Button>
       </div>
 
       <motion.div ref={reportRef} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-xl overflow-hidden border">
@@ -149,7 +149,7 @@ export default function ExamAnalysisPage() {
         <div className="bg-gradient-to-r from-primary via-primary/90 to-secondary p-6 text-white">
           <div className="text-center">
             <p className="text-sm opacity-80 uppercase tracking-wider">{subjectName} - {exam.title}</p>
-            <div className="mt-4 flex items-center justify-center gap-8">
+            <div className="mt-4 flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
               <div className="text-center">
                 <p className="text-3xl font-bold">{session.totalScore}/{session.maxScore}</p>
                 <p className="text-xs opacity-80 mt-1">Total Score</p>

@@ -37,7 +37,7 @@ export default function StudentTimetablePage() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {days.map((day) => (
           <button key={day} onClick={() => setSelectedDay(day)}
-            className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedDay === day ? "animated-gradient text-white shadow-lg" : "bg-muted hover:bg-muted/80"}`}
+            className={`shrink-0 px-4 py-3 rounded-full text-sm font-medium transition-all min-h-[44px] ${selectedDay === day ? "animated-gradient text-white shadow-lg" : "bg-muted hover:bg-muted/80"}`}
           >{day}</button>
         ))}
       </div>

@@ -41,7 +41,7 @@ export default function StudentAttendancePage() {
         <p className="text-sm text-muted-foreground">Track your presence record</p>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-3 gap-3">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: "Present", value: present, color: "text-green-500", bg: "bg-green-500/10" },
           { label: "Absent", value: absent, color: "text-red-500", bg: "bg-red-500/10" },
@@ -62,7 +62,7 @@ export default function StudentAttendancePage() {
             <h3 className="font-semibold mb-1">Attendance Rate</h3>
             <p className="text-xs text-muted-foreground mb-4">{rate}% overall attendance</p>
             <div className="h-48 flex items-center justify-center">
-              <ResponsiveContainer width={200} height={200}>
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}

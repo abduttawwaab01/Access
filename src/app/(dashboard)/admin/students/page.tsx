@@ -155,11 +155,11 @@ export default function StudentsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
-                          <Pencil className="h-3.5 w-3.5" />
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
+                          <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <Button variant="ghost" size="icon" className="text-danger" onClick={() => handleDelete(item)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

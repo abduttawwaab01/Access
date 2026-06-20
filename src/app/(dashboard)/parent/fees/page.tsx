@@ -60,7 +60,7 @@ export default function ParentFeesPage() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="border-0 overflow-hidden">
           <div className="bg-gradient-to-r from-primary via-primary/90 to-secondary p-5 text-white">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div><p className="text-sm opacity-80">Total Paid</p><p className="text-3xl font-bold">₦{totalPaid.toLocaleString()}</p></div>
               <div className="text-right"><p className="text-sm opacity-80">Total Due</p><p className="text-3xl font-bold">₦{totalDue.toLocaleString()}</p></div>
             </div>
@@ -88,8 +88,8 @@ export default function ParentFeesPage() {
                   }).reduce((s, p) => s + p.amount, 0)
                   return (
                     <div key={fs.id} className="p-3 rounded-xl bg-muted/30">
-                      <div className="flex justify-between mb-1"><span className="text-sm font-medium">{fs.type}</span><span className="text-sm font-mono font-bold">₦{fs.amount}</span></div>
-                      <div className="flex justify-between text-xs text-muted-foreground"><span>{fs.term} &bull; Due: {fs.dueDate}</span><span className="text-green-600">₦{paid} paid</span></div>
+                    <div className="flex justify-between gap-2 mb-1"><span className="text-sm font-medium truncate">{fs.type}</span><span className="text-sm font-mono font-bold shrink-0">₦{fs.amount}</span></div>
+                    <div className="flex justify-between gap-2 text-xs text-muted-foreground"><span className="truncate">{fs.term} &bull; Due: {fs.dueDate}</span><span className="text-green-600 shrink-0">₦{paid} paid</span></div>
                     </div>
                   )
                 })}

@@ -201,7 +201,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
               <h3 className="font-bold text-xs text-indigo-800 uppercase tracking-wider">Performance Radar</h3>
               <div className="h-0.5 flex-1 bg-gradient-to-l from-indigo-200 to-transparent" />
             </div>
-            <div className="h-52 print:h-44">
+            <div style={{ height: 208, minHeight: 208 }} className="print:h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="#e5e7eb" />
@@ -218,7 +218,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
               <h3 className="font-bold text-xs text-indigo-800 uppercase tracking-wider">Score Distribution</h3>
               <div className="h-0.5 flex-1 bg-gradient-to-l from-indigo-200 to-transparent" />
             </div>
-            <div className="h-52 print:h-44">
+            <div style={{ height: 208, minHeight: 208 }} className="print:h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
                   <XAxis dataKey="subject" tick={{ fontSize: 8, fill: "#6b7280" }} />

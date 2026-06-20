@@ -64,7 +64,7 @@ export default function ParentAttendancePage() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {children.map((c) => (
           <button key={c.id} onClick={() => setActiveChildId(c.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+            className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-medium transition-all min-h-[44px] ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
           >{c.name.split(" ")[0]}</button>
         ))}
       </div>

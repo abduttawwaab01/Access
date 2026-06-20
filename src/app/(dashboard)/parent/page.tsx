@@ -146,7 +146,7 @@ export default function ParentDashboard() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.4 }}
-                    className="grid grid-cols-3 gap-3"
+                    className="grid grid-cols-3 gap-2"
                   >
                     {[
                       { label: "Avg Score", value: results.length > 0 ? `${Math.round(results.reduce((s: number, r: any) => s + r.score, 0) / results.length)}%` : "0%" },

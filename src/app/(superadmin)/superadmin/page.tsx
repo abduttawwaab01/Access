@@ -1124,12 +1124,12 @@ function SchemeOfWorkSection() {
       />
       <div className="space-y-2">
         {items.map((s: any) => (
-          <div key={s.id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-[#12121a] p-4">
-            <div>
-              <p className="text-sm font-medium text-zinc-200">{s.title}</p>
-              <p className="text-xs text-zinc-500">{s.className} | {s.subjectName} | Creator: {s.creatorName}</p>
+          <div key={s.id} className="flex items-start justify-between flex-wrap gap-2 rounded-lg border border-zinc-800 bg-[#12121a] p-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-zinc-200 truncate">{s.title}</p>
+              <p className="text-xs text-zinc-500 truncate">{s.className} | {s.subjectName} | Creator: {s.creatorName}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <span className={`rounded-full px-2 py-0.5 text-xs ${s.status === "published" ? "bg-emerald-600/20 text-emerald-400" : "bg-amber-600/20 text-amber-400"}`}>{s.status}</span>
               {s.status !== "published" && <button onClick={() => approve(s.id)} className="rounded bg-emerald-600/20 px-2 py-1 text-xs text-emerald-400"><CheckCircle className="h-3 w-3 inline" /> Approve</button>}
               {s.status === "published" && <button onClick={() => reject(s.id)} className="rounded bg-amber-600/20 px-2 py-1 text-xs text-amber-400"><XCircle className="h-3 w-3 inline" /> Reject</button>}
@@ -1169,12 +1169,12 @@ function LessonNotesSection() {
         {loading ? <Loading /> : items.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-8 text-center text-sm text-zinc-500">No lesson notes</div>
         ) : items.map((n: any) => (
-          <div key={n.id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-[#12121a] p-4">
-            <div>
-              <p className="text-sm font-medium text-zinc-200">{n.title}</p>
-              <p className="text-xs text-zinc-500">{n.week ? `Week ${n.week} | ` : ""}Creator: {n.creatorName}</p>
+          <div key={n.id} className="flex items-start justify-between flex-wrap gap-2 rounded-lg border border-zinc-800 bg-[#12121a] p-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-zinc-200 truncate">{n.title}</p>
+              <p className="text-xs text-zinc-500 truncate">{n.week ? `Week ${n.week} | ` : ""}Creator: {n.creatorName}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <span className={`rounded-full px-2 py-0.5 text-xs ${n.status === "published" ? "bg-emerald-600/20 text-emerald-400" : "bg-amber-600/20 text-amber-400"}`}>{n.status}</span>
               {n.status !== "published" && <button onClick={() => approve(n.id)} className="rounded bg-emerald-600/20 px-2 py-1 text-xs text-emerald-400"><CheckCircle className="h-3 w-3 inline" /> Approve</button>}
               <button onClick={() => remove(n.id)} className="rounded bg-red-600/20 px-2 py-1 text-xs text-red-400"><Trash2 className="h-3 w-3 inline" /></button>
@@ -1615,16 +1615,16 @@ function AnnouncementsSection() {
         <div className="space-y-4">
           <Input label="Title" value={form.title} onChange={(v) => setForm((p) => ({ ...p, title: v }))} />
           <Input label="Content" value={form.content} onChange={(v) => setForm((p) => ({ ...p, content: v }))} type="textarea" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-zinc-400">Display Type</label>
-              <select value={form.displayType} onChange={(e) => setForm((p) => ({ ...p, displayType: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500">
+              <select value={form.displayType} onChange={(e) => setForm((p) => ({ ...p, displayType: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500">
                 <option value="banner">Banner</option><option value="ticker">Ticker</option><option value="overlay">Overlay</option>
               </select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-zinc-400">Target Audience</label>
-              <select value={form.targetAudience} onChange={(e) => setForm((p) => ({ ...p, targetAudience: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500">
+              <select value={form.targetAudience} onChange={(e) => setForm((p) => ({ ...p, targetAudience: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500">
                 <option value="all">Everyone</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
               </select>
             </div>

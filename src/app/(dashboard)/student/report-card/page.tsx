@@ -191,15 +191,15 @@ export default function StudentReportCardPage() {
           <p className="text-sm text-muted-foreground">{currentTerm} - Academic Session 2024/2025</p>
         </motion.div>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="h-3.5 w-3.5 mr-1" /> Print</Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}>
-            <DownloadCloud className="h-3.5 w-3.5 mr-1" /> {exporting ? "..." : "PDF"}
+          <Button variant="outline" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" /> Print</Button>
+          <Button variant="outline" onClick={handleExportPDF} disabled={exporting}>
+            <DownloadCloud className="h-4 w-4 mr-1" /> {exporting ? "..." : "PDF"}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}>
-            <Download className="h-3.5 w-3.5 mr-1" /> PNG
+          <Button variant="outline" onClick={handleExportPNG} disabled={exporting}>
+            <Download className="h-4 w-4 mr-1" /> PNG
           </Button>
-          <Button variant="outline" size="sm" onClick={handleShareWhatsApp}>
-            <Send className="h-3.5 w-3.5 mr-1" /> Share
+          <Button variant="outline" onClick={handleShareWhatsApp}>
+            <Send className="h-4 w-4 mr-1" /> Share
           </Button>
         </div>
       </div>

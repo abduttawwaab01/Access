@@ -31,6 +31,10 @@ interface IdCardConfig {
   showBloodGroup?: boolean
   showEmergencyContact?: boolean
   showMedicalNotes?: boolean
+  customAddress?: string
+  customBloodGroup?: string
+  customEmergencyContact?: string
+  customMedicalNotes?: string
   customFields?: { label: string; value: string }[]
 }
 
@@ -56,21 +60,21 @@ export function StudentIDCardBack({ student, school, config }: StudentIDCardBack
           <InfoRow label="Student ID" value={student.studentId} />
           {student.dateOfBirth && <InfoRow label="Date of Birth" value={new Date(student.dateOfBirth).toLocaleDateString()} />}
           {student.gender && <InfoRow label="Gender" value={student.gender} />}
-          {cfg.showBloodGroup && student.bloodGroup && <InfoRow label="Blood Group" value={student.bloodGroup} />}
-          {cfg.showAddress && student.address && <InfoRow label="Address" value={student.address} />}
+          {cfg.showBloodGroup && (cfg.customBloodGroup || student.bloodGroup) && <InfoRow label="Blood Group" value={cfg.customBloodGroup || student.bloodGroup || ""} />}
+          {cfg.showAddress && (cfg.customAddress || student.address) && <InfoRow label="Address" value={cfg.customAddress || student.address || ""} />}
           {student.email && <InfoRow label="Email" value={student.email} />}
           {student.phone && <InfoRow label="Phone" value={student.phone} />}
           {student.parentName && <InfoRow label="Parent/Guardian" value={student.parentName} />}
-          {cfg.showEmergencyContact && student.parentPhone && <InfoRow label="Emergency Contact" value={student.parentPhone} />}
+          {cfg.showEmergencyContact && (cfg.customEmergencyContact || student.parentPhone) && <InfoRow label="Emergency Contact" value={cfg.customEmergencyContact || student.parentPhone || ""} />}
           {(cfg.customFields || []).map((f, i) => (
             f.value ? <InfoRow key={i} label={f.label} value={f.value} /> : null
           ))}
         </div>
 
-        {cfg.showMedicalNotes && student.medicalNotes && (
+        {cfg.showMedicalNotes && (cfg.customMedicalNotes || student.medicalNotes) && (
           <div className="rounded-lg bg-red-50 border border-red-100 p-3">
             <p className="text-[10px] font-semibold text-red-700 mb-0.5">Medical Notes</p>
-            <p className="text-xs text-red-600">{student.medicalNotes}</p>
+            <p className="text-xs text-red-600">{cfg.customMedicalNotes || student.medicalNotes}</p>
           </div>
         )}
 

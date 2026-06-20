@@ -55,7 +55,7 @@ export default function ParentDocumentsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-green-500/15 text-green-600">{doc.status}</Badge>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(`<html><head><title>${doc.title}</title></head><body>Print preview</body></html>`); w.document.close(); w.print() } }}>
+                    <Button variant="ghost" size="icon" onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(`<html><head><title>${doc.title}</title></head><body>Print preview</body></html>`); w.document.close(); w.print() } }}>
                       <Printer className="h-4 w-4" />
                     </Button>
                   </div>

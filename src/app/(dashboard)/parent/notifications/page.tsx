@@ -50,7 +50,7 @@ export default function ParentNotificationsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold">{item.title}</p>
+                          <p className="text-sm font-semibold truncate">{item.title}</p>
                           <Badge variant="outline" className={cn("shrink-0 text-[10px]", item.priority === "high" ? "border-danger/30 text-danger" : "")}>
                             {item.priority}
                           </Badge>

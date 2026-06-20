@@ -106,9 +106,9 @@ export default function ExamDetailPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <h3 className="font-semibold text-lg">Questions</h3>
-        <Button size="sm" onClick={() => setAddOpen(!addOpen)} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+        <Button onClick={() => setAddOpen(!addOpen)} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
           <Plus className="h-4 w-4 mr-1" /> Add Question
         </Button>
       </div>
@@ -155,8 +155,8 @@ export default function ExamDetailPage() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-danger shrink-0" onClick={() => removeQuestion(q.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-danger shrink-0" onClick={() => removeQuestion(q.id)}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>

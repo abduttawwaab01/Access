@@ -27,6 +27,8 @@ interface IdCardConfig {
   backTitle?: string
   showDepartment?: boolean
   showEmergencyContact?: boolean
+  customDepartment?: string
+  customEmergencyContact?: string
   customFields?: { label: string; value: string }[]
 }
 
@@ -51,14 +53,14 @@ export function StaffIDCardBack({ staff, school, config }: StaffIDCardBackProps)
           <InfoRow label="Full Name" value={`${staff.firstName} ${staff.lastName}`} />
           <InfoRow label="Staff ID" value={staff.staffId} />
           {staff.role && <InfoRow label="Role" value={staff.role} />}
-          {cfg.showDepartment && staff.department && <InfoRow label="Department" value={staff.department} />}
+          {cfg.showDepartment && (cfg.customDepartment || staff.department) && <InfoRow label="Department" value={cfg.customDepartment || staff.department || ""} />}
           {staff.gender && <InfoRow label="Gender" value={staff.gender} />}
           {staff.qualification && <InfoRow label="Qualification" value={staff.qualification} />}
           {staff.employmentDate && <InfoRow label="Employed" value={new Date(staff.employmentDate).toLocaleDateString()} />}
           {staff.email && <InfoRow label="Email" value={staff.email} />}
           {staff.phone && <InfoRow label="Phone" value={staff.phone} />}
           {staff.address && <InfoRow label="Address" value={staff.address} />}
-          {cfg.showEmergencyContact && staff.emergencyContact && <InfoRow label="Emergency" value={staff.emergencyContact} />}
+          {cfg.showEmergencyContact && (cfg.customEmergencyContact || staff.emergencyContact) && <InfoRow label="Emergency" value={cfg.customEmergencyContact || staff.emergencyContact || ""} />}
           {(cfg.customFields || []).map((f, i) => (
             f.value ? <InfoRow key={i} label={f.label} value={f.value} /> : null
           ))}
