@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info } from "lucide-react"
+import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2 } from "lucide-react"
+import { compressAndUpload } from "@/lib/imageUtils"
 
 export default function SchoolSettingsPage() {
   const [form, setForm] = useState({
@@ -27,6 +28,7 @@ export default function SchoolSettingsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -42,16 +44,28 @@ export default function SchoolSettingsPage() {
 
   const update = (field: string, value: string) => setForm((prev) => ({ ...prev, [field]: value }))
 
-  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string
-      setLogoPreview(dataUrl)
-      update("logo", dataUrl)
+    setLogoUploading(true)
+    try {
+      const previewUrl = URL.createObjectURL(file)
+      setLogoPreview(previewUrl)
+      const url = await compressAndUpload(file, { maxWidth: 400, quality: 0.7, format: "jpeg" })
+      update("logo", url)
+      toast.success("Logo uploaded and compressed")
+    } catch {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string
+        setLogoPreview(dataUrl)
+        update("logo", dataUrl)
+        toast.warning("Upload failed, stored as base64")
+      }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
+    setLogoUploading(false)
+    if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
   const handleLogoUrl = (value: string) => {
@@ -160,7 +174,7 @@ export default function SchoolSettingsPage() {
                 <div className="space-y-2 flex-1">
                   <Label htmlFor="logoUpload" className="cursor-pointer">
                     <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium transition-all hover:bg-muted">
-                      Upload Image
+                      {logoUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Compressing...</> : <><ImageIcon className="h-4 w-4" /> Upload Image</>}
                     </span>
                     <input
                       ref={fileInputRef}
@@ -168,10 +182,11 @@ export default function SchoolSettingsPage() {
                       type="file"
                       accept="image/*"
                       className="hidden"
+                      disabled={logoUploading}
                       onChange={handleLogoFile}
                     />
                   </Label>
-                  <p className="text-xs text-muted-foreground">Upload a PNG or JPG (will be converted to base64)</p>
+                  <p className="text-xs text-muted-foreground">Upload a PNG or JPG (compressed and stored on Vercel Blob)</p>
                 </div>
               </div>
               <div className="space-y-2">

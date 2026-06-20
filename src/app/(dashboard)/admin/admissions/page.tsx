@@ -54,11 +54,11 @@ export default function AdminAdmissionsPage() {
               <div className="space-y-1">
                 <p className="font-semibold">{app.firstName} {app.lastName}</p>
                 <p className="text-sm text-muted-foreground">{app.email}</p>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>Class: Grade {app.classApplyingFor}</span>
-                  <span>{new Date(app.appliedAt).toLocaleDateString()}</span>
-                  {app.entranceExamScore != null && <span>Exam: {app.entranceExamScore}/100</span>}
-                </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>Class: {app.classApplyingFor}{app.department ? ` (${app.department})` : ""}</span>
+                    <span>{new Date(app.appliedAt).toLocaleDateString()}</span>
+                    {app.entranceExamScore != null && <span>Exam: {app.entranceExamScore}/100</span>}
+                  </div>
               </div>
               <div className="flex items-center gap-2">
                 {app.status === "pending" && (

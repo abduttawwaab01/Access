@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Search, X, Filter } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, X, Filter, ImageIcon, Loader2 } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { getInitials, cn } from "@/lib/utils"
+import { compressAndUpload } from "@/lib/imageUtils"
 
 export default function StudentsPage() {
   const [items, setItems] = useState<any[]>([])
@@ -24,7 +25,8 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("")
   const [filterClass, setFilterClass] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", gender: "", classId: "" })
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "" })
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   const fetchData = async () => {
     const [studentsRes, classesRes] = await Promise.all([fetch("/api/students"), fetch("/api/classes")])
@@ -39,14 +41,28 @@ export default function StudentsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ firstName: "", lastName: "", email: "", gender: "", classId: "" })
+    setForm({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "" })
     setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
     setEditing(item)
-    setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", gender: item.gender || "", classId: item.classId || "" })
+    setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", gender: item.gender || "", classId: item.classId || "", passportPhoto: item.passportPhoto || "" })
     setSheetOpen(true)
+  }
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoUploading(true)
+    try {
+      const url = await compressAndUpload(file, { maxWidth: 200, quality: 0.7, format: "jpeg" })
+      update("passportPhoto", url)
+      toast.success("Photo uploaded")
+    } catch {
+      toast.error("Photo upload failed")
+    }
+    setPhotoUploading(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,6 +133,7 @@ export default function StudentsPage() {
                   <CardContent className="p-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 shrink-0">
+                        <AvatarImage src={item.passportPhoto} />
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
                           {getInitials(`${item.firstName} ${item.lastName}`)}
                         </AvatarFallback>
@@ -157,6 +174,24 @@ export default function StudentsPage() {
             <div className="space-y-2">
               <Label>Last Name</Label>
               <Input value={form.lastName} onChange={(e) => update("lastName", e.target.value)} className="h-12" required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Passport Photo</Label>
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 shrink-0 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30">
+                {form.passportPhoto ? (
+                  <img src={form.passportPhoto} alt="Passport" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-6 w-6 text-muted-foreground/40" />
+                )}
+              </div>
+              <Label htmlFor="passportUpload" className="cursor-pointer">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-all hover:bg-muted">
+                  {photoUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</> : <>Choose File</>}
+                </span>
+                <input id="passportUpload" type="file" accept="image/*" className="hidden" disabled={photoUploading} onChange={handlePhotoUpload} />
+              </Label>
             </div>
           </div>
           <div className="space-y-2">

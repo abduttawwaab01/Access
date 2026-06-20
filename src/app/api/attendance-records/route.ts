@@ -4,8 +4,8 @@ import { store } from "@/lib/api-store"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId")
-  if (!studentId) return NextResponse.json({ error: "studentId required" }, { status: 400 })
   const summary = searchParams.get("summary") === "true"
+  if (!studentId) return NextResponse.json(store.attendance.getAll())
   if (summary) return NextResponse.json(store.attendance.getSummary(studentId))
   return NextResponse.json(store.attendance.getByStudent(studentId))
 }

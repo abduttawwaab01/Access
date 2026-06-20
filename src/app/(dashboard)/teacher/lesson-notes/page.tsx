@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, FileText, Sparkles, Search, X, Eye, EyeOff, CheckCircle2, Clock, HelpCircle, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, Pencil, Trash2, FileText, Sparkles, Search, X, Eye, EyeOff, CheckCircle2, Clock, HelpCircle, ChevronDown, ChevronRight, ScanLine } from "lucide-react"
+import ImageToText from "@/components/ImageToText"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -31,6 +32,7 @@ export default function LessonNotesPage() {
   const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft" })
   const [quiz, setQuiz] = useState<any[]>([])
   const [quizOpen, setQuizOpen] = useState(true)
+  const [ocrOpen, setOcrOpen] = useState(false)
 
   const fetchData = async () => {
     const [notesRes, classesRes] = await Promise.all([
@@ -282,11 +284,26 @@ export default function LessonNotesPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Content</Label>
-              <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate}>
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI Generate
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setOcrOpen(!ocrOpen)}>
+                  <ScanLine className="h-3 w-3 mr-1" />
+                  Extract from Image
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate}>
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI Generate
+                </Button>
+              </div>
             </div>
+            {ocrOpen && (
+              <div className="rounded-xl border bg-muted/30 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground">Picture to Text</span>
+                  <button onClick={() => setOcrOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+                </div>
+                <ImageToText onUseText={(text) => { update("content", text); setOcrOpen(false) }} />
+              </div>
+            )}
             <Textarea value={form.content} onChange={(e) => update("content", e.target.value)} rows={8} className="resize-none" placeholder="Write your lesson content here..." />
           </div>
           <div className="space-y-2">

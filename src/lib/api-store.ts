@@ -10,9 +10,7 @@ let subjects: any[] = []
 let students: any[] = []
 let parents: any[] = []
 
-let staff: any[] = [
-  { id: "1", firstName: "Admin", lastName: "User", staffId: "ADM001", email: "admin@skoolar.org", password: "successor", role: "admin", department: "Administration", status: "active", phone: "+234 800 000 0001" },
-]
+let staff: any[] = []
 
 let teacherAssignments: any[] = []
 let lessonNotes: any[] = []
@@ -113,7 +111,7 @@ export const store = {
     getAllPublished: (classId?: string) => classId ? lessonNotes.filter((n) => n.classId === classId && n.status === "published") : lessonNotes.filter((n) => n.status === "published"),
     getByTeacher: (teacherId: string) => { const ta = teacherAssignments.find((a) => a.teacherId === teacherId); if (!ta) return []; return lessonNotes.filter((n) => ta.classIds.includes(n.classId)) },
     getById: (id: string) => lessonNotes.find((n) => n.id === id),
-    create: (data: any) => { const item = { id: uid(), ...data, quiz: data.quiz || [], status: "draft", createdAt: new Date().toISOString().split("T")[0], approvedBy: null, approvedAt: null }; lessonNotes.push(item); return item },
+    create: (data: any) => { const item = { id: uid(), ...data, quiz: data.quiz || [], status: data.status || "draft", createdAt: new Date().toISOString().split("T")[0], approvedBy: data.approvedBy || null, approvedAt: data.approvedAt || null }; lessonNotes.push(item); return item },
     update: (id: string, data: any) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], ...data }; return lessonNotes[idx] },
     delete: (id: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return false; lessonNotes.splice(idx, 1); return true },
     approve: (id: string, approvedBy: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], status: "published", approvedBy, approvedAt: new Date().toISOString() }; return lessonNotes[idx] },
@@ -122,7 +120,7 @@ export const store = {
   schemeOfWorks: {
     getAll: (classId?: string, subjectId?: string) => { let result = [...schemeOfWorks]; if (classId) result = result.filter((s) => s.classId === classId); if (subjectId) result = result.filter((s) => s.subjectId === subjectId); return result },
     getById: (id: string) => schemeOfWorks.find((s) => s.id === id),
-    create: (data: any) => { const now = new Date().toISOString(); const item = { id: uid(), ...data, status: "draft", createdAt: now, updatedAt: now, approvedBy: null, approvedAt: null }; schemeOfWorks.push(item); return item },
+    create: (data: any) => { const now = new Date().toISOString(); const item = { id: uid(), ...data, status: data.status || "draft", createdAt: now, updatedAt: now, approvedBy: data.approvedBy || null, approvedAt: data.approvedAt || null }; schemeOfWorks.push(item); return item },
     update: (id: string, data: any) => { const idx = schemeOfWorks.findIndex((s) => s.id === id); if (idx === -1) return null; schemeOfWorks[idx] = { ...schemeOfWorks[idx], ...data, updatedAt: new Date().toISOString() }; return schemeOfWorks[idx] },
     delete: (id: string) => { const idx = schemeOfWorks.findIndex((s) => s.id === id); if (idx === -1) return false; schemeOfWorks.splice(idx, 1); return true },
     approve: (id: string, approvedBy: string) => { const idx = schemeOfWorks.findIndex((s) => s.id === id); if (idx === -1) return null; schemeOfWorks[idx] = { ...schemeOfWorks[idx], status: "published", approvedBy, approvedAt: new Date().toISOString() }; return schemeOfWorks[idx] },
@@ -156,6 +154,7 @@ export const store = {
     create: (data: any) => { const item = { id: uid(), ...data }; results.push(item); return item },
   },
   attendance: {
+    getAll: () => attendanceRecords,
     getByStudent: (studentId: string) => attendanceRecords.filter((a) => a.studentId === studentId),
     getSummary: (studentId: string) => {
       const records = attendanceRecords.filter((a) => a.studentId === studentId);
@@ -163,6 +162,7 @@ export const store = {
     },
   },
   fees: {
+    getAll: () => fees,
     getByStudent: (studentId: string) => fees.filter((f) => f.studentId === studentId),
     getSummary: (studentId: string) => {
       const records = fees.filter((f) => f.studentId === studentId);
@@ -186,7 +186,7 @@ export const store = {
     getAll: (subjectId?: string, classId?: string) => { let result = [...exams]; if (subjectId) result = result.filter((e) => e.subjectId === subjectId); if (classId) result = result.filter((e) => e.classId === classId); return result },
     getByTeacher: (teacherId: string) => { const ta = teacherAssignments.find((a) => a.teacherId === teacherId); if (!ta) return []; return exams.filter((e) => ta.classIds.includes(e.classId) && ta.subjectIds.includes(e.subjectId)) },
     getById: (id: string) => exams.find((e) => e.id === id),
-    create: (data: any) => { const now = new Date().toISOString(); const item = { id: uid(), ...data, status: "draft", createdAt: now, updatedAt: now }; exams.push(item); return item },
+    create: (data: any) => { const now = new Date().toISOString(); const item = { id: uid(), ...data, status: data.status || "draft", createdAt: now, updatedAt: now }; exams.push(item); return item },
     update: (id: string, data: any) => { const idx = exams.findIndex((e) => e.id === id); if (idx === -1) return null; exams[idx] = { ...exams[idx], ...data, updatedAt: new Date().toISOString() }; return exams[idx] },
     delete: (id: string) => { const idx = exams.findIndex((e) => e.id === id); if (idx === -1) return false; exams.splice(idx, 1); return true },
     approve: (id: string, approvedBy: string) => { const idx = exams.findIndex((e) => e.id === id); if (idx === -1) return null; exams[idx] = { ...exams[idx], status: "published", approvedBy, approvedAt: new Date().toISOString() }; return exams[idx] },
@@ -267,4 +267,13 @@ export const store = {
       }
     },
   },
+}
+
+// Auto-seed on module load (synchronous, no race condition)
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { runSeed } = require("../seed/runner")
+  runSeed(store)
+} catch (e) {
+  // Silent in production, warn otherwise
 }
