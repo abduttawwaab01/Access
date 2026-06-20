@@ -111,6 +111,11 @@ export default function LoginPage() {
             </Button>
           </form>
         </div>
+        <div className="mt-4 text-center">
+          <Button variant="link" className="text-sm text-muted-foreground" onClick={() => router.push("/")}>
+            ← Back to Homepage
+          </Button>
+        </div>
       </motion.div>
     </div>
   )
