@@ -1,136 +1,412 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { CheckCircle, XCircle, FileText, Search, Eye, X, ChevronDown, ChevronRight } from "lucide-react"
-
-interface LessonNote {
-  id: string; title: string; subject: string; classId: string; term: string; week: string
-  content: string; resources: string; status: string; createdBy: string; createdAt: string; quiz?: any[]
-  teacherName?: string; className?: string
-}
+import { Pencil, FileText, Search, X, CheckCircle, XCircle, ChevronDown, ChevronRight, HelpCircle, ScanLine, Sparkles, Eye, EyeOff, Clock, Plus, Trash2 } from "lucide-react"
+import ImageToText from "@/components/ImageToText"
+import { PageHeader } from "@/components/admin/PageHeader"
+import { FormSheet } from "@/components/admin/FormSheet"
+import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function AdminLessonNotes() {
-  const [notes, setNotes] = useState<LessonNote[]>([])
+  const [notes, setNotes] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
+  const [staff, setStaff] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [tab, setTab] = useState("all")
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editing, setEditing] = useState<any | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
-  const teachers: any[] = []
-  const classes: any[] = []
+  const [ocrOpen, setOcrOpen] = useState(false)
+  const [quizOpen, setQuizOpen] = useState(true)
+  const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft" })
+  const [quiz, setQuiz] = useState<any[]>([])
 
   useEffect(() => {
-    fetch("/api/lesson-notes").then(r => r.json()).then(data => {
-      setNotes(Array.isArray(data) ? data : [])
-      setLoading(false)
-    })
+    Promise.all([
+      fetch("/api/lesson-notes").then((r) => r.json()),
+      fetch("/api/classes").then((r) => r.json()),
+      fetch("/api/staff").then((r) => r.json()),
+    ]).then(([d, c, s]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setLoading(false) })
   }, [])
 
+  const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
+
+  const addQuestion = () => {
+    setQuiz([...quiz, { id: Math.random().toString(36).substring(2, 11), questionText: "", type: "MCQ", options: ["", "", "", ""], correctAnswer: "", points: 1 }])
+  }
+  const removeQuestion = (id: string) => setQuiz(quiz.filter((q) => q.id !== id))
+  const updateQuestion = (id: string, field: string, value: any) => {
+    setQuiz(quiz.map((q) => {
+      if (q.id !== id) return q
+      if (field === "type") {
+        const options = value === "True-False" ? ["True", "False"] : ["", "", "", ""]
+        return { ...q, type: value, options, correctAnswer: "" }
+      }
+      return { ...q, [field]: value }
+    }))
+  }
+  const updateOption = (id: string, index: number, value: string) => {
+    setQuiz(quiz.map((q) => q.id === id ? { ...q, options: q.options.map((o: string, i: number) => i === index ? value : o) } : q))
+  }
+
   const approve = async (id: string) => {
-    await fetch("/api/lesson-notes", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "approved" }) })
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, status: "approved" } : n))
-    toast.success("Lesson note approved")
+    const res = await fetch("/api/lesson-notes", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: "approved", approvedBy: "4" }),
+    })
+    if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "approved" } : n))); toast.success("Approved") }
   }
 
   const reject = async (id: string) => {
-    await fetch("/api/lesson-notes", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "rejected" }) })
-    setNotes(prev => prev.map(n => n.id === id ? { ...n, status: "rejected" } : n))
-    toast.success("Lesson note rejected")
+    const res = await fetch("/api/lesson-notes", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: "rejected" }),
+    })
+    if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "rejected" } : n))); toast.success("Rejected") }
   }
 
-  const filtered = notes.filter(n => {
-    if (statusFilter !== "all" && n.status !== statusFilter) return false
-    if (search && !n.title.toLowerCase().includes(search.toLowerCase()) && !n.subject?.toLowerCase().includes(search.toLowerCase())) return false
+  const openEdit = (item: any) => {
+    setEditing(item)
+    setForm({
+      title: item.title,
+      subject: item.subject,
+      classId: item.classId,
+      week: String(item.week),
+      term: item.term,
+      session: item.session || "",
+      content: item.content,
+      resources: item.resources || "",
+      status: item.status,
+    })
+    setQuiz(item.quiz || [])
+    setSheetOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const payload = { ...form, week: Number(form.week), quiz }
+    const res = await fetch("/api/lesson-notes", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editing.id, data: payload }),
+    })
+    if (res.ok) {
+      toast.success("Lesson note updated")
+      setSheetOpen(false)
+      const r = await fetch("/api/lesson-notes")
+      setNotes(await r.json())
+    } else toast.error("Failed to update")
+  }
+
+  const handleAIGenerate = () => {
+    const subjects = ["Mathematics", "English", "Science", "History", "Geography"]
+    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)]
+    update("content", `## ${form.title || "Lesson Note"}\n\n### Learning Objectives\nBy the end of this lesson, students will be able to:\n- Define and explain key concepts of ${randomSubject}\n- Apply ${randomSubject} principles to solve practical problems\n- Analyze and evaluate ${randomSubject}-related scenarios\n\n### Lesson Content\nThis lesson covers the fundamental concepts of ${randomSubject} for Week ${form.week || "1"}. Students will learn about key principles, engage in practical exercises, and complete assessment tasks to demonstrate their understanding.\n\n### Key Points\n1. Understanding the basic principles\n2. Practical applications in real-world scenarios\n3. Common misconceptions and how to avoid them\n\n### Activities\n- Group discussion on key concepts\n- Practical exercise: Solve ${randomSubject} problems in pairs\n- Individual assessment: Complete the quiz questions`)
+    toast.success("Lesson content generated")
+  }
+
+  const getStaffName = (id: string) => {
+    const s = staff.find((st: any) => st.id === id)
+    return s ? `${s.firstName} ${s.lastName}` : id
+  }
+
+  const getClassName = (id: string) => classes.find((c) => c.id === id)
+
+  const filtered = notes.filter((n) => {
+    if (tab !== "all" && n.status !== tab) return false
+    if (search && !n.title?.toLowerCase().includes(search.toLowerCase()) && !n.subject?.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-2xl font-bold flex items-center gap-2">
-        <FileText className="w-6 h-6" /> Lesson Notes
-      </motion.h1>
-      <div className="flex flex-col sm:flex-row gap-3">
+    <div className="p-4 md:p-6">
+      <PageHeader title="Lesson Notes" description={`${notes.length} notes from teachers`} />
+      <ConfirmDialog open={false} onOpenChange={() => {}} onConfirm={() => {}} title="" description="" />
+
+      <div className="mb-4 flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input className="w-full pl-9 pr-4 py-2 rounded-lg border bg-background" placeholder="Search notes..." value={search} onChange={e => setSearch(e.target.value)} />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 pl-9" />
+          {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2"><X className="h-4 w-4 text-muted-foreground" /></button>}
         </div>
-        <select className="px-3 py-2 rounded-lg border bg-background" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
       </div>
+
+      <Tabs value={tab} onValueChange={setTab} className="mb-4">
+        <TabsList className="w-full">
+          <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+          <TabsTrigger value="pending" className="flex-1">Pending</TabsTrigger>
+          <TabsTrigger value="approved" className="flex-1">Approved</TabsTrigger>
+          <TabsTrigger value="rejected" className="flex-1">Rejected</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">No lesson notes found</div>
+        <EmptyState title="No lesson notes" description={search ? "Try a different search" : "Teachers haven't submitted any notes yet"} />
       ) : (
-        <div className="space-y-3">
-          {filtered.map(note => (
-            <motion.div key={note.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-              <Card className="bg-card/80 backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between flex-wrap gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold">{note.title}</h3>
-                        <Badge className={note.status === "approved" ? "bg-green-500/10 text-green-500" : note.status === "rejected" ? "bg-red-500/10 text-red-500" : "bg-yellow-500/10 text-yellow-500"}>
-                          {note.status}
-                        </Badge>
-                        {note.quiz && note.quiz.length > 0 && <Badge variant="outline">Quiz: {note.quiz.length} Q</Badge>}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {note.subject} | Week {note.week} | {note.term} | {note.createdAt?.split("T")[0]}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {note.status !== "approved" && (
-                        <Button variant="ghost" className="text-green-500" onClick={() => approve(note.id)}><CheckCircle className="w-4 h-4" /></Button>
-                      )}
-                      {note.status !== "rejected" && (
-                        <Button variant="ghost" className="text-red-500" onClick={() => reject(note.id)}><XCircle className="w-4 h-4" /></Button>
-                      )}
-                      <Button variant="ghost" onClick={() => setExpanded(expanded === note.id ? null : note.id)}>
-                        {expanded === note.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                  {expanded === note.id && (
-                    <div className="mt-3 pt-3 border-t space-y-3">
-                      <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: note.content }} />
-                      {note.resources && (
-                        <div>
-                          <p className="text-sm font-medium">Resources:</p>
-                          <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: note.resources }} />
+        <div className="space-y-2">
+          <AnimatePresence>
+            {filtered.map((item, i) => (
+              <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
+                <Card className="glass-card border-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between flex-wrap gap-2">
+                      <div className="flex gap-3 flex-1 min-w-0">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                          <FileText className="h-5 w-5 text-primary" />
                         </div>
-                      )}
-                      {note.quiz && note.quiz.length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium">Quiz Questions ({note.quiz.length}):</p>
-                          <div className="space-y-2 mt-1">
-                            {note.quiz.map((q: any, i: number) => (
-                              <div key={i} className="text-sm p-2 rounded bg-muted/50">
-                                <p><strong>Q{i + 1}:</strong> {q.question} <Badge variant="outline" className="ml-1 text-xs">{q.type}</Badge></p>
-                                {q.type === "MCQ" && q.options && <p className="text-muted-foreground ml-4">Options: {q.options.join(", ")}</p>}
-                                <p className="text-muted-foreground ml-4">Answer: {q.correctAnswer} ({q.points || 1}pt)</p>
-                              </div>
-                            ))}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold">{item.title}</p>
+                            <Badge className={item.status === "approved" ? "bg-green-500/15 text-green-600" : item.status === "rejected" ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}>
+                              {item.status === "approved" ? <><Eye className="h-3 w-3 mr-1" /> Approved</> : item.status === "rejected" ? <><XCircle className="h-3 w-3 mr-1" /> Rejected</> : <><Clock className="h-3 w-3 mr-1" /> Pending</>}
+                            </Badge>
+                            {item.quiz && item.quiz.length > 0 && <Badge variant="outline" className="text-[10px]"><HelpCircle className="h-3 w-3 mr-1" /> Quiz: {item.quiz.length}Q</Badge>}
                           </div>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                            <span>{item.subject}</span>
+                            <span>Week {item.week}</span>
+                            <span>{getClassName(item.classId)?.name}{getClassName(item.classId)?.arm ? ` ${getClassName(item.classId).arm}` : ""}</span>
+                            <span>{item.term}</span>
+                            {item.session && <span>{item.session}</span>}
+                            <span>by {item.creatorName || getStaffName(item.createdBy)}</span>
+                            <span>{item.createdAt?.split("T")[0]}</span>
+                          </div>
+                          {item.content && (
+                            <button onClick={() => setExpanded(expanded === item.id ? null : item.id)} className="mt-1.5 text-xs text-muted-foreground/70 hover:text-foreground transition-colors flex items-center gap-1">
+                              {expanded === item.id ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                              {expanded === item.id ? "Hide content" : "View content"}
+                            </button>
+                          )}
                         </div>
-                      )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)} title="Edit note">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {item.status !== "approved" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => approve(item.id)} title="Approve">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {item.status !== "rejected" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => reject(item.id)} title="Reject">
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    {expanded === item.id && (
+                      <div className="mt-3 pt-3 border-t space-y-3">
+                        <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: item.content }} />
+                        {item.resources && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium">Resources:</span> {item.resources}
+                          </div>
+                        )}
+                        {item.quiz && item.quiz.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium mb-2">Quiz Questions ({item.quiz.length}):</p>
+                            <div className="space-y-2">
+                              {item.quiz.map((q: any, qi: number) => (
+                                <div key={qi} className="text-xs p-2.5 rounded-lg bg-muted/40">
+                                  <p className="font-medium">Q{qi + 1}: {q.questionText}</p>
+                                  {q.type === "MCQ" && q.options && <p className="text-muted-foreground mt-0.5">Options: {q.options.join(", ")}</p>}
+                                  <p className="text-muted-foreground mt-0.5">Answer: {q.correctAnswer} ({q.points}pt)</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
+
+      <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Lesson Note" : "Lesson Note"}>
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70dvh] pb-8">
+          <div className="space-y-2">
+            <Label>Title</Label>
+            <Input value={form.title} onChange={(e) => update("title", e.target.value)} className="h-12" required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Subject</Label>
+              <Input value={form.subject} onChange={(e) => update("subject", e.target.value)} placeholder="e.g. Mathematics" className="h-12" required />
+            </div>
+            <div className="space-y-2">
+              <Label>Class</Label>
+              <Select value={form.classId} onValueChange={(v) => v && update("classId", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select class" /></SelectTrigger>
+                <SelectContent>
+                  {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Week</Label>
+              <Input type="number" value={form.week} onChange={(e) => update("week", e.target.value)} className="h-12" />
+            </div>
+            <div className="space-y-2">
+              <Label>Term</Label>
+              <Select value={form.term} onValueChange={(v) => v && update("term", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select term" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="First Term">First Term</SelectItem>
+                  <SelectItem value="Second Term">Second Term</SelectItem>
+                  <SelectItem value="Third Term">Third Term</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Session</Label>
+            <Select value={form.session} onValueChange={(v) => v && update("session", v)}>
+              <SelectTrigger className="h-12"><SelectValue placeholder="Select session" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2024/2025">2024/2025</SelectItem>
+                <SelectItem value="2025/2026">2025/2026</SelectItem>
+                <SelectItem value="2026/2027">2026/2027</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Content</Label>
+              <div className="flex items-center gap-1">
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setOcrOpen(!ocrOpen)}>
+                  <ScanLine className="h-3 w-3 mr-1" /> Extract from Image
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate}>
+                  <Sparkles className="h-3 w-3 mr-1" /> Generate
+                </Button>
+              </div>
+            </div>
+            {ocrOpen && (
+              <div className="rounded-xl border bg-muted/30 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground">Picture to Text</span>
+                  <button onClick={() => setOcrOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+                </div>
+                <ImageToText multiple onUseText={(text) => { update("content", text); setOcrOpen(false) }} />
+              </div>
+            )}
+            <Textarea value={form.content} onChange={(e) => update("content", e.target.value)} rows={8} className="resize-none" placeholder="Write your lesson content here..." />
+          </div>
+          <div className="space-y-2">
+            <Label>Resources</Label>
+            <Input value={form.resources} onChange={(e) => update("resources", e.target.value)} placeholder="e.g. Textbook Ch. 3, Worksheet 1" className="h-12" />
+          </div>
+          <div className="space-y-2 border rounded-lg p-3">
+            <button type="button" onClick={() => setQuizOpen(!quizOpen)} className="flex items-center justify-between w-full text-left">
+              <div className="flex items-center gap-2">
+                {quizOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                <Label className="cursor-pointer">Quiz Questions</Label>
+                {quiz.length > 0 && <Badge variant="secondary" className="text-xs">{quiz.length} Q</Badge>}
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); addQuestion() }}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add
+              </Button>
+            </button>
+            {quizOpen && (
+              <div className="space-y-3 pt-1">
+                {quiz.map((q, qi) => (
+                  <div key={q.id} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Q{qi + 1}</span>
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeQuestion(q.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <Input value={q.questionText} onChange={(e) => updateQuestion(q.id, "questionText", e.target.value)} placeholder="Question text" className="h-10" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Type</Label>
+                        <Select value={q.type} onValueChange={(v) => updateQuestion(q.id, "type", v)}>
+                          <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MCQ">MCQ</SelectItem>
+                            <SelectItem value="True-False">True/False</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Points</Label>
+                        <Input type="number" value={q.points} onChange={(e) => updateQuestion(q.id, "points", Number(e.target.value))} className="h-10" min={1} />
+                      </div>
+                    </div>
+                    {q.type === "MCQ" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Options</Label>
+                        {q.options.map((opt: string, oi: number) => (
+                          <div key={oi} className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground w-4">{String.fromCharCode(65 + oi)}.</span>
+                            <Input value={opt} onChange={(e) => updateOption(q.id, oi, e.target.value)} placeholder={`Option ${String.fromCharCode(65 + oi)}`} className="h-9 text-sm" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label className="text-xs">Correct Answer</Label>
+                      {q.type === "MCQ" ? (
+                        <Select value={q.correctAnswer} onValueChange={(v) => updateQuestion(q.id, "correctAnswer", v)}>
+                          <SelectTrigger className="h-10"><SelectValue placeholder="Select answer" /></SelectTrigger>
+                          <SelectContent>
+                            {q.options.map((_: string, oi: number) => (
+                              <SelectItem key={oi} value={String.fromCharCode(65 + oi)}>{String.fromCharCode(65 + oi)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Select value={q.correctAnswer} onValueChange={(v) => updateQuestion(q.id, "correctAnswer", v)}>
+                          <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="True">True</SelectItem>
+                            <SelectItem value="False">False</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {quiz.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No questions</p>}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2">
+              <input type="radio" name="status" checked={form.status === "draft"} onChange={() => update("status", "draft")} className="accent-primary" />
+              <span className="text-sm">Draft</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="status" checked={form.status === "published"} onChange={() => update("status", "published")} className="accent-primary" />
+              <span className="text-sm">Published</span>
+            </label>
+          </div>
+          <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">
+            Update Lesson Note
+          </Button>
+        </form>
+      </FormSheet>
     </div>
   )
 }

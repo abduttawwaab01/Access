@@ -10,8 +10,11 @@ import { toast } from "sonner"
 import { Clock, FileText, Play, CheckCircle, AlertTriangle, BarChart3 } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 export default function StudentCbtPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [exams, setExams] = useState<any[]>([])
   const [sessions, setSessions] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
@@ -20,6 +23,7 @@ export default function StudentCbtPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!userId) return
       const [eRes, sRes, subRes] = await Promise.all([
         fetch("/api/exams"),
         fetch("/api/exam-sessions"),
@@ -32,17 +36,17 @@ export default function StudentCbtPage() {
       setLoading(false)
     }
     fetchData()
-  }, [])
+  }, [userId])
 
   const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || "Unknown"
-  const mySessions = sessions.filter((s) => s.studentId === "1")
+  const mySessions = sessions.filter((s) => s.studentId === userId)
   const completedIds = mySessions.filter((s) => s.status === "completed").map((s) => s.examId)
 
   const startExam = (examId: string) => {
-    router.push(`/exam-take`)
+    router.push(`/exam-take?examId=${examId}`)
   }
 
-  if (loading) return <div className="p-4 md:p-6 space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
+  if (loading || !userId) return <div className="p-4 md:p-6 space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">

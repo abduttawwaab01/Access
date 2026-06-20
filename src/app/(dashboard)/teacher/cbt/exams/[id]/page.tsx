@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Plus, Trash2, HelpCircle, Code, AlignLeft, CheckCircle } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { ExamDownload } from "@/components/ExamDownload"
@@ -63,7 +64,9 @@ export default function TeacherExamDetailPage() {
   if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-12", "h-32", "h-20", "h-20"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
   if (!exam) return <div className="p-4 md:p-6"><EmptyState title="Not found" /></div>
 
-  const availableQuestions = allQuestions.filter((q: any) => !(exam.questions || []).find((eq: any) => eq.questionId === q.id))
+  const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || "Unknown"
+
+  const availableQuestions = allQuestions.filter((q: any) => q.subjectId === exam.subjectId && q.approved && !(exam.questions || []).find((eq: any) => eq.questionId === q.id))
 
   return (
     <div className="p-4 md:p-6">
@@ -79,6 +82,7 @@ export default function TeacherExamDetailPage() {
             </div>
             <p className="text-sm text-muted-foreground mt-1">{exam.description}</p>
             <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+              <span>{getSubjectName(exam.subjectId)}</span>
               <span>{exam.duration} min</span>
               <span>{(exam.questions || []).length} questions</span>
               <span>{(exam.questions || []).reduce((s: number, q: any) => s + (q.points || 0), 0)} pts</span>
@@ -101,10 +105,14 @@ export default function TeacherExamDetailPage() {
             <CardContent className="p-4 space-y-3">
               <Label>Select Question</Label>
               <div className="flex gap-2">
-                <select value={selectedQ} onChange={(e) => setSelectedQ(e.target.value)} className="flex-1 h-10 rounded-lg border border-input bg-background px-3 text-sm">
-                  <option value="">Choose...</option>
-                  {availableQuestions.map((q: any) => <option key={q.id} value={q.id}>{q.text.substring(0, 60)}{q.text.length > 60 ? "..." : ""}</option>)}
-                </select>
+                <Select value={selectedQ} onValueChange={(v) => { if (v) setSelectedQ(v) }}>
+                  <SelectTrigger className="flex-1 h-10"><SelectValue placeholder="Choose a question..." /></SelectTrigger>
+                  <SelectContent>
+                    {availableQuestions.map((q: any) => (
+                      <SelectItem key={q.id} value={q.id}>{q.text.substring(0, 60)}{q.text.length > 60 ? "..." : ""} ({q.type})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input type="number" min={1} value={customPoints} onChange={(e) => setCustomPoints(parseInt(e.target.value) || 5)} className="h-10 w-20" />
                 <Button size="sm" onClick={addQuestion} className="h-10"><Plus className="h-4 w-4" /></Button>
               </div>

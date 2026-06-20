@@ -270,11 +270,14 @@ export const store = {
   },
 }
 
-// Auto-seed on module load (synchronous, no race condition)
+// Auto-seed on module load
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { runSeed } = require("../seed/runner")
   runSeed(store)
 } catch (e) {
-  // Silent in production, warn otherwise
+  // Seed may fail in serverless if module not bundled — log for debugging
+  if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
+    console.warn("[Store] Seed skipped:", (e as Error)?.message || e)
+  }
 }

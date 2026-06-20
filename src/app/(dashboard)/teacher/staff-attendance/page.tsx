@@ -1,0 +1,154 @@
+"use client"
+
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+import { CheckCircle2, QrCode } from "lucide-react"
+import { QRScanner } from "@/components/QRScanner"
+import { useSession } from "next-auth/react"
+
+export default function StaffAttendanceCheckInPage() {
+  const { data: session } = useSession()
+  const [checkedIn, setCheckedIn] = useState(false)
+  const [checkInTime, setCheckInTime] = useState<string | null>(null)
+  const [checkInStatus, setCheckInStatus] = useState<"present" | "late" | null>(null)
+
+  const handleQRScan = async (decodedText: string) => {
+    try {
+      const data = JSON.parse(decodedText)
+      if (data.type !== "school_attendance") {
+        toast.error("Not a valid school attendance QR code")
+        return
+      }
+    } catch {
+      toast.error("Invalid QR code format")
+      return
+    }
+
+    const userId = (session?.user as any)?.id
+    if (!userId) {
+      toast.error("You must be logged in to check in")
+      return
+    }
+
+    const now = new Date()
+    const date = now.toISOString().split("T")[0]
+    const time = now.toTimeString().split(" ")[0].substring(0, 5)
+    const hour = now.getHours()
+    const status = hour >= 8 ? "late" : "present"
+
+    const res = await fetch("/api/attendance-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        userType: "staff",
+        date,
+        time,
+        status,
+        method: "qr",
+      }),
+    })
+
+    if (res.ok) {
+      setCheckedIn(true)
+      setCheckInTime(time)
+      setCheckInStatus(status)
+      toast.success(`Checked in as ${status} at ${time}`)
+    } else {
+      const data = await res.json()
+      if (data.error === "Already marked") {
+        toast.error("You have already checked in today")
+      } else {
+        toast.error("Failed to check in")
+      }
+    }
+  }
+
+  const userName = session?.user?.name || "Staff"
+
+  if (checkedIn) {
+    return (
+      <div className="p-4 md:p-6 flex items-center justify-center min-h-[70dvh]">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+          <Card className="border-0 glass-card max-w-md mx-auto">
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-500/15">
+                  <CheckCircle2 className="h-10 w-10 text-green-500" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold">Checked In!</h2>
+              <p className="text-muted-foreground">
+                {userName}, you are marked as{" "}
+                <Badge className={checkInStatus === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>
+                  {checkInStatus}
+                </Badge>{" "}
+                at {checkInTime}
+              </p>
+              <p className="text-xs text-muted-foreground">See you tomorrow!</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+        <h2 className="text-2xl font-bold">Staff Attendance</h2>
+        <p className="text-sm text-muted-foreground">Scan the school QR code to check in</p>
+      </motion.div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <QRScanner
+          onScan={handleQRScan}
+          title="Scan School QR Code"
+          description="Position the school attendance QR code within the camera frame to check in"
+        />
+
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+          <Card className="border-0 glass-card">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <QrCode className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">How it works</h3>
+                  <p className="text-sm text-muted-foreground">Quick and easy check-in process</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
+                  <div>
+                    <p className="text-sm font-medium">Open Camera</p>
+                    <p className="text-xs text-muted-foreground">Tap &quot;Start Camera&quot; to enable your device camera</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</div>
+                  <div>
+                    <p className="text-sm font-medium">Scan QR Code</p>
+                    <p className="text-xs text-muted-foreground">Point your camera at the school attendance QR code displayed at the entrance</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
+                  <div>
+                    <p className="text-sm font-medium">Auto Check-In</p>
+                    <p className="text-xs text-muted-foreground">Your attendance is recorded automatically. You are marked late after 8:00 AM.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  )
+}

@@ -59,7 +59,6 @@ export default function CommunicationPage() {
           <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
           <TabsTrigger value="teachers" className="flex-1">Teachers</TabsTrigger>
           <TabsTrigger value="parents" className="flex-1">Parents</TabsTrigger>
-          <TabsTrigger value="all" className="flex-1 hidden">Everyone</TabsTrigger>
         </TabsList>
       </Tabs>
 

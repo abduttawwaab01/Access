@@ -8,15 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 import { Award, TrendingUp } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 export default function StudentResultsPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTerm, setActiveTerm] = useState("First Term")
 
   useEffect(() => {
-    fetch(`/api/results?studentId=1`).then((r) => r.json()).then((d) => { setResults(d); setLoading(false) })
-  }, [])
+    if (!userId) return
+    fetch(`/api/results?studentId=${userId}`).then((r) => r.json()).then((d) => { setResults(d); setLoading(false) })
+  }, [userId])
 
   const terms = [...new Set(results.map((r) => r.term))]
   const termResults = results.filter((r) => r.term === activeTerm)

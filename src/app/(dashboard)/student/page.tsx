@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { BookOpen, CalendarCheck, TrendingUp, Award, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
 
 const gradientMap: Record<string, string> = {
   "Avg Score": "from-blue-600 via-blue-500 to-cyan-400",
@@ -28,36 +29,40 @@ const cardVariants = {
 }
 
 export default function StudentDashboard() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [results, setResults] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any[]>([])
   const [exams, setExams] = useState<any[]>([])
+  const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const studentId = "1"
-  const studentName = "Alice Johnson"
-  const className = "Grade 10A"
+  const student = students.find((s: any) => s.id === userId)
+  const studentName = student ? `${student.firstName} ${student.lastName}` : "Student"
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [r, a, e] = await Promise.all([
-        fetch(`/api/results?studentId=${studentId}`),
+      const [r, a, e, sRes] = await Promise.all([
+        fetch(`/api/results?studentId=${userId}`),
         fetch(`/api/attendance-records`),
         fetch(`/api/exam-sessions`),
+        fetch("/api/students"),
       ])
       setResults(await r.json())
       const attData = await a.json()
-      setAttendance(attData.filter((x: any) => x.studentId === studentId))
+      setAttendance(attData.filter((x: any) => x.studentId === userId))
       setExams(await e.json())
+      setStudents(await sRes.json())
       setLoading(false)
     }
-    fetchAll()
-  }, [])
+    if (userId) fetchAll()
+  }, [userId])
 
   const avgScore = results.length > 0 ? Math.round(results.reduce((s, r) => s + (r.score / r.total) * 100, 0) / results.length) : 0
   const present = attendance.filter((a) => a.status === "present").length
   const total = attendance.length || 1
   const attPct = Math.round(present / total * 100)
-  const myExams = exams.filter((e) => e.studentId === studentId || e.studentName === studentName)
+  const myExams = exams.filter((e) => e.studentId === userId || e.studentName === studentName)
   const completedExams = myExams.filter((e) => e.status === "completed").length
 
   const subjectScores = results.filter((r) => r.session === "2024/2025").reduce<Record<string, number[]>>((acc, r) => {
@@ -71,7 +76,7 @@ export default function StudentDashboard() {
     score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
   }))
 
-  if (loading) return (
+  if (loading || !userId) return (
     <div className="floating-orbs p-4 md:p-6 space-y-4">
       <div className="h-8 w-56 animate-pulse rounded-lg bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%] animate-shimmer" />
       <div className="h-4 w-32 animate-pulse rounded bg-muted" />
@@ -97,7 +102,7 @@ export default function StudentDashboard() {
         <h2 className="bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-2xl font-bold text-transparent">
           Welcome, {studentName}
         </h2>
-        <p className="text-sm text-muted-foreground">{className}</p>
+        <p className="text-sm text-muted-foreground">{student?.className || ""}</p>
       </motion.div>
 
       <motion.div

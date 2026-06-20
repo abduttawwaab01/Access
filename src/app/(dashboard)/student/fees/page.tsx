@@ -7,25 +7,27 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Wallet, CheckCircle2, Clock, AlertTriangle } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { useSession } from "next-auth/react"
 
 export default function StudentFeesPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [payments, setPayments] = useState<any[]>([])
   const [feeStructures, setFeeStructures] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const studentId = "1"
-
   useEffect(() => {
+    if (!userId) return
     Promise.all([
       fetch("/api/payments").then((r) => r.json()),
       fetch("/api/fee-structures").then((r) => r.json()),
       fetch("/api/students").then((r) => r.json()),
     ]).then(([p, fs, s]) => { setPayments(p); setFeeStructures(fs); setStudents(s); setLoading(false) })
-  }, [])
+  }, [userId])
 
-  const myPayments = payments.filter((p) => p.studentId === studentId)
-  const student = students.find((s) => s.id === studentId)
+  const myPayments = payments.filter((p) => p.studentId === userId)
+  const student = students.find((s) => s.id === userId)
   const classFees = feeStructures.filter((fs) => fs.classId === student?.classId)
 
   const totalDue = classFees.reduce((s, f) => s + f.amount, 0)

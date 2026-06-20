@@ -27,10 +27,10 @@ export default function ParentResultsPage() {
   const [activeTerm, setActiveTerm] = useState(terms[0] || "")
 
   const termResults = results.filter((r) => r.term === activeTerm)
-  const avgScore = termResults.length > 0 ? Math.round(termResults.reduce((s, r) => s + r.score, 0) / termResults.length) : 0
+  const avgScore = termResults.length > 0 ? Math.round(termResults.reduce((s, r) => s + (r.score / r.total) * 100, 0) / termResults.length) : 0
 
-  const barData = termResults.map((r) => ({ subject: r.subject, score: r.score, fullMark: 100 }))
-  const radarData = termResults.map((r) => ({ subject: r.subject, value: r.score }))
+  const barData = termResults.map((r) => ({ subject: r.subject, score: r.total > 0 ? Math.round((r.score / r.total) * 100) : 0, fullMark: 100 }))
+  const radarData = termResults.map((r) => ({ subject: r.subject, value: r.total > 0 ? Math.round((r.score / r.total) * 100) : 0 }))
 
   const prevTerm = terms[terms.indexOf(activeTerm) - 1]
   const prevResults = prevTerm ? results.filter((r) => r.term === prevTerm) : []
@@ -93,11 +93,11 @@ export default function ParentResultsPage() {
                 <p className={cn("text-5xl font-bold mt-1", avgScore >= 80 ? "text-success" : avgScore >= 60 ? "text-warning" : "text-danger")}>
                   {avgScore}%
                 </p>
-                {prevTerm && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {prevResults.length > 0 && (() => {
-                      const prevAvg = Math.round(prevResults.reduce((s, r) => s + r.score, 0) / prevResults.length)
-                      const diff = avgScore - prevAvg
+                  {prevTerm && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {prevResults.length > 0 && (() => {
+                          const prevAvg = Math.round(prevResults.reduce((s, r) => s + (r.score / r.total) * 100, 0) / prevResults.length)
+                          const diff = avgScore - prevAvg
                       return <span className={diff >= 0 ? "text-success" : "text-danger"}>{diff >= 0 ? "\u2191" : "\u2193"} {Math.abs(diff)}% from {prevTerm}</span>
                     })()}
                   </p>

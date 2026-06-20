@@ -157,9 +157,13 @@ export default function AdminAttendancePage() {
         },
         () => {}
       )
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error("Camera access denied or unavailable")
+      if (err?.name === "NotAllowedError" || err?.message?.includes("Permission")) {
+        toast.error("Camera permission denied. Please allow camera access in your browser settings (use HTTPS or localhost).")
+      } else {
+        toast.error("Camera access denied or unavailable")
+      }
       setScanning(false)
     }
   }

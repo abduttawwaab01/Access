@@ -15,9 +15,7 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2, HelpCircle, AlignLeft, CheckCircle, Search } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { EmptyState } from "@/components/admin/EmptyState"
-
-const TEACHER_ID = "1"
-const TEACHER_NAME = "Grace Hopper"
+import { useSession } from "next-auth/react"
 
 const typeIcons: Record<string, any> = { mcq: HelpCircle, true_false: CheckCircle, theory: AlignLeft }
 const typeColors: Record<string, string> = {
@@ -63,6 +61,9 @@ const defaultForm: FormState = {
 }
 
 export default function QuestionBankPage() {
+  const { data: session } = useSession()
+  const TEACHER_ID = (session?.user as any)?.id || "1"
+  const TEACHER_NAME = (session?.user as any)?.name || "Grace Hopper"
   const [questions, setQuestions] = useState<any[]>([])
   const [assignments, setAssignments] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -165,7 +166,8 @@ export default function QuestionBankPage() {
     if (filterSubject !== "all" && q.subjectId !== filterSubject) return false
     if (filterTopic && !q.topic?.toLowerCase().includes(filterTopic.toLowerCase())) return false
     if (filterDifficulty !== "all" && q.difficulty !== filterDifficulty) return false
-    if (filterStatus !== "all" && q.status !== filterStatus) return false
+    if (filterStatus === "approved" && !q.approved) return false
+    if (filterStatus === "pending" && q.approved) return false
     return true
   })
 
@@ -326,6 +328,7 @@ export default function QuestionBankPage() {
                   <SelectItem value="mcq">Multiple Choice</SelectItem>
                   <SelectItem value="true_false">True / False</SelectItem>
                   <SelectItem value="theory">Theory</SelectItem>
+                  <SelectItem value="coding">Coding</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -342,7 +345,7 @@ export default function QuestionBankPage() {
               />
             </div>
 
-            {form.type !== "theory" && (
+            {form.type !== "theory" && form.type !== "coding" && (
               <div className="space-y-2">
                 <Label>Options {form.type === "mcq" && <span className="text-muted-foreground font-normal">(select the correct answer)</span>}</Label>
                 {(form.type === "true_false" ? ["True", "False"] : [0, 1, 2, 3]).map((o, i) => {
@@ -370,6 +373,13 @@ export default function QuestionBankPage() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {(form.type === "theory" || form.type === "coding") && (
+              <div className="space-y-2">
+                <Label htmlFor="expectedAnswer">Expected Answer (for grading reference)</Label>
+                <Textarea id="expectedAnswer" placeholder="Enter the expected answer..." value={form.correctAnswer || ""} onChange={(e) => update("correctAnswer", e.target.value)} className="min-h-[80px]" />
               </div>
             )}
 

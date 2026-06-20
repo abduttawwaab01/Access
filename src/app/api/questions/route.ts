@@ -5,7 +5,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const subjectId = searchParams.get("subjectId") || undefined
   const classId = searchParams.get("classId") || undefined
-  return NextResponse.json(store.questions.getAll(subjectId, classId))
+  const result = store.questions.getAll(subjectId, classId)
+  const subjects = store.subjects.getAll()
+  const classes = store.classes.getAll()
+  return NextResponse.json(result.map((q: any) => ({
+    ...q,
+    subjectName: subjects.find((s: any) => s.id === q.subjectId)?.name || "Unknown",
+    className: classes.find((c: any) => c.id === q.classId)?.name || "Unknown",
+  })))
 }
 
 export async function POST(request: Request) {

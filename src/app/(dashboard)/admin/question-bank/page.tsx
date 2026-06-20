@@ -111,7 +111,7 @@ export default function QuestionBankPage() {
       body.options = ["True", "False"]
     }
     if (form.type === "theory" || form.type === "coding") {
-      body = { ...form, options: undefined, correctAnswer: undefined }
+      body = { ...form, options: undefined }
     }
 
     if (editing) {
@@ -272,6 +272,28 @@ export default function QuestionBankPage() {
           </motion.div>
         ))}
       </div>
+
+      {pendingCount > 0 && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
+          <Button
+            size="sm"
+            className="animated-gradient border-0 text-white shadow-lg shadow-primary/25"
+            onClick={async () => {
+              const pendingIds = items.filter((q) => !q.approved).map((q) => q.id)
+              if (pendingIds.length === 0) return
+              const res = await fetch("/api/question-bank", {
+                method: "PUT", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "approveAll", ids: pendingIds, approvedBy: "4" }),
+              })
+              if (res.ok) { toast.success(`${pendingIds.length} questions approved`); fetchAll() }
+              else toast.error("Failed to approve all")
+            }}
+          >
+            <CheckCircle className="h-4 w-4 mr-1.5" />
+            Approve All Pending ({pendingCount})
+          </Button>
+        </motion.div>
+      )}
 
       <Card className="glass-card border-0 mb-4">
         <CardContent className="p-3 md:p-4">
@@ -521,6 +543,12 @@ export default function QuestionBankPage() {
                   </div>
                 )
               })}
+            </div>
+          )}
+          {(form.type === "theory" || form.type === "coding") && (
+            <div className="space-y-2">
+              <Label htmlFor="expectedAnswer">Expected Answer (for grading reference)</Label>
+              <Textarea id="expectedAnswer" placeholder="Enter the expected answer..." value={form.correctAnswer || ""} onChange={(e) => update("correctAnswer", e.target.value)} className="min-h-[80px]" />
             </div>
           )}
           <div className="space-y-2">

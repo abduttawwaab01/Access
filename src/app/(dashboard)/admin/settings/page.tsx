@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2, CreditCard, QrCode, Download } from "lucide-react"
+import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2, CreditCard, QrCode, Download, Key, Eye, EyeOff } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { compressAndUpload } from "@/lib/imageUtils"
 
@@ -349,6 +349,7 @@ export default function SchoolSettingsPage() {
         </Button>
       </form>
 
+      <UserPasswordManager />
       <SchoolQRCodeSettings />
     </div>
   )
@@ -431,6 +432,111 @@ function SchoolQRCodeSettings() {
               {saving ? "Saving..." : "Save QR Data"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
+function UserPasswordManager() {
+  const [userType, setUserType] = useState<"students" | "staff" | "parents">("students")
+  const [users, setUsers] = useState<any[]>([])
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [showPw, setShowPw] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [userSearch, setUserSearch] = useState("")
+
+  useEffect(() => {
+    setLoading(true)
+    setSelectedUserId("")
+    fetch(`/api/${userType}`).then(r => r.json()).then(data => { setUsers(data); setLoading(false) }).catch(() => setLoading(false))
+  }, [userType])
+
+  const filteredUsers = users.filter((u) => {
+    const name = `${u.firstName || ""} ${u.lastName || ""} ${u.email || ""} ${u.studentId || u.staffId || ""}`.toLowerCase()
+    return name.includes(userSearch.toLowerCase())
+  })
+
+  const handleReset = async () => {
+    if (!selectedUserId || !newPassword || newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return }
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/${userType}/${selectedUserId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword }),
+      })
+      if (res.ok) { toast.success("Password updated successfully"); setNewPassword(""); setSelectedUserId("") }
+      else toast.error("Failed to update password")
+    } catch { toast.error("Failed to update password") }
+    setSaving(false)
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
+      <Card className="glass-card border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Key className="h-4 w-4 text-primary" />
+            User Password Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">Reset passwords for any student, teacher, or parent account.</p>
+          <div className="space-y-2">
+            <Label>User Type</Label>
+            <div className="flex gap-2">
+              {(["students", "staff", "parents"] as const).map((t) => (
+                <button key={t} type="button"
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${userType === t ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+                  onClick={() => setUserType(t)}
+                >{t === "staff" ? "Teachers/Staff" : t === "parents" ? "Parents" : "Students"}</button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Search {userType === "staff" ? "teacher" : userType}</Label>
+            <Input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Type name, email or ID..." className="h-10" />
+          </div>
+          <div className="space-y-1 max-h-48 overflow-y-auto rounded-lg border border-border/50 p-1">
+            {loading ? (
+              <div className="p-4 text-center text-xs text-muted-foreground">Loading...</div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="p-4 text-center text-xs text-muted-foreground">No users found</div>
+            ) : (
+              filteredUsers.slice(0, 50).map((u) => (
+                <button key={u.id} type="button"
+                  className={`w-full text-left rounded-lg px-3 py-2 text-sm transition-colors ${selectedUserId === u.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"}`}
+                  onClick={() => setSelectedUserId(u.id)}
+                >
+                  <span className="font-medium">{u.firstName} {u.lastName}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{u.email || u.studentId || u.staffId || u.id}</span>
+                </button>
+              ))
+            )}
+          </div>
+          {selectedUserId && (
+            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <p className="text-xs font-medium text-primary">
+                Resetting for: {users.find((u) => u.id === selectedUserId)?.firstName} {users.find((u) => u.id === selectedUserId)?.lastName}
+              </p>
+              <div className="space-y-2">
+                <Label>New Password</Label>
+                <div className="relative">
+                  <Input type={showPw ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password (min 6 chars)" className="h-10 pr-10" />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <Button size="sm" className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 w-full" onClick={handleReset} disabled={saving || newPassword.length < 6}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Key className="h-4 w-4 mr-1" />}
+                Reset Password
+              </Button>
+            </motion.div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

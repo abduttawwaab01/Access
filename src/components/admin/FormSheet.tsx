@@ -1,6 +1,7 @@
 "use client"
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { useMobile } from "@/hooks/useMobile"
 
 interface FormSheetProps {
   open: boolean
@@ -11,9 +12,14 @@ interface FormSheetProps {
 }
 
 export function FormSheet({ open, onOpenChange, title, description, children }: FormSheetProps) {
+  const { isMobile } = useMobile()
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85dvh] rounded-t-2xl">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={isMobile ? "h-[85dvh] rounded-t-2xl" : "sm:max-w-lg"}
+      >
         <SheetHeader className="mb-6 text-left">
           <SheetTitle>{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}

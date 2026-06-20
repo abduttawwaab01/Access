@@ -1,6 +1,6 @@
-const CACHE_NAME = "access-v3"
-const STATIC_CACHE = "access-static-v3"
-const API_CACHE = "access-api-v3"
+const CACHE_NAME = "access-v4"
+const STATIC_CACHE = "access-static-v4"
+const API_CACHE = "access-api-v4"
 
 const staticAssets = [
   "/",

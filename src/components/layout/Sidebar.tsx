@@ -1,5 +1,6 @@
 "use client"
 
+import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -155,7 +156,7 @@ export function Sidebar({ items, collapsed, onToggle, user, schoolName }: Sideba
               <p className="truncate text-sm font-medium">{user?.name || "User"}</p>
               <p className="truncate text-xs text-muted-foreground capitalize">{user?.role}</p>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-danger">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-danger" onClick={() => signOut({ callbackUrl: "/login" })}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

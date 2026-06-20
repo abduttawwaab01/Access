@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { FileText, ChevronDown, ChevronUp, BookOpen, CheckCircle2, XCircle, RotateCcw, Trophy, ArrowRight, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const STUDENT_ID = "1"
+import { useSession } from "next-auth/react"
 
 export default function StudentLessonNotesPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [students, setStudents] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [notes, setNotes] = useState<any[]>([])
@@ -28,7 +29,7 @@ export default function StudentLessonNotesPage() {
   const [existingResult, setExistingResult] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const student = students.find((s) => s.id === STUDENT_ID)
+  const student = students.find((s) => s.id === userId)
   const studentClassId = student?.classId || ""
 
   useEffect(() => {
@@ -49,13 +50,14 @@ export default function StudentLessonNotesPage() {
 
   useEffect(() => {
     const fetchInitial = async () => {
+      if (!userId) return
       const [stuRes, clsRes] = await Promise.all([
         fetch("/api/students").then((r) => r.json()),
         fetch("/api/classes").then((r) => r.json()),
       ])
       setStudents(stuRes)
       setClasses(clsRes)
-      const found = stuRes.find((s: any) => s.id === STUDENT_ID)
+      const found = stuRes.find((s: any) => s.id === userId)
       if (found?.classId) {
         setSelectedClassId(found.classId)
       } else {
@@ -63,7 +65,7 @@ export default function StudentLessonNotesPage() {
       }
     }
     fetchInitial()
-  }, [])
+  }, [userId])
 
   const getClassName = (id: string) => classes.find((c) => c.id === id)
   const sortedNotes = [...notes].sort((a, b) => (a.week || 0) - (b.week || 0))
@@ -90,7 +92,7 @@ export default function StudentLessonNotesPage() {
     setAnswers({})
     setQuizResult(null)
 
-    const res = await fetch(`/api/lesson-quiz-results?studentId=${STUDENT_ID}&lessonNoteId=${note.id}`)
+    const res = await fetch(`/api/lesson-quiz-results?studentId=${userId}&lessonNoteId=${note.id}`)
     if (res.ok) {
       const data = await res.json()
       if (data) {
@@ -128,7 +130,7 @@ export default function StudentLessonNotesPage() {
     })
     const score = quizState.questions.length > 0 ? Math.round((correct / quizState.questions.length) * 100) : 0
     const payload = {
-      studentId: STUDENT_ID,
+      studentId: userId,
       lessonNoteId: quizState.lessonNoteId,
       subject: quizState.subject,
       totalQuestions: quizState.questions.length,

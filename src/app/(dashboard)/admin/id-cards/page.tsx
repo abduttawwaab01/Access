@@ -279,61 +279,19 @@ export default function AdminIDCardsPage() {
             </div>
 
             <div ref={cardRef} className="flex justify-center p-4 bg-gray-50 rounded-2xl border border-border/40 overflow-auto">
-              {orientation === "portrait" ? (
-                selectedStudent && school ? (
-                  showBack ? (
-                    <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
-                  ) : (
-                    <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
-                  )
-                ) : selectedStaff && school ? (
-                  showBack ? (
-                    <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
-                  ) : (
-                    <StaffIDCardFront staff={selectedStaff} school={school} />
-                  )
-                ) : null
-              ) : (
-                <div className="relative w-full max-w-[510px] aspect-[510/320] bg-white rounded-2xl shadow-xl border border-border/40 overflow-hidden flex">
-                  {selectedStudent && school ? (
-                    <>
-                      <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
-                        {showBack ? (
-                          <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
-                        ) : (
-                          <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
-                        )}
-                      </div>
-                      <div className="w-px bg-gray-200 self-stretch my-4" />
-                      <div className="flex-1 overflow-hidden flex items-center justify-center" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
-                        {showBack ? (
-                          <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
-                        ) : (
-                          <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
-                        )}
-                      </div>
-                    </>
-                  ) : selectedStaff && school ? (
-                    <>
-                      <div className="flex-1 overflow-hidden" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
-                        {showBack ? (
-                          <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
-                        ) : (
-                          <StaffIDCardFront staff={selectedStaff} school={school} />
-                        )}
-                      </div>
-                      <div className="w-px bg-gray-200 self-stretch my-4" />
-                      <div className="flex-1 overflow-hidden flex items-center justify-center" style={{ transform: 'scale(0.85)', transformOrigin: 'center center' }}>
-                        {showBack ? (
-                          <StaffIDCardFront staff={selectedStaff} school={school} />
-                        ) : (
-                          <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
-                        )}
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              )}
+              {selectedStudent && school ? (
+                showBack ? (
+                  <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
+                ) : (
+                  <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
+                )
+              ) : selectedStaff && school ? (
+                showBack ? (
+                  <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
+                ) : (
+                  <StaffIDCardFront staff={selectedStaff} school={school} />
+                )
+              ) : null}
             </div>
           </div>
 

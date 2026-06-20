@@ -18,11 +18,12 @@ import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { cn } from "@/lib/utils"
-
-const teacherId = "1"
-const teacherName = "Grace Hopper"
+import { useSession } from "next-auth/react"
 
 export default function LessonNotesPage() {
+  const { data: session } = useSession()
+  const teacherId = (session?.user as any)?.id || "1"
+  const teacherName = (session?.user as any)?.name || "Grace Hopper"
   const [items, setItems] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,7 +96,8 @@ export default function LessonNotesPage() {
     e.preventDefault()
     const url = "/api/lesson-notes"
     const method = editing ? "PUT" : "POST"
-    const payload = { ...form, week: Number(form.week), createdBy: teacherId, quiz }
+    const payload: any = { ...form, week: Number(form.week), createdBy: teacherId, quiz }
+    if (editing) payload.id = editing.id
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
     if (res.ok) {
       toast.success(editing ? "Lesson note updated" : "Lesson note created")
@@ -309,7 +311,7 @@ export default function LessonNotesPage() {
                   <span className="text-xs font-medium text-muted-foreground">Picture to Text</span>
                   <button onClick={() => setOcrOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
                 </div>
-                <ImageToText onUseText={(text) => { update("content", text); setOcrOpen(false) }} />
+                <ImageToText multiple onUseText={(text) => { update("content", text); setOcrOpen(false) }} />
               </div>
             )}
             <Textarea value={form.content} onChange={(e) => update("content", e.target.value)} rows={8} className="resize-none" placeholder="Write your lesson content here..." />

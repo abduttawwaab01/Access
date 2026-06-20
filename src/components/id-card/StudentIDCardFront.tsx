@@ -1,90 +1,73 @@
+"use client"
+
 import { QRCodeSVG } from "qrcode.react"
-import type { ReactNode } from "react"
 
 interface StudentData {
-  id?: string
-  firstName: string
-  lastName: string
-  studentId: string
-  className?: string
-  classId?: string
-  passportPhoto?: string
-  dateOfBirth?: string
-  gender?: string
-  bloodGroup?: string
+  id?: string; firstName: string; lastName: string; studentId: string; className?: string; classId?: string
+  passportPhoto?: string; dateOfBirth?: string; gender?: string; bloodGroup?: string
 }
 
-interface SchoolData {
-  name: string
-  shortName?: string
-  logo?: string
-  address?: string
-  phone?: string
-  email?: string
-}
+interface SchoolData { name: string; shortName?: string; logo?: string; address?: string; phone?: string; email?: string }
 
-interface StudentIDCardFrontProps {
-  student: StudentData
-  school: SchoolData
-  classes?: { id: string; name: string }[]
-  className?: string
-  style?: Record<string, string>
-}
+interface Props { student: StudentData; school: SchoolData; classes?: { id: string; name: string }[] }
 
-export function StudentIDCardFront({ student, school, classes, className, style }: StudentIDCardFrontProps) {
+export function StudentIDCardFront({ student, school, classes }: Props) {
   const studentClass = classes?.find((c) => c.id === student.classId)?.name || student.className || "N/A"
   const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase()
   const qrData = JSON.stringify({ type: "student", id: student.id, code: student.studentId })
 
   return (
-    <div className={`w-[340px] rounded-2xl overflow-hidden shadow-xl border border-border/40 ${className || ""}`} style={style}>
-      <div className="bg-gradient-to-r from-primary to-secondary p-5 text-white text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1)_0%,transparent_60%)]" />
+    <div className="w-[340px] rounded-2xl overflow-hidden shadow-xl border border-border/40 bg-white">
+      <div className="relative bg-gradient-to-r from-primary to-secondary px-5 pt-5 pb-14 text-white text-center">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.15)_0%,transparent_70%)]" />
         <div className="relative z-10">
           {school.logo ? (
-            <img src={school.logo} alt="" className="h-12 w-12 mx-auto rounded-full border-2 border-white/30 object-cover mb-1" />
+            <img src={school.logo} alt="" className="h-12 w-12 mx-auto rounded-full border-2 border-white/30 object-cover mb-1.5" />
           ) : (
-            <div className="h-12 w-12 mx-auto rounded-full bg-white/20 flex items-center justify-center text-lg font-bold mb-1">
+            <div className="h-12 w-12 mx-auto rounded-full bg-white/20 flex items-center justify-center text-lg font-bold mb-1.5">
               {school.shortName?.[0] || "S"}
             </div>
           )}
-          <p className="text-sm font-bold tracking-tight">{school.name}</p>
-          <p className="text-[10px] opacity-80 mt-0.5">STUDENT ID CARD</p>
+          <p className="text-sm font-bold tracking-tight leading-tight">{school.name}</p>
+          <p className="text-[9px] uppercase tracking-widest opacity-80 mt-0.5 font-medium">Student ID Card</p>
         </div>
       </div>
-
-      <div className="bg-white p-5 flex gap-4">
-        <div className="shrink-0">
-          {student.passportPhoto ? (
-            <img src={student.passportPhoto} alt="" className="h-20 w-20 rounded-xl border-2 border-primary/20 object-cover" />
-          ) : (
-            <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center border-2 border-primary/20">
-              <span className="text-xl font-bold text-primary">{initials}</span>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0 space-y-1">
-          <p className="text-sm font-bold text-gray-900 truncate">{student.firstName} {student.lastName}</p>
-          <p className="text-xs text-gray-500">{studentClass}</p>
-          <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
-            <span className="font-mono">ID: {student.studentId}</span>
+      <div className="relative px-5 pb-4">
+        <div className="flex justify-center -mt-10 mb-3">
+          <div className="h-24 w-24 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10">
+            {student.passportPhoto ? (
+              <img src={student.passportPhoto} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-primary">{initials}</span>
+              </div>
+            )}
           </div>
-          {student.dateOfBirth && (
-            <p className="text-[10px] text-gray-400">DOB: {new Date(student.dateOfBirth).toLocaleDateString()}</p>
-          )}
-          {student.gender && <p className="text-[10px] text-gray-400">Gender: {student.gender}</p>}
-          {student.bloodGroup && <p className="text-[10px] text-gray-400">Blood: {student.bloodGroup}</p>}
         </div>
-        <div className="shrink-0 flex flex-col items-center">
+        <div className="text-center mb-3">
+          <p className="text-base font-bold text-gray-900">{student.firstName} {student.lastName}</p>
+          <p className="text-xs text-gray-500 font-medium">{studentClass}</p>
+          <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
+            <span className="text-[10px] font-mono text-muted-foreground">ID: {student.studentId}</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5 mb-3">
+          {student.dateOfBirth && <><span className="font-medium text-gray-400">DOB</span><span className="text-right">{new Date(student.dateOfBirth).toLocaleDateString()}</span></>}
+          {student.gender && <><span className="font-medium text-gray-400">Gender</span><span className="text-right">{student.gender}</span></>}
+          {student.bloodGroup && <><span className="font-medium text-gray-400">Blood</span><span className="text-right">{student.bloodGroup}</span></>}
+        </div>
+        <div className="flex items-center justify-center gap-3 border-t border-gray-100 pt-2.5">
           <div className="bg-white rounded-lg p-1 border border-gray-200">
-            <QRCodeSVG value={qrData} size={56} level="M" />
+            <QRCodeSVG value={qrData} size={48} level="M" />
           </div>
-          <p className="text-[7px] text-gray-400 mt-1">Scan for attendance</p>
+          <div className="text-[9px] text-gray-400 leading-tight">
+            <p className="font-medium text-gray-500">{school.name}</p>
+            {school.address && <p>{school.address}</p>}
+          </div>
         </div>
       </div>
-
-      <div className="bg-gray-50 px-5 py-2.5 border-t border-gray-100">
-        <p className="text-[9px] text-gray-400 text-center">{school.address || "Valid for current session"}</p>
+      <div className="bg-gradient-to-r from-primary/5 to-secondary/5 px-5 py-2 border-t border-primary/10">
+        <p className="text-[8px] text-center text-muted-foreground">Valid for current academic session • Scan QR for attendance</p>
       </div>
     </div>
   )

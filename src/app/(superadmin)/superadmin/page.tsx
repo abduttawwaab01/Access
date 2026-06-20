@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import ImageToText from "@/components/ImageToText"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSuperAdmin } from "../layout"
@@ -11,7 +12,7 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon
 } from "lucide-react"
 
 const saFetch = async (url: string, options: RequestInit = {}) => {
@@ -56,6 +57,7 @@ export default function SuperAdminPage() {
       case "exams": return <ExamsSection />
       case "scheme-of-work": return <SchemeOfWorkSection />
       case "lesson-notes": return <LessonNotesSection />
+      case "ocr-tool": return <OcrSection />
       case "fee-structures": return <FeeStructuresSection />
       case "payments": return <PaymentsSection />
       case "salary": return <SalarySection />
@@ -1142,11 +1144,51 @@ function SchemeOfWorkSection() {
   )
 }
 
+// ========================== OCR TOOL ==========================
+function OcrSection() {
+  const [ocrText, setOcrText] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(ocrText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* noop */ }
+  }
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <h1 className="text-xl font-bold text-white">OCR Picture to Text</h1>
+      <p className="text-sm text-zinc-400">Upload images to extract text using client-side OCR. No data leaves your device.</p>
+      <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-6">
+        <ImageToText multiple onUseText={(text) => setOcrText(text)} />
+      </div>
+      {ocrText && (
+        <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-zinc-200">Extracted Text</h2>
+            <button onClick={handleCopy} className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-400 hover:text-white transition-colors">
+              {copied ? "Copied!" : "Copy All"}
+            </button>
+          </div>
+          <pre className="whitespace-pre-wrap text-sm text-zinc-300 bg-zinc-900 rounded-lg p-4 max-h-80 overflow-y-auto">{ocrText}</pre>
+          <p className="text-xs text-zinc-500 mt-2">{ocrText.split(/\s+/).filter(Boolean).length} words &middot; {ocrText.length} characters</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ========================== LESSON NOTES ==========================
 function LessonNotesSection() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState("")
+  const [editNote, setEditNote] = useState<any | null>(null)
+  const [ocrOpen, setOcrOpen] = useState(false)
+  const [editContent, setEditContent] = useState("")
+  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", resources: "" })
 
   const load = useCallback(async () => { setLoading(true); const d = await saFetch("/api/lesson-notes"); setItems(Array.isArray(d) ? d : []); setLoading(false) }, [])
   useEffect(() => { load() }, [load])
@@ -1161,27 +1203,99 @@ function LessonNotesSection() {
     setMessage("Deleted!"); load()
   }
 
+  const openEdit = (n: any) => {
+    setEditNote(n)
+    setEditForm({ title: n.title || "", subject: n.subject || "", content: n.content || "", resources: n.resources || "" })
+    setEditContent(n.content || "")
+    setOcrOpen(false)
+  }
+
+  const saveEdit = async () => {
+    if (!editNote) return
+    await saFetch("/api/lesson-notes", {
+      method: "PUT",
+      body: JSON.stringify({ id: editNote.id, data: { ...editForm, content: editContent } }),
+    })
+    setMessage("Updated!"); setEditNote(null); setOcrOpen(false); load()
+  }
+
+  const getClassName = (id: string, cl: any[]) => cl.find((c) => c.id === id)?.name || id
+
   return (
     <div className="space-y-6 max-w-6xl">
       <Toast message={message} type="success" onClose={() => setMessage("")} />
-      <h1 className="text-xl font-bold text-white">Lesson Notes</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-white">Lesson Notes</h1>
+        <span className="text-xs text-zinc-500">{items.length} notes</span>
+      </div>
       <div className="space-y-2">
         {loading ? <Loading /> : items.length === 0 ? (
           <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-8 text-center text-sm text-zinc-500">No lesson notes</div>
         ) : items.map((n: any) => (
           <div key={n.id} className="flex items-start justify-between flex-wrap gap-2 rounded-lg border border-zinc-800 bg-[#12121a] p-4">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-200 truncate">{n.title}</p>
-              <p className="text-xs text-zinc-500 truncate">{n.week ? `Week ${n.week} | ` : ""}Creator: {n.creatorName}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium text-zinc-200 truncate">{n.title}</p>
+                <span className={`rounded-full px-2 py-0.5 text-xs ${n.status === "published" ? "bg-emerald-600/20 text-emerald-400" : n.status === "rejected" ? "bg-red-600/20 text-red-400" : "bg-amber-600/20 text-amber-400"}`}>
+                  {n.status || "pending"}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-500 truncate mt-0.5">
+                {n.subject && <>{n.subject} &middot; </>}
+                {n.week ? `Week ${n.week} &middot; ` : ""}
+                {n.classId && <>{getClassName(n.classId, items)} &middot; </>}
+                {n.term && <>{n.term} &middot; </>}
+                Creator: {n.creatorName || n.createdBy}
+              </p>
+              {n.content && (
+                <p className="text-xs text-zinc-600 mt-1 line-clamp-1">{n.content.replace(/<[^>]+>/g, "").substring(0, 120)}...</p>
+              )}
             </div>
-            <div className="flex gap-2 shrink-0">
-              <span className={`rounded-full px-2 py-0.5 text-xs ${n.status === "published" ? "bg-emerald-600/20 text-emerald-400" : "bg-amber-600/20 text-amber-400"}`}>{n.status}</span>
-              {n.status !== "published" && <button onClick={() => approve(n.id)} className="rounded bg-emerald-600/20 px-2 py-1 text-xs text-emerald-400"><CheckCircle className="h-3 w-3 inline" /> Approve</button>}
+            <div className="flex gap-1.5 shrink-0 items-center">
+              <button onClick={() => openEdit(n)} className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"><Edit3 className="h-3 w-3 inline mr-0.5" /> Edit</button>
+              {n.status !== "published" && <button onClick={() => approve(n.id)} className="rounded bg-emerald-600/20 px-2 py-1 text-xs text-emerald-400"><CheckCircle className="h-3 w-3 inline mr-0.5" /> Approve</button>}
               <button onClick={() => remove(n.id)} className="rounded bg-red-600/20 px-2 py-1 text-xs text-red-400"><Trash2 className="h-3 w-3 inline" /></button>
             </div>
           </div>
         ))}
       </div>
+
+      {editNote && (
+        <Modal open={!!editNote} onClose={() => { setEditNote(null); setOcrOpen(false) }} title={`Edit: ${editNote.title}`}>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Title</label>
+              <input value={editForm.title} onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Subject</label>
+              <input value={editForm.subject} onChange={(e) => setEditForm((p) => ({ ...p, subject: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Resources</label>
+              <input value={editForm.resources} onChange={(e) => setEditForm((p) => ({ ...p, resources: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-zinc-400">Content</label>
+                <button onClick={() => setOcrOpen(!ocrOpen)} className="flex items-center gap-1 rounded bg-zinc-800 px-2.5 py-1 text-xs text-primary transition-colors hover:bg-zinc-700">
+                  <ScanLine className="h-3 w-3" /> OCR from Image
+                </button>
+              </div>
+              {ocrOpen && (
+                <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4 mb-3">
+                  <ImageToText multiple onUseText={(text) => { setEditContent((prev) => prev + "\n" + text); setOcrOpen(false) }} />
+                </div>
+              )}
+              <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={10} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500 resize-y" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={saveEdit} className="flex-1 rounded-lg bg-gradient-to-r from-red-600 to-red-800 py-2 text-sm font-medium text-white">Save Changes</button>
+              <button onClick={() => { setEditNote(null); setOcrOpen(false) }} className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-400">Cancel</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

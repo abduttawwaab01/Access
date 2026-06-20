@@ -40,6 +40,7 @@ const teacherNav: NavItem[] = [
   { label: "Communication", href: "/teacher/communication", icon: "Bell" },
   { label: "Classes", href: "/teacher/classes", icon: "BookOpen" },
   { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
+  { label: "Staff Check-In", href: "/teacher/staff-attendance", icon: "QrCode" },
   { label: "Analytics", href: "/teacher/analytics", icon: "BarChart3" },
   { label: "CBT Engine", href: "/teacher/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/teacher/question-bank", icon: "HelpCircle" },
