@@ -19,6 +19,9 @@ export async function GET() {
     accentColor: "#f59e0b",
     loginEnabled: saSettings.loginEnabled,
     expirationDate: saSettings.expirationDate,
+    schoolQRCode: saSettings.schoolQRCode || "",
+    studentIdCardConfig: saSettings.studentIdCardConfig || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] },
+    staffIdCardConfig: saSettings.staffIdCardConfig || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] },
   })
 }
 
@@ -34,6 +37,9 @@ export async function PUT(request: NextRequest) {
     schoolLogo: body.logo !== undefined ? body.logo : current.schoolLogo,
     aboutText: body.aboutText ?? current.aboutText,
     exportDefaultExamHeader: body.exportDefaultExamHeader ?? current.exportDefaultExamHeader,
+    studentIdCardConfig: body.studentIdCardConfig !== undefined ? body.studentIdCardConfig : current.studentIdCardConfig,
+    staffIdCardConfig: body.staffIdCardConfig !== undefined ? body.staffIdCardConfig : current.staffIdCardConfig,
+    schoolQRCode: body.schoolQRCode !== undefined ? body.schoolQRCode : current.schoolQRCode,
   })
   return NextResponse.json({ success: true })
 }

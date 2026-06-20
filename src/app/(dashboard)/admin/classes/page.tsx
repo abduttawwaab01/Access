@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -59,12 +60,15 @@ export default function ClassesPage() {
     }
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/classes/${item.id}`, { method: "DELETE" })
-    if (res.ok) {
-      toast.success("Class deleted")
-      fetchItems()
-    }
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/classes/${confirmDelete.id}`, { method: "DELETE" })
+    if (res.ok) { toast.success("Class deleted"); fetchItems() }
+    setConfirmDelete(null)
   }
 
   const grouped = items.reduce((acc: any, item: any) => {
@@ -76,7 +80,8 @@ export default function ClassesPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Classes" description="Manage classes, arms, and streams" actionLabel="Add Class" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Class" description={`Permanently delete ${confirmDelete?.name}? This cannot be undone.`} />
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : items.length === 0 ? (

@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useParentChildren } from "@/hooks/useParentChildren"
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00"]
-const children = [{ id: "1", name: "Alice Johnson", classId: "1" }, { id: "2", name: "Bob Johnson", classId: "2" }]
 
 const subjectColors: Record<string, string> = {
   Mathematics: "bg-blue-500/10 text-blue-600 border-blue-500/20",
@@ -17,7 +17,7 @@ const subjectColors: Record<string, string> = {
 }
 
 export default function ParentTimetablePage() {
-  const [childId, setChildId] = useState("1")
+  const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
   const [timetable, setTimetable] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -28,7 +28,27 @@ export default function ParentTimetablePage() {
     })
   }, [])
 
-  const getSlot = (day: string, time: string) => timetable.find((t) => t.day === day && t.time === time)
+  const filteredTimetable = activeChild
+    ? timetable.filter((t) => t.classId === activeChild.classId)
+    : timetable
+
+  const getSlot = (day: string, time: string) => filteredTimetable.find((t) => t.day === day && t.time === time)
+
+  if (childrenLoading) {
+    return (
+      <div className="p-4 md:p-6 space-y-5">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="flex gap-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-10 w-24 rounded-full bg-muted animate-pulse" />
+          ))}
+        </div>
+        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!activeChildId) return null
 
   return (
     <div className="p-4 md:p-6 space-y-5">
@@ -39,8 +59,8 @@ export default function ParentTimetablePage() {
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {children.map((c) => (
-          <button key={c.id} onClick={() => setChildId(c.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${childId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+          <button key={c.id} onClick={() => setActiveChildId(c.id)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
           >{c.name.split(" ")[0]}</button>
         ))}
       </div>

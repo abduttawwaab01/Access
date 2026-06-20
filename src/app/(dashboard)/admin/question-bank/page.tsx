@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -143,12 +144,15 @@ export default function QuestionBankPage() {
     setSubmitting(false)
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/question-bank?id=${item.id}`, { method: "DELETE" })
-    if (res.ok) {
-      toast.success("Question deleted")
-      fetchAll()
-    }
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/question-bank?id=${confirmDelete.id}`, { method: "DELETE" })
+    if (res.ok) { toast.success("Question deleted"); fetchAll() }
+    setConfirmDelete(null)
   }
 
   const handleApprove = async (id: string) => {
@@ -245,7 +249,8 @@ export default function QuestionBankPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Question Bank" description="Manage and approve questions for exams" actionLabel="Add Question" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Question" description={`Permanently delete this question? This cannot be undone.`} />
       <div className="grid grid-cols-3 gap-3 mb-4">
         {[
           { label: "Total Questions", value: totalCount, color: "text-primary" },

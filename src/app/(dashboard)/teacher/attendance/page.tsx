@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
-import { Search, CheckCircle2, Clock, AlertTriangle, User, History, Camera } from "lucide-react"
+import { Search, CheckCircle2, Clock, AlertTriangle, User, History, Camera, QrCode, ScanLine } from "lucide-react"
+import { QRScanner } from "@/components/QRScanner"
 
 export default function TeacherAttendancePage() {
   const [activeTab, setActiveTab] = useState("mark")
@@ -55,6 +56,24 @@ export default function TeacherAttendancePage() {
     }
   }
 
+  const handleQRScan = async (decodedText: string) => {
+    try {
+      const data = JSON.parse(decodedText)
+      if (data.type === "student" && data.id) {
+        const student = students.find((s) => s.id === data.id)
+        if (!student) { toast.error("Student not found"); return }
+        const hour = new Date().getHours()
+        const status = hour >= 9 ? "late" : "present"
+        await markStudent(data.id, status)
+        toast.success(`${student.firstName} ${student.lastName} marked ${status} via QR`)
+      } else {
+        toast.error("Not a valid student QR code")
+      }
+    } catch {
+      toast.error("Invalid QR code format")
+    }
+  }
+
   const filtered = classStudents.filter((s) =>
     `${s.firstName} ${s.lastName}`.toLowerCase().includes(search.toLowerCase())
   )
@@ -71,6 +90,7 @@ export default function TeacherAttendancePage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="mark"><User className="h-4 w-4 mr-1" /> Mark</TabsTrigger>
+          <TabsTrigger value="scan"><ScanLine className="h-4 w-4 mr-1" /> Scan QR</TabsTrigger>
           <TabsTrigger value="today"><History className="h-4 w-4 mr-1" /> Today</TabsTrigger>
         </TabsList>
 
@@ -126,6 +146,24 @@ export default function TeacherAttendancePage() {
                 )
               })
             )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="scan" className="mt-4">
+          <QRScanner
+            onScan={handleQRScan}
+            title="Scan Student ID Card"
+            description="Position the student's ID card QR code within the camera frame to mark attendance"
+          />
+          <div className="mt-4">
+            <Card className="border-0 glass-card">
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <QrCode className="h-4 w-4" />
+                  The QR code on the student ID card front contains attendance data. Students marked late if scanned after 9:00 AM.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 

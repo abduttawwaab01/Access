@@ -8,21 +8,26 @@ import { Badge } from "@/components/ui/badge"
 import { Printer } from "lucide-react"
 import { FileText, Download } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { useParentChildren } from "@/hooks/useParentChildren"
 
 export default function ParentDocumentsPage() {
+  const { children, loading: childrenLoading } = useParentChildren()
   const [documents, setDocuments] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const linkedStudentIds = ["1", "2"]
+
+  const linkedStudentIds = children.map((c) => c.id)
 
   useEffect(() => {
+    if (childrenLoading || linkedStudentIds.length === 0) return
+    setLoading(true)
     Promise.all([fetch("/api/documents").then((r) => r.json()), fetch("/api/students").then((r) => r.json())])
       .then(([d, s]) => { setDocuments(d.filter((doc: any) => linkedStudentIds.includes(doc.studentId))); setStudents(s); setLoading(false) })
-  }, [])
+  }, [linkedStudentIds, childrenLoading])
 
   const getStudentName = (id: string) => { const s = students.find((s) => s.id === id); return s ? `${s.firstName} ${s.lastName}` : id }
 
-  if (loading) return <div className="p-4 md:p-6 space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>
+  if (loading || childrenLoading) return <div className="p-4 md:p-6 space-y-4">{[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -45,7 +50,7 @@ export default function ParentDocumentsPage() {
                     </div>
                     <div>
                       <p className="font-medium">{doc.title}</p>
-                      <p className="text-xs text-muted-foreground">{doc.reference} • {getStudentName(doc.studentId)} • {new Date(doc.generatedAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-muted-foreground">{doc.reference} &bull; {getStudentName(doc.studentId)} &bull; {new Date(doc.generatedAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

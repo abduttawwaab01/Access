@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -60,9 +61,15 @@ export default function AssignmentsPage() {
     else toast.error("Failed to save")
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/assignments/${item.id}`, { method: "DELETE" })
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/assignments/${confirmDelete.id}`, { method: "DELETE" })
     if (res.ok) { toast.success("Deleted"); fetchData() }
+    setConfirmDelete(null)
   }
 
   const filtered = items.filter((a) => tab === "all" || a.status === tab)
@@ -72,7 +79,8 @@ export default function AssignmentsPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Assignments" description={`${items.length} total`} actionLabel="New Assignment" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Assignment" description={`Permanently delete ${confirmDelete?.title}? This cannot be undone.`} />
       <Tabs value={tab} onValueChange={setTab} className="mb-4">
         <TabsList className="w-full">
           <TabsTrigger value="all" className="flex-1">All</TabsTrigger>

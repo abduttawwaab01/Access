@@ -82,17 +82,22 @@ export async function POST(request: NextRequest) {
     }
     // Announcements
     case "createAnnouncement": {
-      const ann = store.superAnnouncements.create({
+      store.superAnnouncements.create({
         title: body.title, content: body.content, type: body.type || "text", displayType: body.displayType || "banner",
-        targetAudience: body.targetAudience || "all",
+        targetAudience: body.targetAudience || "all", priority: body.priority || "normal",
+        startDate: body.startDate || null, endDate: body.endDate || null,
       })
       return NextResponse.json({ success: true, message: "Announcement created", data: { announcements: store.superAnnouncements.getAll() } })
     }
     case "toggleAnnouncement": {
       const ann = store.superAnnouncements.getById(body.id)
       if (!ann) return NextResponse.json({ success: false, error: "Not found" })
-      store.superAnnouncements.update(body.id, { active: !ann.active })
-      return NextResponse.json({ success: true, message: "Toggled", data: { announcements: store.superAnnouncements.getAll() } })
+      if (body.title) {
+        store.superAnnouncements.update(body.id, { title: body.title, content: body.content, displayType: body.displayType, targetAudience: body.targetAudience, priority: body.priority, startDate: body.startDate, endDate: body.endDate })
+      } else {
+        store.superAnnouncements.update(body.id, { active: !ann.active })
+      }
+      return NextResponse.json({ success: true, message: body.title ? "Updated" : "Toggled", data: { announcements: store.superAnnouncements.getAll() } })
     }
     case "deleteAnnouncement": {
       store.superAnnouncements.delete(body.id)

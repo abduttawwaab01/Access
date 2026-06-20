@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -130,9 +131,15 @@ export default function SchemeOfWorkPage() {
     } else toast.error("Failed to save")
   }
 
-  const handleDelete = async (item: Scheme) => {
-    const res = await fetch(`/api/scheme-of-work?id=${item.id}`, { method: "DELETE" })
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: Scheme) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/scheme-of-work?id=${confirmDelete.id}`, { method: "DELETE" })
     if (res.ok) { toast.success("Deleted"); fetchData() }
+    setConfirmDelete(null)
   }
 
   const toggleExpand = (id: string) => setExpanded((prev) => (prev === id ? null : id))
@@ -151,7 +158,8 @@ export default function SchemeOfWorkPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Scheme of Work" description={`${items.length} schemes`} actionLabel="New Scheme" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Scheme" description={`Permanently delete ${confirmDelete?.title}? This cannot be undone.`} />
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : items.length === 0 ? (

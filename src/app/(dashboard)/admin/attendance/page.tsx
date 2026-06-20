@@ -10,6 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { QrCode, Camera, CheckCircle2, Clock, AlertTriangle, User, Search, Scan, History, Shield, RefreshCw, Download } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
+import { SchoolQRCodeDownload } from "@/components/SchoolQRCode"
 
 export default function AdminAttendancePage() {
   const [activeTab, setActiveTab] = useState("scanner")
@@ -52,12 +54,48 @@ export default function AdminAttendancePage() {
   }
 
   const findUser = (code: string) => {
+    try {
+      const parsed = JSON.parse(code)
+      if (parsed.type === "student" && parsed.id) {
+        const student = students.find((s) => s.id === parsed.id)
+        if (student) return { type: "student", id: student.id, name: `${student.firstName} ${student.lastName}`, user: student }
+      }
+      if (parsed.type === "school_attendance") return { type: "staff", id: null, name: "Staff Entry" }
+      if (parsed.type === "staff") {
+        const staffMember = staff.find((s) => s.id === parsed.id || s.staffId === parsed.code)
+        if (staffMember) return { type: "staff", id: staffMember.id, name: `${staffMember.firstName} ${staffMember.lastName}` }
+      }
+    } catch {}
     const qr = qrCodes.find((q) => q.code === code)
-    if (!qr) return null
-    if (qr.type === "school_entry") return { type: "staff", id: null, name: "Staff Entry" }
-    const student = students.find((s) => `STU-${s.firstName.toUpperCase()}-${s.id.padStart(3, "0")}` === code)
-    if (student) return { type: "student", id: student.id, name: `${student.firstName} ${student.lastName}`, user: student }
+    if (qr) {
+      if (qr.type === "school_entry") return { type: "staff", id: null, name: "Staff Entry" }
+      const student = students.find((s) => `STU-${s.firstName.toUpperCase()}-${s.id.padStart(3, "0")}` === code)
+      if (student) return { type: "student", id: student.id, name: `${student.firstName} ${student.lastName}`, user: student }
+    }
     return null
+  }
+
+  const markStaffAttendance = async (staffId: string) => {
+    const now = new Date()
+    const date = now.toISOString().split("T")[0]
+    const time = now.toTimeString().split(" ")[0].substring(0, 5)
+    const hour = now.getHours()
+    const status = hour >= 8 ? "late" : "present"
+    const existing = logs.find((l) => l.userId === staffId && l.date === date)
+    if (existing) { toast.error("Staff already marked today"); return }
+    const res = await fetch("/api/attendance-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: staffId, userType: "staff", date, time, status, method: "qr" }),
+    })
+    if (res.ok) {
+      const newLog = await res.json()
+      const updated = [...logs, newLog]
+      setLogs(updated)
+      updateStats(updated)
+      toast.success(`Staff marked as ${status}`)
+      setScanned(null)
+    }
   }
 
   const markAttendance = async (userId: string, userType: string) => {
@@ -103,7 +141,11 @@ export default function AdminAttendancePage() {
           const user = findUser(decodedText)
           if (user) {
             if (user.type === "staff") {
-              toast.success("School entry QR scanned - staff area")
+              if (user.id) {
+                markStaffAttendance(user.id)
+              } else {
+                toast.success("School attendance QR - open camera for staff self-check-in")
+              }
             } else if (user.id) {
               markAttendance(user.id, "student")
             } else {
@@ -285,9 +327,11 @@ export default function AdminAttendancePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="codes" className="mt-4">
+        <TabsContent value="codes" className="mt-4 space-y-4">
+          <SchoolQRCodeDownload />
           <Card className="border-0 glass-card">
             <CardContent className="p-4 space-y-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2"><QrCode className="h-4 w-4" /> Attendance QR Codes</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {qrCodes.map((qr) => (
                   <Card key={qr.id} className="border border-border/50">
@@ -302,16 +346,14 @@ export default function AdminAttendancePage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-center p-4 bg-white rounded-xl">
-                        <div className="h-32 w-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/20">
-                          <QrCode className="h-16 w-16 text-muted-foreground/40" />
-                        </div>
+                        <QRCodeSVG value={qr.code} size={120} level="M" />
                       </div>
-                      <Button variant="outline" size="sm" className="w-full mt-3">
-                        <Download className="h-4 w-4 mr-1" /> Download QR
-                      </Button>
                     </CardContent>
                   </Card>
                 ))}
+                {qrCodes.length === 0 && (
+                  <div className="col-span-full text-center py-8 text-sm text-muted-foreground">No QR codes generated yet</div>
+                )}
               </div>
             </CardContent>
           </Card>

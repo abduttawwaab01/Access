@@ -40,7 +40,7 @@ let salaryRecords: any[] = []
 let salaryStructures: any[] = []
 let documents: any[] = []
 
-let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superAdminPassword: "successor", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "" }
+let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superAdminPassword: "successor", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "", schoolQRCode: "", studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] }, staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] } }
 
 let admissionApplications: any[] = []
 let superAnnouncements: any[] = []

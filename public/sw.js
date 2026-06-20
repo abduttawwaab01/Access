@@ -64,7 +64,7 @@ async function cacheFirst(request) {
   if (cached) {
     fetch(request).then((response) => {
       if (response.ok) {
-        caches.open(STATIC_CACHE).then((cache) => cache.put(request, response))
+        caches.open(STATIC_CACHE).then((cache) => cache.put(request, response.clone()))
       }
     }).catch(() => {})
     return cached

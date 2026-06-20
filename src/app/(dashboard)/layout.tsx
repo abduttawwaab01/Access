@@ -22,9 +22,11 @@ const adminNav: NavItem[] = [
   { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
   { label: "Salary", href: "/admin/salary", icon: "Wallet" },
   { label: "Admissions", href: "/admin/admissions", icon: "ClipboardCheck" },
+  { label: "ID Cards", href: "/admin/id-cards", icon: "CreditCard" },
   { label: "Feedback", href: "/admin/feedback", icon: "MessageSquare" },
   { label: "Documents", href: "/admin/documents", icon: "FileText" },
   { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
+  { label: "Announcements", href: "/admin/announcements", icon: "Megaphone" },
   { label: "Reports", href: "/admin/reports", icon: "FileText" },
   { label: "Settings", href: "/admin/settings", icon: "Settings" },
 ]
@@ -46,12 +48,16 @@ const teacherNav: NavItem[] = [
 
 const parentNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
+  { label: "My Children", href: "/parent/children", icon: "Users" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
+  { label: "Report Card", href: "/parent/report-card", icon: "FileText" },
+  { label: "Lesson Notes", href: "/parent/lesson-notes", icon: "BookOpen" },
   { label: "Fees", href: "/parent/fees", icon: "CreditCard" },
   { label: "Attendance", href: "/parent/attendance", icon: "Calendar" },
   { label: "Timetable", href: "/parent/timetable", icon: "BookOpen" },
-  { label: "Notifications", href: "/parent/notifications", icon: "Bell" },
+  { label: "Communication", href: "/parent/communication", icon: "Bell" },
   { label: "Documents", href: "/parent/documents", icon: "FileText" },
+  { label: "Settings", href: "/parent/settings", icon: "Settings" },
 ]
 
 const studentNav: NavItem[] = [
@@ -92,10 +98,10 @@ const studentBottomNav: NavItem[] = [
 
 const parentBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
+  { label: "Children", href: "/parent/children", icon: "Users" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
   { label: "Fees", href: "/parent/fees", icon: "CreditCard" },
   { label: "Attendance", href: "/parent/attendance", icon: "Calendar" },
-  { label: "Notifications", href: "/parent/notifications", icon: "Bell" },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

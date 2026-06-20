@@ -262,7 +262,7 @@ export const TEACHER_DATA = [
 export const ADMIN_DATA = {
   firstName: "Admin",
   lastName: "User",
-  email: "admin@school.com",
+  email: "admin@skoolar.org",
   role: "admin",
   department: "Administration",
   qualification: "M.Ed. Educational Administration",

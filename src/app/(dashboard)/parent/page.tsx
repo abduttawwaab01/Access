@@ -9,11 +9,7 @@ import { BarChart3, CalendarCheck, DollarSign, TrendingUp, BookOpen, ChevronRigh
 import { getInitials, cn } from "@/lib/utils"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import Link from "next/link"
-
-const childrenData = [
-  { id: "1", name: "Alice Johnson", class: "Grade 10A", className: "Grade 10", arm: "A", image: undefined },
-  { id: "2", name: "Bob Johnson", class: "Grade 8B", className: "Grade 8", arm: "B", image: undefined },
-]
+import { useParentChildren } from "@/hooks/useParentChildren"
 
 const containerVariants = {
   hidden: {},
@@ -26,30 +22,49 @@ const itemVariants = {
 }
 
 export default function ParentDashboard() {
-  const [activeChild, setActiveChild] = useState("1")
+  const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
   const [results, setResults] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any>({})
   const [fees, setFees] = useState<any>({})
 
-  const child = childrenData.find((c) => c.id === activeChild) || childrenData[0]
-
   useEffect(() => {
+    if (!activeChildId) return
     Promise.all([
-      fetch(`/api/results?studentId=${activeChild}`).then((r) => r.json()),
-      fetch(`/api/attendance-records?studentId=${activeChild}&summary=true`).then((r) => r.json()),
-      fetch(`/api/fees?studentId=${activeChild}&summary=true`).then((r) => r.json()),
+      fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()),
+      fetch(`/api/attendance-records?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
+      fetch(`/api/fees?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
     ]).then(([res, att, fee]) => {
       setResults(res)
       setAttendance(att)
       setFees(fee)
     })
-  }, [activeChild])
+  }, [activeChildId])
 
   const chartData = results.filter((r: any) => r.term === "First Term").map((r: any) => ({
     subject: r.subject.substring(0, 4),
     score: r.score,
     fill: r.score >= 80 ? "#10b981" : r.score >= 60 ? "#f59e0b" : "#ef4444",
   }))
+
+  if (childrenLoading) {
+    return (
+      <div className="floating-orbs p-4 md:p-6 space-y-5">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="flex gap-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-10 w-24 rounded-full bg-muted animate-pulse" />
+          ))}
+        </div>
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+          <div className="h-24 rounded-xl bg-muted animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!activeChild) return null
 
   return (
     <div className="floating-orbs p-4 md:p-6 space-y-5">
@@ -70,7 +85,7 @@ export default function ParentDashboard() {
         transition={{ duration: 0.4 }}
         className="flex gap-2 overflow-x-auto pb-1"
       >
-        {childrenData.map((c, i) => (
+        {children.map((c, i) => (
           <motion.button
             key={c.id}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -78,10 +93,10 @@ export default function ParentDashboard() {
             transition={{ delay: i * 0.08, duration: 0.3 }}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            onClick={() => setActiveChild(c.id)}
+            onClick={() => setActiveChildId(c.id)}
             className={cn(
               "flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 border",
-              activeChild === c.id
+              activeChildId === c.id
                 ? "bg-gradient-to-r from-primary via-purple-500 to-secondary text-white border-transparent shadow-lg shadow-primary/25"
                 : "bg-muted/50 text-muted-foreground border-border/50 hover:border-primary/30 hover:bg-primary/[0.03]"
             )}
@@ -89,7 +104,7 @@ export default function ParentDashboard() {
             <Avatar className="h-6 w-6">
               <AvatarFallback className={cn(
                 "text-[9px]",
-                activeChild === c.id ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                activeChildId === c.id ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
               )}>
                 {getInitials(c.name)}
               </AvatarFallback>
@@ -101,7 +116,7 @@ export default function ParentDashboard() {
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={child.id}
+          key={activeChild.id}
           variants={containerVariants}
           initial="hidden"
           animate="show"
@@ -119,12 +134,12 @@ export default function ParentDashboard() {
                       transition={{ type: "spring", stiffness: 300, delay: 0.1 }}
                     >
                       <Avatar className="h-12 w-12 border-2 border-white/30 shadow-lg">
-                        <AvatarFallback className="bg-white/20 text-white">{getInitials(child.name)}</AvatarFallback>
+                        <AvatarFallback className="bg-white/20 text-white">{getInitials(activeChild.name)}</AvatarFallback>
                       </Avatar>
                     </motion.div>
                     <div>
-                      <p className="font-bold text-lg">{child.name}</p>
-                      <p className="text-sm text-white/70">{child.class}</p>
+                      <p className="font-bold text-lg">{activeChild.name}</p>
+                      <p className="text-sm text-white/70">{activeChild.className}</p>
                     </div>
                   </div>
                   <motion.div

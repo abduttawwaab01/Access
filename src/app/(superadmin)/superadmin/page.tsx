@@ -1549,7 +1549,15 @@ function AnnouncementsSection() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState("")
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ title: "", content: "", displayType: "banner", targetAudience: "all" })
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [filterDisplay, setFilterDisplay] = useState<string>("all")
+  const [filterAudience, setFilterAudience] = useState<string>("all")
+  const [form, setForm] = useState({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "" })
+
+  const audienceLabels: Record<string, string> = { all: "Everyone", teachers: "Teachers", parents: "Parents", students: "Students" }
+  const displayLabels: Record<string, string> = { banner: "Banner", ticker: "Ticker", overlay: "Overlay" }
+  const priorityColors: Record<string, string> = { high: "text-red-400 bg-red-600/10", normal: "text-blue-400 bg-blue-600/10", low: "text-zinc-400 bg-zinc-600/10" }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1560,60 +1568,132 @@ function AnnouncementsSection() {
 
   useEffect(() => { load() }, [load])
 
-  const create = async () => {
-    const d = await saApi("createAnnouncement", form)
-    if (d.success) { setMessage("Created!"); load(); setShowForm(false); setForm({ title: "", content: "", displayType: "banner", targetAudience: "all" }) }
-    else { setMessage(d.error) }
+  const resetForm = () => { setForm({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "" }); setEditingId(null) }
+
+  const openEdit = (a: any) => {
+    setForm({ title: a.title, content: a.content, displayType: a.displayType || "banner", targetAudience: a.targetAudience || "all", priority: a.priority || "normal", startDate: a.startDate || "", endDate: a.endDate || "" })
+    setEditingId(a.id)
+    setShowForm(true)
+  }
+
+  const save = async () => {
+    if (!form.title.trim() || !form.content.trim()) { setMessage("Title and content are required"); return }
+    let d
+    if (editingId) { d = await saApi("toggleAnnouncement", { id: editingId, ...form }) }
+    else { d = await saApi("createAnnouncement", form) }
+    if (d.success) { setMessage(editingId ? "Updated!" : "Created!"); load(); setShowForm(false); resetForm() }
+    else { setMessage(d.error || "Failed") }
   }
 
   const toggle = async (id: string) => {
     await saApi("toggleAnnouncement", { id })
-    setMessage("Toggled!"); load()
+    load()
   }
 
   const remove = async (id: string) => {
-    await saApi("deleteAnnouncement", { id })
-    setMessage("Deleted!"); load()
+    const d = await saApi("deleteAnnouncement", { id })
+    if (d.success) { setMessage("Deleted!"); load() }
+    else { setMessage(d.error || "Failed") }
   }
+
+  const filtered = items.filter((a) => {
+    if (filterStatus !== "all" && (filterStatus === "active" ? !a.active : a.active)) return false
+    if (filterDisplay !== "all" && a.displayType !== filterDisplay) return false
+    if (filterAudience !== "all" && a.targetAudience !== filterAudience) return false
+    return true
+  })
 
   return (
     <div className="space-y-6 max-w-4xl">
       <Toast message={message} type="success" onClose={() => setMessage("")} />
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">Announcements</h1>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-red-600 to-red-800 px-4 py-2 text-sm font-medium text-white"><Plus className="h-4 w-4" /> Create</button>
+        <button onClick={() => { resetForm(); setShowForm(true) }} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-red-600 to-red-800 px-4 py-2 text-sm font-medium text-white"><Plus className="h-4 w-4" /> Create</button>
       </div>
-      <Modal open={showForm} onClose={() => setShowForm(false)} title="Create Announcement">
+
+      <Modal open={showForm} onClose={() => { setShowForm(false); resetForm() }} title={editingId ? "Edit Announcement" : "Create Announcement"}>
         <div className="space-y-4">
           <Input label="Title" value={form.title} onChange={(v) => setForm((p) => ({ ...p, title: v }))} />
           <Input label="Content" value={form.content} onChange={(v) => setForm((p) => ({ ...p, content: v }))} type="textarea" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Display Type</label>
+              <select value={form.displayType} onChange={(e) => setForm((p) => ({ ...p, displayType: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500">
+                <option value="banner">Banner</option><option value="ticker">Ticker</option><option value="overlay">Overlay</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Target Audience</label>
+              <select value={form.targetAudience} onChange={(e) => setForm((p) => ({ ...p, targetAudience: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500">
+                <option value="all">Everyone</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
+              </select>
+            </div>
+          </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-zinc-400">Display Type</label>
-            <select value={form.displayType} onChange={(e) => setForm((p) => ({ ...p, displayType: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500">
-              <option value="banner">Banner</option><option value="ticker">Ticker</option><option value="overlay">Overlay</option>
+            <label className="mb-1 block text-xs font-medium text-zinc-400">Priority</label>
+            <select value={form.priority} onChange={(e) => setForm((p) => ({ ...p, priority: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500">
+              <option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option>
             </select>
           </div>
-          <Input label="Target" value={form.targetAudience} onChange={(v) => setForm((p) => ({ ...p, targetAudience: v }))} />
-          <button onClick={create} className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-800 py-2.5 text-sm font-semibold text-white">Create</button>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Start Date" value={form.startDate} onChange={(v) => setForm((p) => ({ ...p, startDate: v }))} type="date" />
+            <Input label="End Date" value={form.endDate} onChange={(v) => setForm((p) => ({ ...p, endDate: v }))} type="date" />
+          </div>
+          <button onClick={save} className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-800 py-2.5 text-sm font-semibold text-white">
+            {editingId ? "Update" : "Create"}
+          </button>
         </div>
       </Modal>
-      {loading ? <Loading /> : items.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-8 text-center text-sm text-zinc-500">No announcements</div>
-      ) : items.map((a: any) => (
-        <div key={a.id} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-[#12121a] p-4">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-zinc-200">{a.title} <span className="text-xs text-zinc-500">({a.displayType})</span></p>
-            <p className="text-xs text-zinc-500">{a.content}</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => toggle(a.id)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${a.active ? "bg-emerald-600/20 text-emerald-400" : "bg-zinc-600/20 text-zinc-400"}`}>
-              {a.active ? "Active" : "Inactive"}
-            </button>
-            <button onClick={() => remove(a.id)} className="rounded-lg bg-red-600/20 px-3 py-1.5 text-xs text-red-400"><Trash2 className="h-3 w-3" /></button>
-          </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 text-xs text-zinc-500"><Filter className="h-3.5 w-3.5" /> Filters:</div>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="rounded-lg border border-zinc-800 bg-[#12121a] px-3 py-1.5 text-xs text-zinc-300 outline-none focus:border-red-500">
+          <option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option>
+        </select>
+        <select value={filterDisplay} onChange={(e) => setFilterDisplay(e.target.value)} className="rounded-lg border border-zinc-800 bg-[#12121a] px-3 py-1.5 text-xs text-zinc-300 outline-none focus:border-red-500">
+          <option value="all">All Types</option><option value="banner">Banner</option><option value="ticker">Ticker</option><option value="overlay">Overlay</option>
+        </select>
+        <select value={filterAudience} onChange={(e) => setFilterAudience(e.target.value)} className="rounded-lg border border-zinc-800 bg-[#12121a] px-3 py-1.5 text-xs text-zinc-300 outline-none focus:border-red-500">
+          <option value="all">All Audiences</option><option value="all">Everyone</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
+        </select>
+        <span className="ml-auto text-xs text-zinc-500">{filtered.length} of {items.length}</span>
+      </div>
+
+      {loading ? <Loading /> : filtered.length === 0 ? (
+        <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-8 text-center text-sm text-zinc-500">No announcements match filters</div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((a: any) => (
+            <div key={a.id} className="rounded-xl border border-zinc-800 bg-[#12121a] p-4 transition-colors hover:border-zinc-700">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium text-zinc-200">{a.title}</p>
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] ${priorityColors[a.priority] || priorityColors.normal}`}>{a.priority || "normal"}</span>
+                    <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">{displayLabels[a.displayType] || a.displayType}</span>
+                    <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">{audienceLabels[a.targetAudience] || a.targetAudience || "Everyone"}</span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-zinc-400 line-clamp-2">{a.content}</p>
+                  <div className="mt-2 flex items-center gap-3 text-[10px] text-zinc-600">
+                    <span>Created: {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "-"}</span>
+                    {a.startDate && <span>Start: {new Date(a.startDate).toLocaleDateString()}</span>}
+                    {a.endDate && <span>End: {new Date(a.endDate).toLocaleDateString()}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => toggle(a.id)}
+                    className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${a.active ? "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30" : "bg-zinc-600/20 text-zinc-400 hover:bg-zinc-600/30"}`}>
+                    {a.active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
+                    {a.active ? "Active" : "Inactive"}
+                  </button>
+                  <button onClick={() => openEdit(a)} className="rounded-lg bg-blue-600/20 px-2.5 py-1.5 text-xs text-blue-400 hover:bg-blue-600/30"><Pencil className="h-3 w-3" /></button>
+                  <button onClick={() => remove(a.id)} className="rounded-lg bg-red-600/20 px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-600/30"><Trash2 className="h-3 w-3" /></button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }

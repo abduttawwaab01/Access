@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -77,9 +78,15 @@ export default function StudentsPage() {
     } else toast.error("Failed to save")
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/students/${item.id}`, { method: "DELETE" })
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/students/${confirmDelete.id}`, { method: "DELETE" })
     if (res.ok) { toast.success("Student deleted"); fetchItems() }
+    setConfirmDelete(null)
   }
 
   const fetchItems = async () => {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -63,12 +64,15 @@ export default function SubjectsPage() {
     }
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/subjects/${item.id}`, { method: "DELETE" })
-    if (res.ok) {
-      toast.success("Subject deleted")
-      fetchData()
-    }
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/subjects/${confirmDelete.id}`, { method: "DELETE" })
+    if (res.ok) { toast.success("Subject deleted"); fetchData() }
+    setConfirmDelete(null)
   }
 
   const filtered = filterClass === "all" ? items : items.filter((s) => s.classId === filterClass)
@@ -77,7 +81,8 @@ export default function SubjectsPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Subjects" description="Manage subjects offered across classes" actionLabel="Add Subject" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Subject" description={`Permanently delete ${confirmDelete?.name}? This cannot be undone.`} />
       {classes.length > 0 && (
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
           <Button variant={filterClass === "all" ? "default" : "outline"} size="sm" onClick={() => setFilterClass("all")} className="shrink-0 rounded-full">

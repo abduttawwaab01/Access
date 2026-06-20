@@ -7,24 +7,21 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts"
 import { cn } from "@/lib/utils"
-
-const children = [
-  { id: "1", name: "Alice Johnson" },
-  { id: "2", name: "Bob Johnson" },
-]
+import { useParentChildren } from "@/hooks/useParentChildren"
 
 export default function ParentResultsPage() {
-  const [childId, setChildId] = useState("1")
+  const { children, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!activeChildId) return
     setLoading(true)
-    fetch(`/api/results?studentId=${childId}`).then((r) => r.json()).then((data) => {
+    fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()).then((data) => {
       setResults(data)
       setLoading(false)
     })
-  }, [childId])
+  }, [activeChildId])
 
   const terms = [...new Set(results.map((r) => r.term))]
   const [activeTerm, setActiveTerm] = useState(terms[0] || "")
@@ -42,6 +39,23 @@ export default function ParentResultsPage() {
     return { ...b, previous: prev?.score || 0 }
   })
 
+  if (childrenLoading) {
+    return (
+      <div className="p-4 md:p-6 space-y-5">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="flex gap-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-10 w-24 rounded-full bg-muted animate-pulse" />
+          ))}
+        </div>
+        <div className="h-40 rounded-xl bg-muted animate-pulse" />
+        <div className="h-40 rounded-xl bg-muted animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!activeChildId) return null
+
   return (
     <div className="p-4 md:p-6 space-y-5">
       <div>
@@ -51,8 +65,8 @@ export default function ParentResultsPage() {
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {children.map((c) => (
-          <button key={c.id} onClick={() => setChildId(c.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${childId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+          <button key={c.id} onClick={() => setActiveChildId(c.id)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
           >{c.name.split(" ")[0]}</button>
         ))}
       </div>
@@ -66,7 +80,7 @@ export default function ParentResultsPage() {
       )}
 
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-40 rounded-xl bg-muted animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-40 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : termResults.length === 0 ? (
         <Card className="glass-card border-0"><CardContent className="p-8 text-center text-muted-foreground">No results available for this term</CardContent></Card>
       ) : (
@@ -84,7 +98,7 @@ export default function ParentResultsPage() {
                     {prevResults.length > 0 && (() => {
                       const prevAvg = Math.round(prevResults.reduce((s, r) => s + r.score, 0) / prevResults.length)
                       const diff = avgScore - prevAvg
-                      return <span className={diff >= 0 ? "text-success" : "text-danger"}>{diff >= 0 ? "↑" : "↓"} {Math.abs(diff)}% from {prevTerm}</span>
+                      return <span className={diff >= 0 ? "text-success" : "text-danger"}>{diff >= 0 ? "\u2191" : "\u2193"} {Math.abs(diff)}% from {prevTerm}</span>
                     })()}
                   </p>
                 )}

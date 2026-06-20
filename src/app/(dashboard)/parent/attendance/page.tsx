@@ -6,28 +6,28 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { cn } from "@/lib/utils"
-
-const children = [{ id: "1", name: "Alice Johnson" }, { id: "2", name: "Bob Johnson" }]
+import { useParentChildren } from "@/hooks/useParentChildren"
 
 const COLORS = { present: "#10b981", late: "#f59e0b", absent: "#ef4444" }
 
 export default function ParentAttendancePage() {
-  const [childId, setChildId] = useState("1")
+  const { children, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
   const [records, setRecords] = useState<any[]>([])
   const [summary, setSummary] = useState<any>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!activeChildId) return
     setLoading(true)
     Promise.all([
-      fetch(`/api/attendance-records?studentId=${childId}`).then((r) => r.json()),
-      fetch(`/api/attendance-records?studentId=${childId}&summary=true`).then((r) => r.json()),
+      fetch(`/api/attendance-records?studentId=${activeChildId}`).then((r) => r.json()),
+      fetch(`/api/attendance-records?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
     ]).then(([recs, sum]) => {
       setRecords(recs)
       setSummary(sum)
       setLoading(false)
     })
-  }, [childId])
+  }, [activeChildId])
 
   const pieData = [
     { name: "Present", value: summary.present || 0, color: COLORS.present },
@@ -36,6 +36,23 @@ export default function ParentAttendancePage() {
   ].filter((d) => d.value > 0)
 
   const rate = summary.total > 0 ? Math.round(((summary.present || 0) / summary.total) * 100) : 0
+
+  if (childrenLoading) {
+    return (
+      <div className="p-4 md:p-6 space-y-5">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="flex gap-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-10 w-24 rounded-full bg-muted animate-pulse" />
+          ))}
+        </div>
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        <div className="h-48 rounded-xl bg-muted animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!activeChildId) return null
 
   return (
     <div className="p-4 md:p-6 space-y-5">
@@ -46,14 +63,14 @@ export default function ParentAttendancePage() {
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {children.map((c) => (
-          <button key={c.id} onClick={() => setChildId(c.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${childId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+          <button key={c.id} onClick={() => setActiveChildId(c.id)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
           >{c.name.split(" ")[0]}</button>
         ))}
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1,2].map((i) => <div key={i} className="h-48 rounded-xl bg-muted animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2].map((i) => <div key={i} className="h-48 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : (
         <>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>

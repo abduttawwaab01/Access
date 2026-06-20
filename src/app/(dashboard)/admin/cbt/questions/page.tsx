@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -87,12 +88,15 @@ export default function QuestionsPage() {
     }
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/questions/${item.id}`, { method: "DELETE" })
-    if (res.ok) {
-      toast.success("Question deleted")
-      fetchData()
-    }
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/questions/${confirmDelete.id}`, { method: "DELETE" })
+    if (res.ok) { toast.success("Question deleted"); fetchData() }
+    setConfirmDelete(null)
   }
 
   const updateOption = (idx: number, value: string) => {
@@ -114,7 +118,8 @@ export default function QuestionsPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Question Bank" description="Create and manage exam questions" actionLabel="Add Question" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Question" description={`Permanently delete this question? This cannot be undone.`} />
       <div className="mb-4 flex flex-wrap gap-2">
         <Input placeholder="Search questions..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 max-w-xs" />
         <Select value={filterType} onValueChange={(v) => { if (v) setFilterType(v) }}>

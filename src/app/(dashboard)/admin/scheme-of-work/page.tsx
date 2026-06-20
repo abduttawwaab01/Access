@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -168,14 +169,16 @@ export default function SchemeOfWorkPage() {
     }
   }
 
-  const handleDelete = async (item: Scheme) => {
-    const res = await fetch(`/api/scheme-of-work?id=${item.id}`, { method: "DELETE" })
-    if (res.ok) {
-      toast.success("Scheme deleted")
-      fetchData()
-    } else {
-      toast.error("Failed to delete")
-    }
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: Scheme) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/scheme-of-work?id=${confirmDelete.id}`, { method: "DELETE" })
+    if (res.ok) { toast.success("Scheme deleted"); fetchData() }
+    else { toast.error("Failed to delete") }
+    setConfirmDelete(null)
   }
 
   const filtered = items.filter((item) => {
@@ -197,7 +200,8 @@ export default function SchemeOfWorkPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Scheme of Work" description="Create and manage termly teaching schemes" actionLabel="New Scheme" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Scheme" description={`Permanently delete ${confirmDelete?.title}? This cannot be undone.`} />
       <div className="mb-4 flex flex-wrap gap-2">
         <Select value={filterClass} onValueChange={(v) => v && setFilterClass(v)}>
           <SelectTrigger className="h-9 w-40"><SelectValue placeholder="All Classes" /></SelectTrigger>

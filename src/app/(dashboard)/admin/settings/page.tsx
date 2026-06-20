@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2 } from "lucide-react"
+import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2, CreditCard, QrCode, Download } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { compressAndUpload } from "@/lib/imageUtils"
 
 export default function SchoolSettingsPage() {
@@ -25,6 +26,8 @@ export default function SchoolSettingsPage() {
     primaryColor: "#6366f1",
     secondaryColor: "#06b6d4",
     accentColor: "#f59e0b",
+    studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] },
+    staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] },
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -77,10 +80,11 @@ export default function SchoolSettingsPage() {
     e.preventDefault()
     setSaving(true)
     try {
+      const { studentIdCardConfig, staffIdCardConfig, ...rest } = form
       await fetch("/api/school", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...rest, studentIdCardConfig, staffIdCardConfig }),
       })
       document.documentElement.style.setProperty("--primary", form.primaryColor)
       document.documentElement.style.setProperty("--secondary", form.secondaryColor)
@@ -257,12 +261,159 @@ export default function SchoolSettingsPage() {
           </Card>
         </motion.div>
 
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card className="glass-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CreditCard className="h-4 w-4 text-primary" />
+                ID Card Back Settings (Student)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">Configure what appears on the back of student ID cards.</p>
+              <div className="space-y-2">
+                <Label>Back Panel Title</Label>
+                <Input value={form.studentIdCardConfig?.backTitle || "Student Information"} onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, backTitle: e.target.value } })} />
+              </div>
+              <div className="space-y-3">
+                {(["showAddress", "showBloodGroup", "showEmergencyContact", "showMedicalNotes"] as const).map((field) => (
+                  <label key={field} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(form.studentIdCardConfig as any)?.[field] ?? true}
+                      onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, [field]: e.target.checked } })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm capitalize">{field.replace("show", "").replace(/([A-Z])/g, " $1").trim()}</span>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <Card className="glass-card border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CreditCard className="h-4 w-4 text-primary" />
+                ID Card Back Settings (Staff)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">Configure what appears on the back of staff ID cards.</p>
+              <div className="space-y-2">
+                <Label>Back Panel Title</Label>
+                <Input value={form.staffIdCardConfig?.backTitle || "Staff Information"} onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, backTitle: e.target.value } })} />
+              </div>
+              <div className="space-y-3">
+                {(["showDepartment", "showEmergencyContact"] as const).map((field) => (
+                  <label key={field} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(form.staffIdCardConfig as any)?.[field] ?? true}
+                      onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, [field]: e.target.checked } })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm capitalize">{field.replace("show", "").replace(/([A-Z])/g, " $1").trim()}</span>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25" disabled={saving}>
           <Save className="mr-2 h-4 w-4" />
           {saving ? "Saving..." : "Save Settings"}
         </Button>
       </form>
+
+      <SchoolQRCodeSettings />
     </div>
+  )
+}
+
+function SchoolQRCodeSettings() {
+  const [school, setSchool] = useState<any>(null)
+  const [qrValue, setQrValue] = useState("")
+  const [saving, setSaving] = useState(false)
+  const qrRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch("/api/school").then((r) => r.json()).then((data) => {
+      setSchool(data)
+      setQrValue(data.schoolQRCode || JSON.stringify({ type: "school_attendance", school: data.name || "Access School", id: "school_1" }))
+    })
+  }, [])
+
+  const handleDownload = async () => {
+    if (!qrRef.current) return
+    try {
+      const html2canvas = (await import("html2canvas")).default
+      const canvas = await html2canvas(qrRef.current, { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+      const link = document.createElement("a")
+      link.download = `${(school?.name || "School").replace(/\s+/g, "_")}_Attendance_QR.png`
+      link.href = canvas.toDataURL("image/png")
+      link.click()
+      toast.success("QR code downloaded")
+    } catch { toast.error("Failed to download") }
+  }
+
+  const handleSaveQR = async () => {
+    setSaving(true)
+    try {
+      await fetch("/api/school", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schoolQRCode: qrValue }) })
+      toast.success("School QR data saved")
+    } catch { toast.error("Failed to save") }
+    setSaving(false)
+  }
+
+  if (!school) return null
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
+      <Card className="glass-card border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <QrCode className="h-4 w-4 text-primary" />
+            School Attendance QR Code
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Generate a QR code for staff attendance. Display at school entrance for staff to scan.
+          </p>
+          <div className="flex justify-center">
+            <div ref={qrRef} className="inline-block bg-white p-6 rounded-2xl shadow-lg border border-gray-200 text-center">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                {school?.logo ? <img src={school.logo} alt="" className="h-8 w-8 rounded-full object-cover" /> : <Building2 className="h-6 w-6 text-gray-400" />}
+                <span className="text-sm font-bold text-gray-800">{school?.name || "School"}</span>
+              </div>
+              <QRCodeSVG value={qrValue} size={180} level="H" includeMargin />
+              <p className="text-[10px] text-gray-400 mt-2">Scan to mark attendance</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>QR Code Data (JSON)</Label>
+            <textarea
+              value={qrValue}
+              onChange={(e) => setQrValue(e.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs font-mono"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownload} className="flex-1">
+              <Download className="h-4 w-4 mr-1" /> Download PNG
+            </Button>
+            <Button onClick={handleSaveQR} disabled={saving} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 flex-1">
+              {saving ? "Saving..." : "Save QR Data"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 

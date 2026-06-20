@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 
 export interface ChildInfo {
   id: string
+  studentId?: string
   name: string
   firstName: string
   lastName: string
@@ -37,6 +38,7 @@ export function useParentChildren() {
         if (!student) return null
         return {
           id: student.id,
+          studentId: student.studentId || "",
           name: `${student.firstName} ${student.lastName}`,
           firstName: student.firstName,
           lastName: student.lastName,

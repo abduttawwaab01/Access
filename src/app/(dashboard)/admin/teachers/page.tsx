@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -141,9 +142,15 @@ export default function TeachersPage() {
     } else toast.error("Failed to save")
   }
 
-  const handleDelete = async (item: any) => {
-    const res = await fetch(`/api/staff/${item.id}`, { method: "DELETE" })
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
+
+  const handleDelete = (item: any) => setConfirmDelete(item)
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/staff/${confirmDelete.id}`, { method: "DELETE" })
     if (res.ok) { toast.success("Staff removed"); fetchItems() }
+    setConfirmDelete(null)
   }
 
   const filtered = items.filter((s) => {
@@ -154,7 +161,8 @@ export default function TeachersPage() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Teachers & Staff" description={`${items.length} total staff`} actionLabel="Add Staff" onAction={openCreate} />
-
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Staff" description={`Permanently delete ${confirmDelete?.firstName} ${confirmDelete?.lastName}? This cannot be undone.`} />
       <div className="mb-4 relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Search staff..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 pl-9" />

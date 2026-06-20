@@ -2,75 +2,67 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
-import { Download, Printer, Send, Share2, FileText, DownloadCloud, Award } from "lucide-react"
+import { Download, Printer, Send, FileText, DownloadCloud } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
-import { useSession } from "next-auth/react"
+import { useParentChildren } from "@/hooks/useParentChildren"
 
-export default function StudentReportCardPage() {
-  const { data: session } = useSession()
+export default function ParentReportCardPage() {
+  const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
   const [results, setResults] = useState<any[]>([])
-  const [students, setStudents] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [school, setSchool] = useState<any>(null)
-  const [reportCards, setReportCards] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
 
-  const userId = (session?.user as any)?.id || "1"
-
   useEffect(() => {
+    if (!activeChildId) return
+    setLoading(true)
     Promise.all([
-      fetch("/api/results").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
+      fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()),
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()),
-      fetch("/api/report-cards").then((r) => r.json()),
       fetch("/api/attendance-logs").then((r) => r.json()),
-    ]).then(([res, stu, cls, sch, rc, att]) => {
+    ]).then(([res, cls, sch, att]) => {
       setResults(Array.isArray(res) ? res : [])
-      setStudents(Array.isArray(stu) ? stu : [])
       setClasses(Array.isArray(cls) ? cls : [])
       setSchool(sch)
-      setReportCards(Array.isArray(rc) ? rc : [])
       setAttendance(Array.isArray(att) ? att : [])
       setLoading(false)
     })
-  }, [])
+  }, [activeChildId])
 
-  const student = students.find((s: any) => s.id === userId)
-  if (!student && !loading) {
+  if (childrenLoading) return <div className="p-4 md:p-6 space-y-4">{["h-24", "h-96"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
+
+  if (!activeChild) {
     return (
       <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <FileText className="h-16 w-16 text-muted-foreground/30 mb-4" />
-        <h3 className="font-semibold text-lg">Student Not Found</h3>
-        <p className="text-sm text-muted-foreground">Could not load your profile.</p>
+        <h3 className="font-semibold text-lg">No Child Selected</h3>
+        <p className="text-sm text-muted-foreground">Select a child to view their report card.</p>
       </div>
     )
   }
 
-  const studentResults = results.filter((r) => r.studentId === (student?.id || userId))
-  const terms = [...new Set(studentResults.map((r) => r.term))] as string[]
+  const studentResults = results.filter((r: any) => r.studentId === activeChildId)
+  const terms = [...new Set(studentResults.map((r: any) => r.term))] as string[]
   const currentTerm = terms[terms.length - 1] || "First Term"
-  const termResults = studentResults.filter((r) => r.term === currentTerm)
+  const termResults = studentResults.filter((r: any) => r.term === currentTerm)
 
-  const studentClass = classes.find((c) => c.id === student?.classId)
-  const studentAttendance = attendance.filter((a) => a.userId === (student?.id || userId))
-  const todayLogs = studentAttendance.filter((l) => l.date === new Date().toISOString().split("T")[0])
-  const allLogs = studentAttendance.filter((l) => l.userType === "student" || !l.userType)
+  const studentClass = classes.find((c) => c.id === activeChild.classId)
+  const childAttendance = attendance.filter((a: any) => a.userId === activeChildId)
 
   const reportData = {
     schoolName: school?.name || "Access School",
     schoolLogo: school?.logo || "",
     schoolMotto: school?.motto || "",
     schoolAddress: school?.address || "",
-    studentName: student ? `${student.firstName} ${student.lastName}` : "Student",
-    studentId: student?.studentId || "N/A",
+    studentName: `${activeChild.firstName} ${activeChild.lastName}`,
+    studentId: activeChild.studentId || "N/A",
     className: studentClass?.name || "N/A",
     term: currentTerm,
     session: "2024/2025",
@@ -81,40 +73,32 @@ export default function StudentReportCardPage() {
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",
     })),
-    domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
-      ? [
-          { name: "Punctuality", score: 8, max: 10 },
-          { name: "Neatness", score: 7, max: 10 },
-          { name: "Attentiveness", score: 9, max: 10 },
-          { name: "Honesty", score: 8, max: 10 },
-          { name: "Leadership", score: 7, max: 10 },
-          { name: "Participation", score: 8, max: 10 },
-        ]
-      : [
-          { name: "Critical Thinking", score: 82, max: 100 },
-          { name: "Communication", score: 75, max: 100 },
-          { name: "Collaboration", score: 88, max: 100 },
-          { name: "Creativity", score: 70, max: 100 },
-          { name: "Problem Solving", score: 78, max: 100 },
-          { name: "Leadership", score: 72, max: 100 },
-        ]
-    ),
+    domains: [
+      { name: "Critical Thinking", score: 82, max: 100 },
+      { name: "Communication", score: 75, max: 100 },
+      { name: "Collaboration", score: 88, max: 100 },
+      { name: "Creativity", score: 70, max: 100 },
+      { name: "Problem Solving", score: 78, max: 100 },
+      { name: "Leadership", score: 72, max: 100 },
+    ],
     attendance: {
-      present: allLogs.filter((l) => l.status === "present").length || 38,
-      absent: allLogs.filter((l) => l.status === "absent").length || 2,
-      late: allLogs.filter((l) => l.status === "late").length || 5,
-      total: allLogs.length || 45,
+      present: childAttendance.filter((l: any) => l.status === "present").length || 38,
+      absent: childAttendance.filter((l: any) => l.status === "absent").length || 2,
+      late: childAttendance.filter((l: any) => l.status === "late").length || 5,
+      total: childAttendance.length || 45,
     },
-    teacherComment: student
-      ? `${student.firstName} ${student.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`
-      : "A diligent student with great potential.",
+    teacherComment: `${activeChild.firstName} ${activeChild.lastName} has shown good progress this term. Consistent effort in core subjects is commendable.`,
     teacherName: "Class Teacher",
-    principalComment: "A well-rounded student who demonstrates good character and academic promise. Encouraged to maintain focus and participate in school activities.",
+    principalComment: "A student with great potential. Encouraged to participate more in extracurricular activities.",
     nextTerm: "6th January 2025",
-    position: termResults.length > 0 ? "—" : "—",
-    totalStudents: students.filter((s: any) => s.classId === student?.classId).length || 0,
+    position: "—",
+    totalStudents: 0,
     generatedAt: new Date().toISOString(),
   }
+
+  const totalAverage = reportData.subjects.length > 0
+    ? Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / reportData.subjects.length)
+    : 0
 
   const handleExportPDF = async () => {
     if (!reportRef.current) return
@@ -169,19 +153,11 @@ export default function StudentReportCardPage() {
   }
 
   const handleShareWhatsApp = () => {
-    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / (reportData.subjects.length || 1))}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}\n\nView full report on Access School Portal.`
+    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${totalAverage}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}\n\nView full report on Access School Portal.`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 
-  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-48", "h-32", "h-64", "h-48"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
-
-  if (termResults.length === 0 && !loading) return (
-    <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <FileText className="h-16 w-16 text-muted-foreground/30 mb-4" />
-      <h3 className="font-semibold text-lg">No Report Card Available</h3>
-      <p className="text-sm text-muted-foreground">Results for {currentTerm} are not yet published.</p>
-    </div>
-  )
+  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-48", "h-64"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -204,9 +180,38 @@ export default function StudentReportCardPage() {
         </div>
       </div>
 
-      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
-        <ReportCard ref={reportRef} data={reportData} />
-      </motion.div>
+      {children.length > 1 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2 overflow-x-auto pb-2 print:hidden">
+          {children.map((child: any) => (
+            <button
+              key={child.id}
+              onClick={() => setActiveChildId(child.id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all shrink-0 ${
+                activeChildId === child.id
+                  ? "bg-primary text-white shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-[10px]">{child.firstName[0]}{child.lastName[0]}</AvatarFallback>
+              </Avatar>
+              {child.firstName} {child.lastName}
+            </button>
+          ))}
+        </motion.div>
+      )}
+
+      {termResults.length === 0 ? (
+        <div className="text-center py-16">
+          <FileText className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="font-semibold text-lg">No Report Card Available</h3>
+          <p className="text-sm text-muted-foreground">Results for {currentTerm} are not yet published for this student.</p>
+        </div>
+      ) : (
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
+          <ReportCard ref={reportRef} data={reportData} />
+        </motion.div>
+      )}
     </div>
   )
 }
