@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { captureElement } from "@/lib/capture"
 import { Download, FileText, FileDown, School } from "lucide-react"
 import { jsPDF } from "jspdf"
 
@@ -114,8 +115,7 @@ export function ExamDownload({ exam, questions }: ExamDownloadProps) {
     `
     document.body.appendChild(element)
     try {
-      const { default: html2canvas } = await import("html2canvas")
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" })
+      const canvas = await captureElement(element, { scale: 2, backgroundColor: "#ffffff" })
       const imgData = canvas.toDataURL("image/png")
       const pdf = new jsPDF("p", "mm", "a4")
       const imgWidth = 210

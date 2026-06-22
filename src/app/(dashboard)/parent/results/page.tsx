@@ -112,9 +112,10 @@ export default function ParentResultsPage() {
           <Card className="glass-card border-0">
             <CardContent className="p-4">
               <p className="text-sm font-semibold mb-3">Subject Scores</p>
-              <div className="h-48 md:h-56 min-h-[160px]">
+              <div className="overflow-x-auto">
+                <div className="h-48 md:h-56 min-h-[160px] min-w-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={comparisonData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <BarChart data={comparisonData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                     <XAxis dataKey="subject" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ background: "rgba(0,0,0,0.8)", border: "none", borderRadius: 8, fontSize: 12 }} />
@@ -122,6 +123,7 @@ export default function ParentResultsPage() {
                     {prevTerm && <Bar dataKey="previous" name={prevTerm} radius={[6, 6, 0, 0]} barSize={20} fill="#94a3b8" opacity={0.5} />}
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
               </div>
             </CardContent>
           </Card>

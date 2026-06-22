@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 export default function ExamTakeLanding() {
   const [exams, setExams] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [studentName, setStudentName] = useState("")
   const [selectedExam, setSelectedExam] = useState<string | null>(null)
@@ -21,10 +22,11 @@ export default function ExamTakeLanding() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [eRes, sRes] = await Promise.all([fetch("/api/exams"), fetch("/api/subjects")])
+      const [eRes, sRes, sesRes] = await Promise.all([fetch("/api/exams"), fetch("/api/subjects"), fetch("/api/exam-sessions")])
       const allExams = await eRes.json()
       setExams(allExams.filter((e: any) => e.status === "published"))
       setSubjects(await sRes.json())
+      setSessions(await sesRes.json())
       setLoading(false)
     }
     fetchData()
@@ -32,9 +34,25 @@ export default function ExamTakeLanding() {
 
   const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || "Unknown"
 
+  const getAttemptCount = (examId: string) => {
+    if (!studentName.trim()) return 0
+    return sessions.filter((s) => s.examId === examId && s.studentName?.toLowerCase() === studentName.trim().toLowerCase()).length
+  }
+
   const startExam = async () => {
     if (!studentName.trim()) { toast.error("Please enter your name"); return }
     if (!selectedExam) { toast.error("Please select an exam"); return }
+    const exam = exams.find((e) => e.id === selectedExam)
+    if (exam) {
+      const maxAttempts = exam.maxAttempts ?? 0
+      if (maxAttempts > 0) {
+        const attempts = getAttemptCount(selectedExam)
+        if (attempts >= maxAttempts) {
+          toast.error(`You have used all ${maxAttempts} attempt(s) for this exam`)
+          return
+        }
+      }
+    }
     setStarting(true)
     try {
       const res = await fetch("/api/exam-sessions", {
@@ -102,6 +120,11 @@ export default function ExamTakeLanding() {
                         <span>{getSubjectName(exam.subjectId)}</span>
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{exam.duration} min</span>
                         <span>{(exam.questions || []).length} questions</span>
+                        {exam.maxAttempts > 0 && studentName.trim() && (
+                          <Badge variant="outline" className={getAttemptCount(exam.id) >= exam.maxAttempts ? "text-red-500 border-red-500/30" : ""}>
+                            {getAttemptCount(exam.id)}/{exam.maxAttempts} attempts
+                          </Badge>
+                        )}
                       </div>
                     </button>
                   ))}

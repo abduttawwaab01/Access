@@ -82,7 +82,7 @@ export default function AdminReportsPage() {
               <h3 className="text-sm md:text-base font-semibold mb-3">Term Performance Trend</h3>
               <div className="h-48 md:h-56 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={termData} margin={{ left: -15, right: 5 }}>
+                  <LineChart data={termData} margin={{ left: 0, right: 5 }}>
                     <XAxis dataKey="term" tick={{ fontSize: 10 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
                     <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -134,9 +134,10 @@ export default function AdminReportsPage() {
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
               <h3 className="text-sm md:text-base font-semibold mb-3">Subject Average Comparison</h3>
-              <div className="h-48 md:h-64 min-h-[180px]">
+              <div className="overflow-x-auto">
+                <div className="h-48 md:h-64 min-h-[180px] min-w-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={subjectChart} layout={subjectChart.length > 6 ? "vertical" : "horizontal"} margin={{ left: -15, right: 5 }}>
+                  <BarChart data={subjectChart} layout={subjectChart.length > 6 ? "vertical" : "horizontal"} margin={{ left: 0, right: 5 }}>
                     {subjectChart.length > 6 ? (
                       <>
                         <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
@@ -152,6 +153,7 @@ export default function AdminReportsPage() {
                     <Bar dataKey="average" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={28} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
               </div>
             </CardContent>
           </Card>

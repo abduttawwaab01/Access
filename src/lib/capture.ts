@@ -27,6 +27,21 @@ export async function captureElement(
     backgroundColor,
     logging: false,
     allowTaint: false,
+    onclone: (clonedDoc: Document) => {
+      const style = clonedDoc.createElement("style")
+      style.textContent = `
+        .animated-gradient {
+          background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important;
+        }
+        .glass-card {
+          background: rgba(255,255,255,0.9) !important;
+        }
+        [class*="bg-gradient-"] {
+          background-image: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important;
+        }
+      `
+      clonedDoc.head.appendChild(style)
+    },
   })
 
   return canvas

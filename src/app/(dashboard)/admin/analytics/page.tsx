@@ -145,7 +145,7 @@ export default function AdminAnalyticsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5 glass-card border-0 p-1.5">
+          <TabsList className="inline-flex w-max gap-1.5">
             <TabsTrigger value="overview" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Overview</TabsTrigger>
             <TabsTrigger value="academics" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Academics</TabsTrigger>
             <TabsTrigger value="attendance" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Attendance</TabsTrigger>
@@ -187,17 +187,19 @@ export default function AdminAnalyticsPage() {
                 <CardContent className="p-4 md:p-5">
                   <h3 className="text-sm md:text-base font-semibold mb-1">Enrollment by Class</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3 md:mb-4">Student distribution across classes</p>
-                  <div className="h-48 md:h-64 min-h-[180px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={studentsPerClass} margin={{ top: 5, right: 5, bottom: 16, left: -10 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={40} />
-                        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} width={25} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }} />
-                        <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={32}>
-                          {studentsPerClass.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.8} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="overflow-x-auto">
+                    <div className="h-48 md:h-64 min-h-[180px] min-w-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={studentsPerClass} margin={{ top: 5, right: 5, bottom: 16, left: 0 }}>
+                          <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={40} />
+                          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} width={25} />
+                          <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }} />
+                          <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={32}>
+                            {studentsPerClass.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.8} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -239,7 +241,7 @@ export default function AdminAnalyticsPage() {
                 <p className="text-[11px] md:text-xs text-muted-foreground mb-3 md:mb-4">Average score by student</p>
                 <div className="h-48 md:h-64 min-h-[180px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={recentExamScores} margin={{ top: 5, right: 5, bottom: 5, left: -10 }} layout={recentExamScores.length > 8 ? "vertical" : "horizontal"}>
+                    <BarChart data={recentExamScores} margin={{ top: 5, right: 5, bottom: 5, left: 0 }} layout={recentExamScores.length > 8 ? "vertical" : "horizontal"}>
                       {recentExamScores.length > 8 ? (
                         <>
                           <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={30} />
@@ -272,17 +274,19 @@ export default function AdminAnalyticsPage() {
                 <CardContent className="p-4 md:p-5">
                   <h3 className="text-sm md:text-base font-semibold mb-1">Subject Performance</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3 md:mb-4">Average score by subject</p>
-                  <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={subjectAvgScores} margin={{ top: 5, right: 5, bottom: 16, left: -10 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={0} angle={-15} textAnchor="end" height={35} />
-                        <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={25} />
-                        <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }} formatter={(v: any) => [`${v}%`, "Avg"]} />
-                        <Bar dataKey="average" radius={[6, 6, 0, 0]} maxBarSize={28}>
-                          {subjectAvgScores.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.8} />)}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <div className="overflow-x-auto">
+                    <div className="h-56 md:h-72 min-h-[200px] min-w-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={subjectAvgScores} margin={{ top: 5, right: 5, bottom: 16, left: 0 }}>
+                          <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={0} angle={-15} textAnchor="end" height={35} />
+                          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={25} />
+                          <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }} formatter={(v: any) => [`${v}%`, "Avg"]} />
+                          <Bar dataKey="average" radius={[6, 6, 0, 0]} maxBarSize={28}>
+                            {subjectAvgScores.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.8} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -295,7 +299,7 @@ export default function AdminAnalyticsPage() {
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3 md:mb-4">Average performance across terms</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={termScoreData} margin={{ top: 5, right: 10, bottom: 5, left: -10 }}>
+                      <LineChart data={termScoreData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="term" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={25} />

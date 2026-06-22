@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { AlertTriangle, Clock, ChevronLeft, ChevronRight, Send, AlertCircle } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import { useAntiCheat } from "@/hooks/useAntiCheat"
+import { ExamCalculator } from "@/components/ExamCalculator"
 
 export default function ExamTakePage() {
   const params = useParams()
@@ -24,18 +25,38 @@ export default function ExamTakePage() {
   const [tabWarnings, setTabWarnings] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState<any>(null)
+  const [fullscreenWarned, setFullscreenWarned] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const enterFsRef = useRef<(() => Promise<void>) | null>(null)
 
   const handleTabSwitch = useCallback((count: number) => {
     setTabWarnings(count)
+    if (!exam) return
+    const limit = exam.tabSwitchLimit ?? 3
+    if (limit === 0) return
     if (count === 1) toast.warning("Please do not switch tabs during the exam", { duration: 3000 })
-    if (count >= 3) {
+    if (count >= limit) {
       toast.error("Multiple tab switches detected! Exam will be submitted.", { duration: 5000 })
       handleSubmit(true)
     }
-  }, [])
+  }, [exam])
 
-  const { enterFullscreen } = useAntiCheat({ onTabSwitch: handleTabSwitch, enabled: !submitted })
+  const handleFullscreenExit = useCallback(() => {
+    if (!exam?.requireFullscreen) return
+    if (!fullscreenWarned) {
+      setFullscreenWarned(true)
+      toast.warning("Please stay in fullscreen mode during the exam", { duration: 4000 })
+    }
+    enterFsRef.current?.()
+  }, [exam, fullscreenWarned])
+
+  const { enterFullscreen } = useAntiCheat({
+    onTabSwitch: handleTabSwitch,
+    onFullscreenExit: handleFullscreenExit,
+    enabled: !submitted,
+    allowCopyPaste: exam?.allowCopyPaste ?? false,
+  })
+  enterFsRef.current = enterFullscreen
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,12 +86,13 @@ export default function ExamTakePage() {
           const ansMap: Record<string, string> = {}
           sData.answers?.forEach((a: any) => { ansMap[a.questionId] = a.answer })
           setAnswers(ansMap)
+
+          if (eData.requireFullscreen !== false) enterFullscreen()
         }
       } catch {}
       setLoading(false)
     }
     fetchData()
-    enterFullscreen()
   }, [params.id])
 
   useEffect(() => {
@@ -313,6 +335,8 @@ export default function ExamTakePage() {
           )}
         </div>
       </div>
+
+      <ExamCalculator />
     </div>
   )
 }

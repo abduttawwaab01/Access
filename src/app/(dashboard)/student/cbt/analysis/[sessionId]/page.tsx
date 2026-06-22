@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from "recharts"
 import { ArrowLeft, Clock, Award, Brain, AlertTriangle, Lightbulb, Target, CheckCircle2, XCircle, FileText, DownloadCloud } from "lucide-react"
+import { captureElement } from "@/lib/capture"
 import { toast } from "sonner"
 
 const getGrade = (pct: number) => {
@@ -118,8 +119,7 @@ export default function ExamAnalysisPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+      const canvas = await captureElement(reportRef.current, { scale: 2, backgroundColor: "#ffffff" })
       const link = document.createElement("a")
       link.download = `Exam_Analysis_${exam.title.replace(/\s+/g, "_")}.png`
       link.href = canvas.toDataURL("image/png")

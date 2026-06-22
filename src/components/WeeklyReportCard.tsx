@@ -140,7 +140,7 @@ const WeeklyReportCard = forwardRef<HTMLDivElement, { data: WeeklyReportData }>(
           </table>
           <div className="h-28 mt-3">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                 <XAxis dataKey="subject" tick={{ fontSize: 8 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 8 }} width={20} axisLine={false} tickLine={false} />
                 <Bar dataKey="score" radius={[3, 3, 0, 0]} maxBarSize={20}>

@@ -224,7 +224,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
             <h3 className="font-bold uppercase tracking-wider text-indigo-800" style={{ fontSize: "6.5pt", marginBottom: "2pt" }}>Score Distribution</h3>
             <div style={{ height: chartHeight, minWidth: 0, minHeight: chartHeight }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 2, right: 2, bottom: 2, left: -10 }}>
+                <BarChart data={barData} margin={{ top: 2, right: 2, bottom: 2, left: 0 }}>
                   <XAxis dataKey="subject" tick={{ fontSize: compact ? 5.5 : 6.5, fill: "#6b7280" }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: compact ? 5.5 : 6.5, fill: "#6b7280" }} />
                   <Tooltip contentStyle={{ fontSize: 10 }} formatter={(value: any) => [`${value}%`, "Score"]} />

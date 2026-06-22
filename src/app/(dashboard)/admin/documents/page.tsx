@@ -15,6 +15,7 @@ import {
   FileText, Download, Printer, Plus, FileCheck, ScrollText, Receipt,
   User, Search, Eye, X, Loader2, CheckCircle2, AlertCircle, ImageIcon
 } from "lucide-react"
+import { captureElement } from "@/lib/capture"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { ReceiptTemplate } from "@/components/documents/ReceiptTemplate"
 import { AcceptanceLetterTemplate } from "@/components/documents/AcceptanceLetterTemplate"
@@ -136,8 +137,7 @@ export default function AdminDocumentsPage() {
     if (!previewRef.current) return
     setExporting(doc.id)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true })
+      const canvas = await captureElement(previewRef.current, { scale: 2 })
       const link = document.createElement("a")
       link.download = `${doc.reference}.png`
       link.href = canvas.toDataURL("image/png")
@@ -151,9 +151,8 @@ export default function AdminDocumentsPage() {
     if (!previewRef.current) return
     setExporting(doc.id)
     try {
-      const html2canvas = (await import("html2canvas")).default
+      const canvas = await captureElement(previewRef.current, { scale: 2 })
       const { jsPDF } = await import("jspdf")
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true })
       const imgData = canvas.toDataURL("image/png")
       const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width / 2, canvas.height / 2] })
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2)

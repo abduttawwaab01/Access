@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2, CreditCard, QrCode, Download, Key, Eye, EyeOff, GraduationCap, Plus, Trash2 } from "lucide-react"
+import { captureElement } from "@/lib/capture"
 import { QRCodeSVG } from "qrcode.react"
 import { compressAndUpload } from "@/lib/imageUtils"
 
@@ -486,8 +487,7 @@ function SchoolQRCodeSettings() {
   const handleDownload = async () => {
     if (!qrRef.current) return
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const canvas = await html2canvas(qrRef.current, { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+      const canvas = await captureElement(qrRef.current, { scale: 3, backgroundColor: "#ffffff" })
       const link = document.createElement("a")
       link.download = `${(school?.name || "School").replace(/\s+/g, "_")}_Attendance_QR.png`
       link.href = canvas.toDataURL("image/png")

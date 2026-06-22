@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Play, Clock, FileText, Eye } from "lucide-react"
+import { Plus, Pencil, Trash2, Play, Clock, FileText, Eye, Shield } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 
@@ -28,7 +28,7 @@ export default function TeacherExamsPage() {
   const [filterSubject, setFilterSubject] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "" })
+  const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
 
   const fetchData = async () => {
     const [eRes, sRes, cRes] = await Promise.all([fetch("/api/exams"), fetch("/api/subjects"), fetch("/api/classes")])
@@ -39,8 +39,8 @@ export default function TeacherExamsPage() {
 
   const update = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
 
-  const openCreate = () => { setEditing(null); setForm({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "" }); setSheetOpen(true) }
-  const openEdit = (item: any) => { setEditing(item); setForm({ title: item.title, description: item.description || "", duration: item.duration, shuffleQuestions: item.shuffleQuestions, showResults: item.showResults, subjectId: item.subjectId || "", classId: item.classId || "" }); setSheetOpen(true) }
+  const openCreate = () => { setEditing(null); setForm({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 }); setSheetOpen(true) }
+  const openEdit = (item: any) => { setEditing(item); setForm({ title: item.title, description: item.description || "", duration: item.duration, shuffleQuestions: item.shuffleQuestions, showResults: item.showResults, subjectId: item.subjectId || "", classId: item.classId || "", requireFullscreen: item.requireFullscreen ?? true, tabSwitchLimit: item.tabSwitchLimit ?? 3, allowCopyPaste: item.allowCopyPaste ?? false, maxAttempts: item.maxAttempts ?? 0 }); setSheetOpen(true) }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -179,6 +179,39 @@ export default function TeacherExamsPage() {
           </div>
           <div className="flex items-center justify-between"><Label>Shuffle Questions</Label><Switch checked={form.shuffleQuestions} onCheckedChange={(v) => update("shuffleQuestions", v)} /></div>
           <div className="flex items-center justify-between"><Label>Show Results</Label><Switch checked={form.showResults} onCheckedChange={(v) => update("showResults", v)} /></div>
+
+          <div className="border-t pt-4 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Security Settings</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Require Fullscreen</Label>
+                  <p className="text-xs text-muted-foreground">Locks student into fullscreen during exam</p>
+                </div>
+                <Switch checked={form.requireFullscreen} onCheckedChange={(v) => update("requireFullscreen", v)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Allow Copy & Paste</Label>
+                  <p className="text-xs text-muted-foreground">Permit copy/paste operations during exam</p>
+                </div>
+                <Switch checked={form.allowCopyPaste} onCheckedChange={(v) => update("allowCopyPaste", v)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Tab Switch Limit</Label>
+                <p className="text-xs text-muted-foreground">Auto-submit after this many tab switches (0 = unlimited)</p>
+                <Input type="number" min={0} max={20} value={form.tabSwitchLimit} onChange={(e) => update("tabSwitchLimit", parseInt(e.target.value) || 0)} className="h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label>Max Attempts Per Student</Label>
+                <p className="text-xs text-muted-foreground">0 = unlimited attempts</p>
+                <Input type="number" min={0} max={99} value={form.maxAttempts} onChange={(e) => update("maxAttempts", parseInt(e.target.value) || 0)} className="h-12" />
+              </div>
+            </div>
+          </div>
           <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">{editing ? "Update" : "Create"}</Button>
         </form>
       </FormSheet>

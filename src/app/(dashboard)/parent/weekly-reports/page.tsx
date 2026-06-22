@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { FileText, Star, Download, DownloadCloud, Send, Printer, Calendar, ChevronDown, ChevronRight } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { captureElement } from "@/lib/capture"
 import { useParentChildren } from "@/hooks/useParentChildren"
 import { EmptyState } from "@/components/admin/EmptyState"
 import WeeklyReportCard from "@/components/WeeklyReportCard"
@@ -84,11 +85,10 @@ export default function ParentWeeklyReportsPage() {
     setPreviewReport(report)
     await new Promise((r) => setTimeout(r, 300))
     try {
-      const html2canvas = (await import("html2canvas")).default
       const { jsPDF } = await import("jspdf")
       const el = document.getElementById("weekly-report-preview")
       if (!el) return
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true })
+      const canvas = await captureElement(el, { scale: 2 })
       const imgData = canvas.toDataURL("image/png")
       const pdf = new jsPDF("p", "mm", "a4")
       const pdfWidth = 210
@@ -108,10 +108,9 @@ export default function ParentWeeklyReportsPage() {
     setPreviewReport(report)
     await new Promise((r) => setTimeout(r, 300))
     try {
-      const html2canvas = (await import("html2canvas")).default
       const el = document.getElementById("weekly-report-preview")
       if (!el) return
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true })
+      const canvas = await captureElement(el, { scale: 2 })
       const link = document.createElement("a")
       link.download = `Weekly_Report_${report.studentName.replace(/\s+/g, "_")}_Week${report.week}.png`
       link.href = canvas.toDataURL("image/png")

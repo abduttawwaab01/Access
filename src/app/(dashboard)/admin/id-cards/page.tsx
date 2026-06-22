@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Search, Download, Printer, Users, GraduationCap, RefreshCw, Edit3, Eye, EyeOff, ArrowLeft, QrCode, RotateCw, FileDown } from "lucide-react"
+import { captureElement } from "@/lib/capture"
 import { StudentIDCardFront } from "@/components/id-card/StudentIDCardFront"
 import { StudentIDCardBack } from "@/components/id-card/StudentIDCardBack"
 import { StaffIDCardFront } from "@/components/id-card/StaffIDCardFront"
@@ -60,8 +61,7 @@ export default function AdminIDCardsPage() {
   const exportSingleCard = async (format: "png" | "pdf") => {
     if (!cardRef.current) return
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const canvas = await html2canvas(cardRef.current, { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+      const canvas = await captureElement(cardRef.current, { scale: 3, backgroundColor: "#ffffff" })
       const imgData = canvas.toDataURL("image/png")
       const name = tab === "students" && selectedStudent
         ? `${selectedStudent.firstName}_${selectedStudent.lastName}_ID`
@@ -88,7 +88,6 @@ export default function AdminIDCardsPage() {
   const handleBulkExport = async () => {
     setBulkExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
       const { jsPDF } = await import("jspdf")
       const list = tab === "students" ? filteredStudents : filteredStaff
       const slug = tab === "students" ? "Student" : "Staff"
@@ -111,7 +110,7 @@ export default function AdminIDCardsPage() {
           : `<div>${renderStaffCardHTML(item, school)}</div>`
         document.body.appendChild(container)
 
-        const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true })
+        const canvas = await captureElement(container, { scale: 2, backgroundColor: "#ffffff" })
         document.body.removeChild(container)
 
         const imgData = canvas.toDataURL("image/png")
