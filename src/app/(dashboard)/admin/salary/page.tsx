@@ -95,116 +95,120 @@ export default function AdminSalaryPage() {
         ))}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="structures" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-4 w-4 mr-1" /> Salary Structures</TabsTrigger>
           <TabsTrigger value="payroll" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Wallet className="h-4 w-4 mr-1" /> Payroll</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="structures" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4 space-y-3">
-              {staff.map((s) => {
-                const struct = getSalaryStructure(s.id)
-                const isEditing = editingStaff === s.id
-                return (
-                  <Card key={s.id} className="border border-border/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <Avatar className="h-10 w-10 shrink-0"><AvatarFallback>{s.firstName[0]}{s.lastName[0]}</AvatarFallback></Avatar>
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{s.firstName} {s.lastName}</p>
-                            <p className="text-xs text-muted-foreground truncate">{s.role} • {s.department}</p>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => startEdit(s.id)} className="shrink-0"><Edit3 className="h-4 w-4" /></Button>
-                      </div>
-                      {isEditing ? (
-                        <div className="mt-4 space-y-3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div><label className="text-xs text-muted-foreground">Base Salary (₦)</label><Input type="number" value={editForm.baseSalary} onChange={(e) => setEditForm({ ...editForm, baseSalary: e.target.value })} /></div>
-                            <div><label className="text-xs text-muted-foreground">Bank Name</label><Input value={editForm.bankName} onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })} /></div>
-                            <div><label className="text-xs text-muted-foreground">Account Number</label><Input value={editForm.accountNumber} onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })} /></div>
-                            <div><label className="text-xs text-muted-foreground">Account Name</label><Input value={editForm.accountName} onChange={(e) => setEditForm({ ...editForm, accountName: e.target.value })} /></div>
-                          </div>
-                          <Button size="sm" onClick={() => saveSalaryStructure(s.id)}>Save</Button>
-                        </div>
-                      ) : struct ? (
-                        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                          <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Base</span><p className="font-bold">₦{struct.baseSalary}</p></div>
-                          <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Bank</span><p className="font-bold">{struct.bankName}</p></div>
-                          <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Account</span><p className="font-bold font-mono">{struct.accountNumber}</p></div>
-                          <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Name</span><p className="font-bold truncate">{struct.accountName}</p></div>
-                        </div>
-                      ) : (
-                        <div className="mt-3"><Button size="sm" variant="outline" onClick={() => startEdit(s.id)}>Set Salary</Button></div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="payroll" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="font-semibold">{currentMonth} {currentYear} Payroll</h3>
-            <Button onClick={initializeMonthlyPayroll}><Plus className="h-4 w-4 mr-1" /> Initialize Payroll</Button>
-          </div>
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4">
-              {salaryRecords.filter((r) => r.month === currentMonth && r.year === currentYear).length === 0 ? (
-                <EmptyState title="No payroll records" description="Click 'Initialize Payroll' to generate salary records for this month" />
-              ) : (
-                <div className="space-y-2">
-                  {salaryRecords.filter((r) => r.month === currentMonth && r.year === currentYear).map((rec) => {
-                    const s = staff.find((st) => st.id === rec.staffId)
-                    return (
-                      <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 flex-wrap gap-2">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-xs">{s ? `${s.firstName[0]}${s.lastName[0]}` : "?"}</AvatarFallback></Avatar>
-                          <div className="min-w-0"><p className="text-sm font-medium truncate">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <p className="font-mono font-bold">₦{(rec.amount ?? 0).toLocaleString()}</p>
-                          {rec.status === "paid" ? (
-                            <Badge className="bg-green-500/15 text-green-600 shrink-0"><CheckCircle2 className="h-3 w-3 mr-1" /> Paid</Badge>
-                          ) : (
-                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => markPaid(rec.id)}><CheckCircle2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Mark Paid</span></Button>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4">
-              <h4 className="font-semibold mb-3">Payment History</h4>
-              {salaryRecords.filter((r) => r.status === "paid").length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No completed payments</p>
-              ) : (
-                <div className="space-y-2">
-                  {salaryRecords.filter((r) => r.status === "paid").slice().reverse().map((rec) => {
-                    const s = staff.find((st) => st.id === rec.staffId)
-                    return (
-                      <div key={rec.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 text-xs">
-                        <span>{s ? `${s.firstName} ${s.lastName}` : rec.staffId} - {rec.month} {rec.year}</span>
-                        <span className="font-mono font-bold">₦{rec.amount} <Badge className="bg-green-500/15 text-green-600 text-[10px]">Paid</Badge></span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {activeTab === "structures" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 space-y-3">
+            {staff.map((s) => {
+              const struct = getSalaryStructure(s.id)
+              const isEditing = editingStaff === s.id
+              return (
+                <Card key={s.id} className="border border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar className="h-10 w-10 shrink-0"><AvatarFallback>{s.firstName[0]}{s.lastName[0]}</AvatarFallback></Avatar>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{s.firstName} {s.lastName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{s.role} • {s.department}</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(s.id)} className="shrink-0"><Edit3 className="h-4 w-4" /></Button>
+                    </div>
+                    {isEditing ? (
+                      <div className="mt-4 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div><label className="text-xs text-muted-foreground">Base Salary (₦)</label><Input type="number" value={editForm.baseSalary} onChange={(e) => setEditForm({ ...editForm, baseSalary: e.target.value })} /></div>
+                          <div><label className="text-xs text-muted-foreground">Bank Name</label><Input value={editForm.bankName} onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })} /></div>
+                          <div><label className="text-xs text-muted-foreground">Account Number</label><Input value={editForm.accountNumber} onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })} /></div>
+                          <div><label className="text-xs text-muted-foreground">Account Name</label><Input value={editForm.accountName} onChange={(e) => setEditForm({ ...editForm, accountName: e.target.value })} /></div>
+                        </div>
+                        <Button size="sm" onClick={() => saveSalaryStructure(s.id)}>Save</Button>
+                      </div>
+                    ) : struct ? (
+                      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Base</span><p className="font-bold">₦{struct.baseSalary}</p></div>
+                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Bank</span><p className="font-bold">{struct.bankName}</p></div>
+                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Account</span><p className="font-bold font-mono">{struct.accountNumber}</p></div>
+                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Name</span><p className="font-bold truncate">{struct.accountName}</p></div>
+                      </div>
+                    ) : (
+                      <div className="mt-3"><Button size="sm" variant="outline" onClick={() => startEdit(s.id)}>Set Salary</Button></div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {activeTab === "payroll" && (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-semibold">{currentMonth} {currentYear} Payroll</h3>
+          <Button onClick={initializeMonthlyPayroll}><Plus className="h-4 w-4 mr-1" /> Initialize Payroll</Button>
+        </div>
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4">
+            {salaryRecords.filter((r) => r.month === currentMonth && r.year === currentYear).length === 0 ? (
+              <EmptyState title="No payroll records" description="Click 'Initialize Payroll' to generate salary records for this month" />
+            ) : (
+              <div className="space-y-2">
+                {salaryRecords.filter((r) => r.month === currentMonth && r.year === currentYear).map((rec) => {
+                  const s = staff.find((st) => st.id === rec.staffId)
+                  return (
+                    <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 flex-wrap gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-xs">{s ? `${s.firstName[0]}${s.lastName[0]}` : "?"}</AvatarFallback></Avatar>
+                        <div className="min-w-0"><p className="text-sm font-medium truncate">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p className="font-mono font-bold">₦{(rec.amount ?? 0).toLocaleString()}</p>
+                        {rec.status === "paid" ? (
+                          <Badge className="bg-green-500/15 text-green-600 shrink-0"><CheckCircle2 className="h-3 w-3 mr-1" /> Paid</Badge>
+                        ) : (
+                          <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => markPaid(rec.id)}><CheckCircle2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Mark Paid</span></Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4">
+            <h4 className="font-semibold mb-3">Payment History</h4>
+            {salaryRecords.filter((r) => r.status === "paid").length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No completed payments</p>
+            ) : (
+              <div className="space-y-2">
+                {salaryRecords.filter((r) => r.status === "paid").slice().reverse().map((rec) => {
+                  const s = staff.find((st) => st.id === rec.staffId)
+                  return (
+                    <div key={rec.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 text-xs">
+                      <span>{s ? `${s.firstName} ${s.lastName}` : rec.staffId} - {rec.month} {rec.year}</span>
+                      <span className="font-mono font-bold">₦{rec.amount} <Badge className="bg-green-500/15 text-green-600 text-[10px]">Paid</Badge></span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      )}
     </div>
   )
 }

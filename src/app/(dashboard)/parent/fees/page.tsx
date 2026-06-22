@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { Building, Wallet, CheckCircle2, Clock, AlertTriangle, Copy, ExternalLink } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -70,49 +70,53 @@ export default function ParentFeesPage() {
         </Card>
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Wallet className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Clock className="h-4 w-4 mr-1" /> History</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="mt-4">
-          <Card className="border-0 glass-card"><CardContent className="p-4 space-y-4">
-            <h3 className="font-semibold">Fee Breakdown</h3>
-            {dueStructures.length === 0 ? <EmptyState title="No fees" description="No fee structures for your children's classes" /> : (
-              <div className="space-y-3">
-                {dueStructures.map((fs) => {
-                  const paid = myPayments.filter((p) => {
-                    const student = students.find((s) => s.id === p.studentId && s.classId === fs.classId)
-                    return student && (p.feeStructureId === fs.id || p.status === "confirmed")
-                  }).reduce((s, p) => s + p.amount, 0)
-                  return (
-                    <div key={fs.id} className="p-3 rounded-xl bg-muted/30">
-                    <div className="flex justify-between gap-2 mb-1"><span className="text-sm font-medium truncate">{fs.type}</span><span className="text-sm font-mono font-bold shrink-0">₦{fs.amount}</span></div>
-                    <div className="flex justify-between gap-2 text-xs text-muted-foreground"><span className="truncate">{fs.term} &bull; Due: {fs.dueDate}</span><span className="text-green-600 shrink-0">₦{paid} paid</span></div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent></Card>
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          <Card className="border-0 glass-card"><CardContent className="p-4">
-            {myPayments.length === 0 ? <EmptyState title="No payments" description="Payment history will appear here" /> : (
-              <div className="space-y-2">
-                {myPayments.slice().reverse().map((p) => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                    <div><p className="text-sm font-medium">{getStudentName(p.studentId)}</p><p className="text-xs text-muted-foreground">{p.reference} &bull; ₦{p.amount} &bull; {p.method}</p></div>
-                    <Badge className={p.status === "confirmed" ? "bg-green-500/15 text-green-600" : p.status === "pending" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}>{p.status}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent></Card>
-        </TabsContent>
       </Tabs>
+
+      {activeTab === "overview" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card"><CardContent className="p-4 space-y-4">
+          <h3 className="font-semibold">Fee Breakdown</h3>
+          {dueStructures.length === 0 ? <EmptyState title="No fees" description="No fee structures for your children's classes" /> : (
+            <div className="space-y-3">
+              {dueStructures.map((fs) => {
+                const paid = myPayments.filter((p) => {
+                  const student = students.find((s) => s.id === p.studentId && s.classId === fs.classId)
+                  return student && (p.feeStructureId === fs.id || p.status === "confirmed")
+                }).reduce((s, p) => s + p.amount, 0)
+                return (
+                  <div key={fs.id} className="p-3 rounded-xl bg-muted/30">
+                  <div className="flex justify-between gap-2 mb-1"><span className="text-sm font-medium truncate">{fs.type}</span><span className="text-sm font-mono font-bold shrink-0">₦{fs.amount}</span></div>
+                  <div className="flex justify-between gap-2 text-xs text-muted-foreground"><span className="truncate">{fs.term} &bull; Due: {fs.dueDate}</span><span className="text-green-600 shrink-0">₦{paid} paid</span></div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent></Card>
+      </div>
+      )}
+
+      {activeTab === "history" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card"><CardContent className="p-4">
+          {myPayments.length === 0 ? <EmptyState title="No payments" description="Payment history will appear here" /> : (
+            <div className="space-y-2">
+              {myPayments.slice().reverse().map((p) => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                  <div><p className="text-sm font-medium">{getStudentName(p.studentId)}</p><p className="text-xs text-muted-foreground">{p.reference} &bull; ₦{p.amount} &bull; {p.method}</p></div>
+                  <Badge className={p.status === "confirmed" ? "bg-green-500/15 text-green-600" : p.status === "pending" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}>{p.status}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent></Card>
+      </div>
+      )}
     </div>
   )
 }

@@ -220,149 +220,157 @@ export default function AdminAttendancePage() {
         ))}
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="scanner" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><QrCode className="h-4 w-4 mr-1" /> QR Scanner</TabsTrigger>
           <TabsTrigger value="manual" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
           <TabsTrigger value="logs" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today's Logs</TabsTrigger>
           <TabsTrigger value="codes" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Shield className="h-4 w-4 mr-1" /> QR Codes</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="scanner" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4 space-y-4">
-              {!scanning && !scanned && (
-                <div className="text-center py-8">
-                  <div className="flex justify-center mb-4">
-                    <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20">
-                      <Camera className="h-10 w-10 text-primary" />
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">Scan a student ID QR code or school entry QR code</p>
-                  <Button onClick={startScanner} className="animated-gradient border-0 text-white">
-                    <Scan className="h-4 w-4 mr-2" /> Start Scanner
-                  </Button>
-                </div>
-              )}
-
-              {scanning && (
-                <div>
-                  <div id="qr-reader" className="w-full max-w-sm mx-auto rounded-xl overflow-hidden" />
-                  <div className="text-center mt-4">
-                    <Button variant="outline" onClick={() => { setScanning(false) }}>Stop Scanner</Button>
-                  </div>
-                </div>
-              )}
-
-              {scanned && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4">
-                  <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                  <p className="font-semibold">QR Code Scanned</p>
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">{scanned}</p>
-                  <div className="flex gap-2 justify-center mt-4">
-                    <Button variant="outline" onClick={() => setScanned(null)}>Scan Again</Button>
-                  </div>
-                </motion.div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Face Recognition Placeholder */}
-          <Card className="border-0 glass-card mt-4">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-purple-500/15 text-purple-600">
-                  <Camera className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Face Recognition</p>
-                  <p className="text-xs text-muted-foreground">AI-powered identity verification</p>
-                </div>
-              </div>
-              <Badge className="bg-amber-500/15 text-amber-600">Coming Soon</Badge>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="manual" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4 space-y-4">
-              <p className="text-sm text-muted-foreground">Enter a student ID code or staff code to mark attendance</p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input placeholder="Enter QR code (e.g. STU-ALICE-001)" value={manualCode} onChange={(e) => setManualCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleManualCheckIn()} />
-                <Button onClick={handleManualCheckIn} className="shrink-0"><Search className="h-4 w-4 mr-1" /> Find</Button>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground">Quick codes:</p>
-                {qrCodes.map((qr) => (
-                  <Button key={qr.id} variant="outline" size="sm" className="mr-2 mb-1" onClick={() => { setManualCode(qr.code) }}>
-                    {qr.code}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="logs" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4">
-              {logs.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">No attendance logs yet</div>
-              ) : (
-                <div className="space-y-2">
-                  {logs.slice().reverse().map((log) => (
-                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">{getUserName(log.userId, log.userType).split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{getUserName(log.userId, log.userType)}</p>
-                          <p className="text-xs text-muted-foreground">{log.date} at {log.time} via {log.method}</p>
-                        </div>
-                      </div>
-                      <Badge className={log.status === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{log.status}</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="codes" className="mt-4 space-y-4">
-          <SchoolQRCodeDownload />
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4 space-y-4">
-              <h3 className="font-semibold text-sm flex items-center gap-2"><QrCode className="h-4 w-4" /> Attendance QR Codes</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {qrCodes.map((qr) => (
-                  <Card key={qr.id} className="border border-border/50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10">
-                          <QrCode className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium capitalize">{qr.type.replace("_", " ")} QR</p>
-                          <p className="text-xs text-muted-foreground font-mono">{qr.code}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-center p-4 bg-white rounded-xl">
-                        <QRCodeSVG value={qr.code} size={120} level="M" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {qrCodes.length === 0 && (
-                  <div className="col-span-full text-center py-8 text-sm text-muted-foreground">No QR codes generated yet</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {activeTab === "scanner" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 space-y-4">
+            {!scanning && !scanned && (
+              <div className="text-center py-8">
+                <div className="flex justify-center mb-4">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20">
+                    <Camera className="h-10 w-10 text-primary" />
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">Scan a student ID QR code or school entry QR code</p>
+                <Button onClick={startScanner} className="animated-gradient border-0 text-white">
+                  <Scan className="h-4 w-4 mr-2" /> Start Scanner
+                </Button>
+              </div>
+            )}
+
+            {scanning && (
+              <div>
+                <div id="qr-reader" className="w-full max-w-sm mx-auto rounded-xl overflow-hidden" />
+                <div className="text-center mt-4">
+                  <Button variant="outline" onClick={() => { setScanning(false) }}>Stop Scanner</Button>
+                </div>
+              </div>
+            )}
+
+            {scanned && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                <p className="font-semibold">QR Code Scanned</p>
+                <p className="text-xs text-muted-foreground mt-1 font-mono">{scanned}</p>
+                <div className="flex gap-2 justify-center mt-4">
+                  <Button variant="outline" onClick={() => setScanned(null)}>Scan Again</Button>
+                </div>
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Face Recognition Placeholder */}
+        <Card className="border-0 glass-card mt-4">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-purple-500/15 text-purple-600">
+                <Camera className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Face Recognition</p>
+                <p className="text-xs text-muted-foreground">AI-powered identity verification</p>
+              </div>
+            </div>
+            <Badge className="bg-amber-500/15 text-amber-600">Coming Soon</Badge>
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {activeTab === "manual" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 space-y-4">
+            <p className="text-sm text-muted-foreground">Enter a student ID code or staff code to mark attendance</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input placeholder="Enter QR code (e.g. STU-ALICE-001)" value={manualCode} onChange={(e) => setManualCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleManualCheckIn()} />
+              <Button onClick={handleManualCheckIn} className="shrink-0"><Search className="h-4 w-4 mr-1" /> Find</Button>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Quick codes:</p>
+              {qrCodes.map((qr) => (
+                <Button key={qr.id} variant="outline" size="sm" className="mr-2 mb-1" onClick={() => { setManualCode(qr.code) }}>
+                  {qr.code}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {activeTab === "logs" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4">
+            {logs.length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">No attendance logs yet</div>
+            ) : (
+              <div className="space-y-2">
+                {logs.slice().reverse().map((log) => (
+                  <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs">{getUserName(log.userId, log.userType).split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{getUserName(log.userId, log.userType)}</p>
+                        <p className="text-xs text-muted-foreground">{log.date} at {log.time} via {log.method}</p>
+                      </div>
+                    </div>
+                    <Badge className={log.status === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{log.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {activeTab === "codes" && (
+      <div className="mt-4 space-y-4">
+        <SchoolQRCodeDownload />
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 space-y-4">
+            <h3 className="font-semibold text-sm flex items-center gap-2"><QrCode className="h-4 w-4" /> Attendance QR Codes</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {qrCodes.map((qr) => (
+                <Card key={qr.id} className="border border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10">
+                        <QrCode className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium capitalize">{qr.type.replace("_", " ")} QR</p>
+                        <p className="text-xs text-muted-foreground font-mono">{qr.code}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center p-4 bg-white rounded-xl">
+                      <QRCodeSVG value={qr.code} size={120} level="M" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {qrCodes.length === 0 && (
+                <div className="col-span-full text-center py-8 text-sm text-muted-foreground">No QR codes generated yet</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      )}
     </div>
   )
 }

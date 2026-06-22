@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -166,16 +166,17 @@ export default function TeacherAnalyticsPage() {
         ))}
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="trends" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]: data-[state=active]:text-white">Trends</TabsTrigger>
           <TabsTrigger value="comparison" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]: data-[state=active]:text-white">Comparison</TabsTrigger>
           <TabsTrigger value="engagement" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]: data-[state=active]:text-white">Engagement</TabsTrigger>
           <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]: data-[state=active]:text-white">Insights</TabsTrigger>
         </TabsList>
+      </Tabs>
 
-        {activeTab === "trends" && (
-        <TabsContent value="trends" className="space-y-6 mt-0">
+      {activeTab === "trends" && (
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="glass-card border-0">
@@ -235,11 +236,11 @@ export default function TeacherAnalyticsPage() {
               </Card>
             </motion.div>
           </div>
-        </TabsContent>
-        )}
+      </div>
+      )}
 
-        {activeTab === "comparison" && (
-        <TabsContent value="comparison" className="space-y-6 mt-0">
+      {activeTab === "comparison" && (
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="glass-card border-0">
@@ -307,11 +308,11 @@ export default function TeacherAnalyticsPage() {
               </CardContent>
             </Card>
           </motion.div>
-        </TabsContent>
-        )}
+      </div>
+      )}
 
-        {activeTab === "engagement" && (
-        <TabsContent value="engagement" className="space-y-6 mt-0">
+      {activeTab === "engagement" && (
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="glass-card border-0">
@@ -367,11 +368,11 @@ export default function TeacherAnalyticsPage() {
               </Card>
             </motion.div>
           </div>
-        </TabsContent>
-        )}
+      </div>
+      )}
 
-        {activeTab === "insights" && (
-        <TabsContent value="insights" className="space-y-6 mt-0">
+      {activeTab === "insights" && (
+      <div className="space-y-6">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <Card className="glass-card border-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
               <CardContent className="p-4 md:p-6">
@@ -431,9 +432,8 @@ export default function TeacherAnalyticsPage() {
               </CardContent>
             </Card>
           </motion.div>
-        </TabsContent>
-        )}
-      </Tabs>
+      </div>
+      )}
     </div>
   )
 }

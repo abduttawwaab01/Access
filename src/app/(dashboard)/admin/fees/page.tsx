@@ -124,145 +124,151 @@ export default function AdminFeesPage() {
         ))}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
           <TabsTrigger value="bank" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Building className="h-4 w-4 mr-1" /> Bank Details</TabsTrigger>
           <TabsTrigger value="structures" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Landmark className="h-4 w-4 mr-1" /> Fee Structures</TabsTrigger>
           <TabsTrigger value="confirmations" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><CheckCircle2 className="h-4 w-4 mr-1" /> Confirm Payments {pendingCount > 0 && <Badge className="ml-1 bg-red-500 text-white text-[10px] px-1 py-0">{pendingCount}</Badge>}</TabsTrigger>
         </TabsList>
-
-        {activeTab === "overview" && (
-        <TabsContent value="overview" className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="border-0 glass-card"><CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Collection Rate</h3>
-              <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white shrink-0"><div><p className="text-xl font-bold">{collectionRate}%</p></div></div>
-                <div className="space-y-2 w-full sm:flex-1"><Progress value={collectionRate} className="h-3" /><div className="flex justify-between text-xs text-muted-foreground"><span>₦{(totalCollected / 1e6).toFixed(1)}M collected</span><span>₦{(outstanding / 1e6).toFixed(1)}M outstanding</span></div></div>
-              </div>
-              <div className="h-48 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%" minHeight={200}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={4} dataKey="value">{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-            </CardContent></Card>
-            <Card className="border-0 glass-card"><CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Per Class Breakdown</h3>
-              <div className="h-48 md:h-56 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%" minHeight={200}><BarChart data={barData}><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="expected" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Expected" /><Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="Paid" /></BarChart></ResponsiveContainer></div>
-            </CardContent></Card>
-          </div>
-        </TabsContent>
-        )}
-
-        <TabsContent value="bank" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="font-semibold">School Bank Details</h3>
-                <Button variant="outline" size="sm" onClick={() => setShowBankForm(!showBankForm)}><Edit3 className="h-4 w-4 mr-1" /> Edit</Button>
-              </div>
-              {showBankForm ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div><label className="text-xs text-muted-foreground">Bank Name</label><Input value={bankForm.bankName} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground">Account Name</label><Input value={bankForm.accountName} onChange={(e) => setBankForm({ ...bankForm, accountName: e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground">Account Number</label><Input value={bankForm.accountNumber} onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })} /></div>
-                    <div><label className="text-xs text-muted-foreground">Swift Code</label><Input value={bankForm.swiftCode} onChange={(e) => setBankForm({ ...bankForm, swiftCode: e.target.value })} /></div>
-                    <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Branch</label><Input value={bankForm.branch} onChange={(e) => setBankForm({ ...bankForm, branch: e.target.value })} /></div>
-                  </div>
-                  <Button size="sm" onClick={saveBankDetails}>Save Bank Details</Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[{ label: "Bank Name", value: bankDetails?.bankName }, { label: "Account Name", value: bankDetails?.accountName }, { label: "Account Number", value: bankDetails?.accountNumber }, { label: "Swift Code", value: bankDetails?.swiftCode }].map((d) => (
-                    <div key={d.label} className="rounded-xl bg-muted/30 p-3 min-w-0"><p className="text-[10px] text-muted-foreground">{d.label}</p><p className="text-sm font-mono font-bold mt-0.5 truncate">{d.value}</p></div>
-                  ))}
-                </div>
-              )}
-              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 p-3 text-xs">
-                <strong>Instructions:</strong> Parents will see these bank details on their portal. They make transfers and enter the reference number. Admin confirms receipt here.
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="structures" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4 space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="font-semibold">Fee Structures</h3>
-                <Button size="sm" onClick={() => setShowFeeForm(!showFeeForm)}><Plus className="h-4 w-4 mr-1" /> Add Fee</Button>
-              </div>
-              {showFeeForm && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/30">
-                  <div><label className="text-xs">Class</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.classId} onChange={(e) => setFeeForm({ ...feeForm, classId: e.target.value })}>{classes.map((c) => <option key={c.id} value={c.id}>{c.name} {c.arm}</option>)}</select></div>
-                  <div><label className="text-xs">Type</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.type} onChange={(e) => setFeeForm({ ...feeForm, type: e.target.value })}>{["Tuition", "Transport", "Hostel", "Lab Fee", "Sports", "ICT", "Library", "Development Levy"].map((t) => <option key={t}>{t}</option>)}</select></div>
-                  <div><label className="text-xs">Amount (₦)</label><Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} /></div>
-                  <div><label className="text-xs">Term</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.term} onChange={(e) => setFeeForm({ ...feeForm, term: e.target.value })}>{["First Term", "Second Term", "Third Term"].map((t) => <option key={t}>{t}</option>)}</select></div>
-                  <div><label className="text-xs">Due Date</label><Input type="date" value={feeForm.dueDate} onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })} /></div>
-                  <div className="flex items-end"><Button size="sm" onClick={saveFeeStructure}>Save</Button></div>
-                </div>
-              )}
-              {feeStructures.length === 0 ? <EmptyState title="No fee structures" description="Add fees for each class and term" /> : (
-                <div className="space-y-2">
-                  {feeStructures.map((fs) => (
-                    <div key={fs.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Wallet className="h-4 w-4 text-primary" /></div>
-                        <div className="min-w-0"><p className="text-sm font-medium truncate">{fs.type} - {getClassName(fs.classId)}</p><p className="text-xs text-muted-foreground">{fs.term} • Due: {fs.dueDate}</p></div>
-                      </div>
-                      <p className="text-sm font-mono font-bold shrink-0 ml-2">₦{(fs.amount ?? 0).toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="confirmations" className="mt-4">
-          <Card className="border-0 glass-card">
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Pending Payment Confirmations</h3>
-              {payments.filter((p) => p.status === "pending").length === 0 ? (
-                <EmptyState title="No pending payments" description="All payments have been confirmed" />
-              ) : (
-                <div className="space-y-3">
-                  {payments.filter((p) => p.status === "pending").map((p) => (
-                    <Card key={p.id} className="border-0 bg-amber-50/50 dark:bg-amber-950/10">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2"><p className="text-sm font-medium">{getStudentName(p.studentId)}</p><Badge className="bg-amber-500/15 text-amber-600 shrink-0">Pending</Badge></div>
-                            <p className="text-xs text-muted-foreground mt-1 break-words">Ref: {p.reference} • {p.method} • {new Date(p.paidAt).toLocaleString()}</p>
-                            <p className="text-lg font-bold mt-1 font-mono">₦{(p.amount ?? 0).toLocaleString()}</p>
-                          </div>
-                          <div className="flex gap-1.5 shrink-0">
-                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 sm:flex-initial" onClick={() => confirmPayment(p.id)}><CheckCircle2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Confirm</span></Button>
-                            <Button size="sm" variant="outline" className="text-red-500 border-red-200 flex-1 sm:flex-initial" onClick={() => rejectPayment(p.id)}><XCircle className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Reject</span></Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              <h3 className="font-semibold mt-6 mb-3">All Payments</h3>
-              {payments.length === 0 ? <EmptyState title="No payments" description="Payments will appear here" /> : (
-                <div className="space-y-2">
-                  {payments.slice().reverse().map((p) => {
-                    const student = students.find((s) => s.id === p.studentId)
-                    return (
-                      <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 gap-2">
-                        <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{student ? `${student.firstName} ${student.lastName}` : p.studentId}</p><p className="text-xs text-muted-foreground truncate">{p.reference} • {p.method}</p></div>
-                        <div className="text-right shrink-0"><p className="text-sm font-mono font-bold">₦{(p.amount ?? 0).toLocaleString()}</p><Badge className={cn(p.status === "confirmed" ? "bg-green-500/15 text-green-600" : p.status === "pending" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600")}>{p.status}</Badge></div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {activeTab === "overview" && (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-0 glass-card"><CardContent className="p-4">
+            <h3 className="font-semibold mb-3">Collection Rate</h3>
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white shrink-0"><div><p className="text-xl font-bold">{collectionRate}%</p></div></div>
+              <div className="space-y-2 w-full sm:flex-1"><Progress value={collectionRate} className="h-3" /><div className="flex justify-between text-xs text-muted-foreground"><span>₦{(totalCollected / 1e6).toFixed(1)}M collected</span><span>₦{(outstanding / 1e6).toFixed(1)}M outstanding</span></div></div>
+            </div>
+            <div className="h-48 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%" minHeight={200}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={4} dataKey="value">{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+          </CardContent></Card>
+          <Card className="border-0 glass-card"><CardContent className="p-4">
+            <h3 className="font-semibold mb-3">Per Class Breakdown</h3>
+            <div className="h-48 md:h-56 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%" minHeight={200}><BarChart data={barData}><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="expected" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Expected" /><Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="Paid" /></BarChart></ResponsiveContainer></div>
+          </CardContent></Card>
+        </div>
+      </div>
+      )}
+
+      {activeTab === "bank" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="font-semibold">School Bank Details</h3>
+              <Button variant="outline" size="sm" onClick={() => setShowBankForm(!showBankForm)}><Edit3 className="h-4 w-4 mr-1" /> Edit</Button>
+            </div>
+            {showBankForm ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><label className="text-xs text-muted-foreground">Bank Name</label><Input value={bankForm.bankName} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Account Name</label><Input value={bankForm.accountName} onChange={(e) => setBankForm({ ...bankForm, accountName: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Account Number</label><Input value={bankForm.accountNumber} onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Swift Code</label><Input value={bankForm.swiftCode} onChange={(e) => setBankForm({ ...bankForm, swiftCode: e.target.value })} /></div>
+                  <div className="sm:col-span-2"><label className="text-xs text-muted-foreground">Branch</label><Input value={bankForm.branch} onChange={(e) => setBankForm({ ...bankForm, branch: e.target.value })} /></div>
+                </div>
+                <Button size="sm" onClick={saveBankDetails}>Save Bank Details</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[{ label: "Bank Name", value: bankDetails?.bankName }, { label: "Account Name", value: bankDetails?.accountName }, { label: "Account Number", value: bankDetails?.accountNumber }, { label: "Swift Code", value: bankDetails?.swiftCode }].map((d) => (
+                  <div key={d.label} className="rounded-xl bg-muted/30 p-3 min-w-0"><p className="text-[10px] text-muted-foreground">{d.label}</p><p className="text-sm font-mono font-bold mt-0.5 truncate">{d.value}</p></div>
+                ))}
+              </div>
+            )}
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 p-3 text-xs">
+              <strong>Instructions:</strong> Parents will see these bank details on their portal. They make transfers and enter the reference number. Admin confirms receipt here.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {activeTab === "structures" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="font-semibold">Fee Structures</h3>
+              <Button size="sm" onClick={() => setShowFeeForm(!showFeeForm)}><Plus className="h-4 w-4 mr-1" /> Add Fee</Button>
+            </div>
+            {showFeeForm && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/30">
+                <div><label className="text-xs">Class</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.classId} onChange={(e) => setFeeForm({ ...feeForm, classId: e.target.value })}>{classes.map((c) => <option key={c.id} value={c.id}>{c.name} {c.arm}</option>)}</select></div>
+                <div><label className="text-xs">Type</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.type} onChange={(e) => setFeeForm({ ...feeForm, type: e.target.value })}>{["Tuition", "Transport", "Hostel", "Lab Fee", "Sports", "ICT", "Library", "Development Levy"].map((t) => <option key={t}>{t}</option>)}</select></div>
+                <div><label className="text-xs">Amount (₦)</label><Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} /></div>
+                <div><label className="text-xs">Term</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.term} onChange={(e) => setFeeForm({ ...feeForm, term: e.target.value })}>{["First Term", "Second Term", "Third Term"].map((t) => <option key={t}>{t}</option>)}</select></div>
+                <div><label className="text-xs">Due Date</label><Input type="date" value={feeForm.dueDate} onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })} /></div>
+                <div className="flex items-end"><Button size="sm" onClick={saveFeeStructure}>Save</Button></div>
+              </div>
+            )}
+            {feeStructures.length === 0 ? <EmptyState title="No fee structures" description="Add fees for each class and term" /> : (
+              <div className="space-y-2">
+                {feeStructures.map((fs) => (
+                  <div key={fs.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Wallet className="h-4 w-4 text-primary" /></div>
+                      <div className="min-w-0"><p className="text-sm font-medium truncate">{fs.type} - {getClassName(fs.classId)}</p><p className="text-xs text-muted-foreground">{fs.term} • Due: {fs.dueDate}</p></div>
+                    </div>
+                    <p className="text-sm font-mono font-bold shrink-0 ml-2">₦{(fs.amount ?? 0).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      )}
+
+      {activeTab === "confirmations" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4">
+            <h3 className="font-semibold mb-3">Pending Payment Confirmations</h3>
+            {payments.filter((p) => p.status === "pending").length === 0 ? (
+              <EmptyState title="No pending payments" description="All payments have been confirmed" />
+            ) : (
+              <div className="space-y-3">
+                {payments.filter((p) => p.status === "pending").map((p) => (
+                  <Card key={p.id} className="border-0 bg-amber-50/50 dark:bg-amber-950/10">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2"><p className="text-sm font-medium">{getStudentName(p.studentId)}</p><Badge className="bg-amber-500/15 text-amber-600 shrink-0">Pending</Badge></div>
+                          <p className="text-xs text-muted-foreground mt-1 break-words">Ref: {p.reference} • {p.method} • {new Date(p.paidAt).toLocaleString()}</p>
+                          <p className="text-lg font-bold mt-1 font-mono">₦{(p.amount ?? 0).toLocaleString()}</p>
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white flex-1 sm:flex-initial" onClick={() => confirmPayment(p.id)}><CheckCircle2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Confirm</span></Button>
+                          <Button size="sm" variant="outline" className="text-red-500 border-red-200 flex-1 sm:flex-initial" onClick={() => rejectPayment(p.id)}><XCircle className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Reject</span></Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <h3 className="font-semibold mt-6 mb-3">All Payments</h3>
+            {payments.length === 0 ? <EmptyState title="No payments" description="Payments will appear here" /> : (
+              <div className="space-y-2">
+                {payments.slice().reverse().map((p) => {
+                  const student = students.find((s) => s.id === p.studentId)
+                  return (
+                    <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 gap-2">
+                      <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{student ? `${student.firstName} ${student.lastName}` : p.studentId}</p><p className="text-xs text-muted-foreground truncate">{p.reference} • {p.method}</p></div>
+                      <div className="text-right shrink-0"><p className="text-sm font-mono font-bold">₦{(p.amount ?? 0).toLocaleString()}</p><Badge className={cn(p.status === "confirmed" ? "bg-green-500/15 text-green-600" : p.status === "pending" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600")}>{p.status}</Badge></div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      )}
     </div>
   )
 }

@@ -1,10 +1,6 @@
 "use client"
 
-import { forwardRef, useMemo } from "react"
-import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
-} from "recharts"
+import { forwardRef } from "react"
 
 interface SubjectResult {
   subject: string
@@ -61,15 +57,6 @@ interface ReportCardData {
 
 const GRADE_COLORS: Record<string, string> = {
   A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", E: "#ef4444", F: "#dc2626",
-}
-
-const GRADE_BG: Record<string, string> = {
-  A: "bg-green-500/15 text-green-600",
-  B: "bg-blue-500/15 text-blue-600",
-  C: "bg-amber-500/15 text-amber-600",
-  D: "bg-orange-500/15 text-orange-600",
-  E: "bg-red-500/15 text-red-600",
-  F: "bg-red-500/15 text-red-600",
 }
 
 function getGrade(pct: number) {
@@ -205,36 +192,18 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
           </div>
         </div>
 
-        {/* === CHARTS ROW === */}
+        {/* === CHARTS ROW (Static SVG — html2canvas compatible) === */}
         <div className="grid grid-cols-2 gap-3 print:gap-2" style={{ marginBottom: compact ? "4pt" : "8pt" }}>
           <div>
             <h3 className="font-bold uppercase tracking-wider text-indigo-800" style={{ fontSize: "6.5pt", marginBottom: "2pt" }}>Performance Radar</h3>
             <div style={{ height: chartHeight, minWidth: 0, minHeight: chartHeight }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: compact ? 6 : 7, fill: "#6b7280" }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                  <Radar dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={1.5} />
-                </RadarChart>
-              </ResponsiveContainer>
+              <StaticRadarChart data={radarData} height={chartHeight} compact={compact} />
             </div>
           </div>
           <div>
             <h3 className="font-bold uppercase tracking-wider text-indigo-800" style={{ fontSize: "6.5pt", marginBottom: "2pt" }}>Score Distribution</h3>
             <div style={{ height: chartHeight, minWidth: 0, minHeight: chartHeight }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} margin={{ top: 2, right: 2, bottom: 2, left: 0 }}>
-                  <XAxis dataKey="subject" tick={{ fontSize: compact ? 5.5 : 6.5, fill: "#6b7280" }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: compact ? 5.5 : 6.5, fill: "#6b7280" }} />
-                  <Tooltip contentStyle={{ fontSize: 10 }} formatter={(value: any) => [`${value}%`, "Score"]} />
-                  <Bar dataKey="score" radius={[2, 2, 0, 0]}>
-                    {barData.map((entry, i) => (
-                      <Cell key={i} fill={GRADE_COLORS[entry.grade] || "#6366f1"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <StaticBarChart data={barData} height={chartHeight} compact={compact} />
             </div>
           </div>
         </div>
@@ -330,3 +299,74 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
 })
 
 ReportCard.displayName = "ReportCard"
+
+function StaticRadarChart({ data, height, compact }: { data: { subject: string; score: number }[]; height: number; compact: boolean }) {
+  const cx = 150
+  const cy = height / 2
+  const maxR = Math.min(130, cy - 16)
+  const n = data.length
+  if (n === 0) return null
+
+  const angles = data.map((_, i) => (Math.PI * 2 * i) / n - Math.PI / 2)
+  const rings = [0.25, 0.5, 0.75, 1]
+
+  return (
+    <svg viewBox={`0 0 300 ${height}`} width="100%" height="100%" style={{ fontFamily: "sans-serif" }}>
+      {rings.map((r) => {
+        const points = angles.map((a) => `${cx + maxR * r * Math.cos(a)},${cy + maxR * r * Math.sin(a)}`).join(" ")
+        return <polygon key={r} points={points} fill="none" stroke="#e5e7eb" strokeWidth="0.5" />
+      })}
+      {angles.map((a, i) => (
+        <line key={i} x1={cx} y1={cy} x2={cx + maxR * Math.cos(a)} y2={cy + maxR * Math.sin(a)} stroke="#e5e7eb" strokeWidth="0.5" />
+      ))}
+      <polygon
+        points={data.map((d, i) => `${cx + maxR * (d.score / 100) * Math.cos(angles[i])},${cy + maxR * (d.score / 100) * Math.sin(angles[i])}`).join(" ")}
+        fill="rgba(99,102,241,0.2)" stroke="#6366f1" strokeWidth="1.5"
+      />
+      {data.map((d, i) => {
+        const x = cx + (maxR + 14) * Math.cos(angles[i])
+        const y = cy + (maxR + 14) * Math.sin(angles[i])
+        const label = d.subject.length > 8 ? d.subject.substring(0, 7) + "..." : d.subject
+        return <text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize={compact ? 5 : 6} fill="#6b7280">{label}</text>
+      })}
+    </svg>
+  )
+}
+
+function StaticBarChart({ data, height, compact }: { data: { subject: string; score: number; grade: string }[]; height: number; compact: boolean }) {
+  const margin = { top: 4, right: 4, bottom: compact ? 22 : 26, left: compact ? 22 : 26 }
+  const w = 300
+  const h = height
+  const chartW = w - margin.left - margin.right
+  const chartH = h - margin.top - margin.bottom
+  const n = data.length
+  if (n === 0) return null
+  const barW = Math.min(20, (chartW / n) * 0.7)
+  const gap = (chartW - barW * n) / (n + 1)
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="100%" style={{ fontFamily: "sans-serif" }}>
+      {[0, 25, 50, 75, 100].map((v) => {
+        const y = margin.top + chartH - (v / 100) * chartH
+        return (
+          <g key={v}>
+            <line x1={margin.left} y1={y} x2={w - margin.right} y2={y} stroke="#f3f4f6" strokeWidth="0.5" />
+            <text x={margin.left - 3} y={y + 1} textAnchor="end" dominantBaseline="middle" fontSize={compact ? 4.5 : 5.5} fill="#9ca3af">{v}</text>
+          </g>
+        )
+      })}
+      <line x1={margin.left} y1={margin.top + chartH} x2={w - margin.right} y2={margin.top + chartH} stroke="#e5e7eb" strokeWidth="0.5" />
+      {data.map((d, i) => {
+        const x = margin.left + gap + i * (barW + gap)
+        const barH = (d.score / 100) * chartH
+        const y = margin.top + chartH - barH
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={barH} rx="2" fill={GRADE_COLORS[d.grade] || "#6366f1"} />
+            <text x={x + barW / 2} y={margin.top + chartH + (compact ? 10 : 12)} textAnchor="middle" fontSize={compact ? 4 : 5} fill="#6b7280" transform={`rotate(-30 ${x + barW / 2} ${margin.top + chartH + (compact ? 10 : 12)})`}>{d.subject.length > 6 ? d.subject.substring(0, 5) + "..." : d.subject}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}

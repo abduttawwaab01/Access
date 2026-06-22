@@ -14,3 +14,12 @@ export async function POST(request: Request) {
   const item = store.documents.create(body)
   return NextResponse.json(item, { status: 201 })
 }
+
+export async function PUT(request: Request) {
+  const body = await request.json()
+  const { id, ...data } = body
+  if (!id) return NextResponse.json({ error: "Document ID is required" }, { status: 400 })
+  const updated = store.documents.update(id, data)
+  if (!updated) return NextResponse.json({ error: "Document not found" }, { status: 404 })
+  return NextResponse.json(updated)
+}

@@ -139,8 +139,22 @@ export default function AdminReportCardsPage() {
       const { jsPDF } = await import("jspdf")
       const canvas = await captureElement(reportRef.current, { scale: 2 })
       const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
+      const pdfW = 595
+      const pdfH = 842
+      const imgAspect = canvas.width / canvas.height
+      const pdfAspect = pdfW / pdfH
+      let drawW, drawH
+      if (imgAspect > pdfAspect) {
+        drawW = pdfW - 20
+        drawH = drawW / imgAspect
+      } else {
+        drawH = pdfH - 20
+        drawW = drawH * imgAspect
+      }
+      const offsetX = (pdfW - drawW) / 2
+      const offsetY = (pdfH - drawH) / 2
+      pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
       pdf.save(`Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
       toast.success("Report card downloaded as PDF")
     } catch (err) {

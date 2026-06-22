@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 import { Award, TrendingUp } from "lucide-react"
@@ -100,32 +100,33 @@ export default function StudentResultsPage() {
         </Card>
       </motion.div>
 
-      <Tabs value={activeTerm} onValueChange={setActiveTerm}>
+      <Tabs value={activeTerm} onValueChange={setActiveTerm} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           {terms.map((t) => <TabsTrigger key={t} value={t} className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm rounded-lg data-[state=active]:animated-gradient data-[state=active]:text-white">{t}</TabsTrigger>)}
         </TabsList>
-        <TabsContent value={activeTerm} className="space-y-2 mt-0">
-          {termResults.map((r, i) => {
-            const pct = Math.round((r.score / r.total) * 100)
-            return (
-              <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-                <Card className="glass-card border-0">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{r.subject}</span>
-                        <Badge variant="outline" className={`text-[10px] ${r.grade === "A" ? "bg-green-500/10 text-green-600" : r.grade === "B" ? "bg-blue-500/10 text-blue-600" : r.grade === "C" ? "bg-amber-500/10 text-amber-600" : "bg-red-500/10 text-red-600"}`}>{r.grade}</Badge>
-                      </div>
-                      <span className="text-sm font-bold">{r.score}/{r.total}</span>
-                    </div>
-                    <Progress value={pct} className="h-2" />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )
-          })}
-        </TabsContent>
       </Tabs>
+
+      <div className="space-y-2">
+        {termResults.map((r, i) => {
+          const pct = Math.round((r.score / r.total) * 100)
+          return (
+            <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+              <Card className="glass-card border-0">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{r.subject}</span>
+                      <Badge variant="outline" className={`text-[10px] ${r.grade === "A" ? "bg-green-500/10 text-green-600" : r.grade === "B" ? "bg-blue-500/10 text-blue-600" : r.grade === "C" ? "bg-amber-500/10 text-amber-600" : "bg-red-500/10 text-red-600"}`}>{r.grade}</Badge>
+                    </div>
+                    <span className="text-sm font-bold">{r.score}/{r.total}</span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        })}
+      </div>
     </div>
   )
 }

@@ -70,14 +70,22 @@ export default function AdminIDCardsPage() {
             ? renderStudentCardHTML(item, school, classes, orientation)
             : renderStaffCardHTML(item, school, orientation))
 
+      const cardW = orientation === "landscape" ? 600 : 340
+      const cardH = orientation === "landscape" ? 340 : 480
+
       const container = document.createElement("div")
       container.style.position = "fixed"
-      container.style.left = "-9999px"
+      container.style.left = "0"
       container.style.top = "0"
+      container.style.zIndex = "-1"
+      container.style.opacity = "0"
+      container.style.pointerEvents = "none"
       container.style.background = "#ffffff"
-      container.style.padding = "20px"
+      container.style.width = `${cardW}px`
       container.innerHTML = html
       document.body.appendChild(container)
+
+      await new Promise((r) => setTimeout(r, 200))
 
       const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
       document.body.removeChild(container)
@@ -95,8 +103,23 @@ export default function AdminIDCardsPage() {
         toast.success("ID card downloaded as PNG")
       } else {
         const { jsPDF } = await import("jspdf")
-        const pdf = new jsPDF({ orientation: orientation === "portrait" ? "portrait" : "landscape", unit: "px", format: [canvas.width, canvas.height] })
-        pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+        const isLandscape = orientation === "landscape"
+        const pdfW = isLandscape ? 842 : 595
+        const pdfH = isLandscape ? 595 : 842
+        const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" })
+        const imgAspect = canvas.width / canvas.height
+        const pdfAspect = pdfW / pdfH
+        let drawW, drawH
+        if (imgAspect > pdfAspect) {
+          drawW = pdfW - 40
+          drawH = drawW / imgAspect
+        } else {
+          drawH = pdfH - 40
+          drawW = drawH * imgAspect
+        }
+        const offsetX = (pdfW - drawW) / 2
+        const offsetY = (pdfH - drawH) / 2
+        pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
         pdf.save(`${name}.pdf`)
         toast.success("ID card downloaded as PDF")
       }
@@ -114,34 +137,54 @@ export default function AdminIDCardsPage() {
       const slug = tab === "students" ? "Student" : "Staff"
       if (list.length === 0) { toast.error("No items to export"); setBulkExporting(false); return }
 
-      const pdf = new jsPDF({ orientation: orientation === "portrait" ? "portrait" : "landscape", unit: "px", format: [340, 480] })
+      const isLandscape = orientation === "landscape"
+      const pdfW = isLandscape ? 842 : 595
+      const pdfH = isLandscape ? 595 : 842
+      const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" })
 
       for (let i = 0; i < list.length; i++) {
         const item = list[i]
 
         const captureAndAdd = async (html: string): Promise<void> => {
+          const cardW = isLandscape ? 600 : 340
           const container = document.createElement("div")
           container.style.position = "fixed"
-          container.style.left = "-9999px"
+          container.style.left = "0"
           container.style.top = "0"
+          container.style.zIndex = "-1"
+          container.style.opacity = "0"
+          container.style.pointerEvents = "none"
           container.style.background = "#ffffff"
-          container.style.padding = "20px"
+          container.style.width = `${cardW}px`
           container.innerHTML = html
           document.body.appendChild(container)
+
+          await new Promise((r) => setTimeout(r, 200))
+
           const canvas = await captureElement(container, { scale: 2, backgroundColor: "#ffffff" })
           document.body.removeChild(container)
           const imgData = canvas.toDataURL("image/png")
-          pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+          const imgAspect = canvas.width / canvas.height
+          const pdfAspect = pdfW / pdfH
+          let drawW, drawH
+          if (imgAspect > pdfAspect) {
+            drawW = pdfW - 40
+            drawH = drawW / imgAspect
+          } else {
+            drawH = pdfH - 40
+            drawW = drawH * imgAspect
+          }
+          const offsetX = (pdfW - drawW) / 2
+          const offsetY = (pdfH - drawH) / 2
+          pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
         }
 
         if (i > 0) pdf.addPage()
-        // Front
         const frontHTML = tab === "students"
           ? `<div>${renderStudentCardHTML(item, school, classes, orientation)}</div>`
           : `<div>${renderStaffCardHTML(item, school, orientation)}</div>`
         await captureAndAdd(frontHTML)
 
-        // Back
         pdf.addPage()
         const backHTML = tab === "students"
           ? `<div>${renderStudentCardBackHTML(item, school, idCardConfig, orientation)}</div>`
@@ -205,13 +248,16 @@ export default function AdminIDCardsPage() {
       </motion.div>
 
       {!selectedStudent && !selectedStaff ? (
-        <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearch("") }}>
-          <TabsList className="flex flex-nowrap w-full gap-2 overflow-x-auto scrollbar-hide">
-            <TabsTrigger value="students" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[140px]"><Users className="h-4 w-4 mr-1.5" /> Student ID Cards</TabsTrigger>
-            <TabsTrigger value="staff" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[140px]"><GraduationCap className="h-4 w-4 mr-1.5" /> Staff ID Cards</TabsTrigger>
-          </TabsList>
+        <>
+          <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearch("") }} className="mb-4">
+            <TabsList className="flex flex-wrap w-full gap-1.5">
+              <TabsTrigger value="students" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white"><Users className="h-4 w-4 mr-1.5" /> Student ID Cards</TabsTrigger>
+              <TabsTrigger value="staff" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white"><GraduationCap className="h-4 w-4 mr-1.5" /> Staff ID Cards</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          <TabsContent value="students" className="mt-4 space-y-4">
+          {tab === "students" && (
+          <div className="space-y-4">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -245,9 +291,11 @@ export default function AdminIDCardsPage() {
                 <div className="col-span-full text-center py-8 text-sm text-muted-foreground">No students found</div>
               )}
             </div>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="staff" className="mt-4 space-y-4">
+          {tab === "staff" && (
+          <div className="space-y-4">
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -277,8 +325,9 @@ export default function AdminIDCardsPage() {
                 <div className="col-span-full text-center py-8 text-sm text-muted-foreground">No staff found</div>
               )}
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+          )}
+        </>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">

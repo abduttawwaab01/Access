@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -181,16 +181,17 @@ export default function StudentAnalyticsPage() {
         ))}
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="performance" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Performance</TabsTrigger>
           <TabsTrigger value="subjects" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Subjects</TabsTrigger>
           <TabsTrigger value="attendance" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Attendance</TabsTrigger>
           <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Insights</TabsTrigger>
         </TabsList>
+      </Tabs>
 
-        {activeTab === "performance" && (
-        <TabsContent value="performance" className="space-y-6 mt-0">
+      {activeTab === "performance" && (
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="glass-card border-0">
@@ -239,11 +240,11 @@ export default function StudentAnalyticsPage() {
               </Card>
             </motion.div>
           </div>
-        </TabsContent>
-        )}
+      </div>
+      )}
 
-        {activeTab === "subjects" && (
-        <TabsContent value="subjects" className="space-y-6 mt-0">
+      {activeTab === "subjects" && (
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="glass-card border-0">
@@ -313,11 +314,11 @@ export default function StudentAnalyticsPage() {
               </CardContent>
             </Card>
           </motion.div>
-        </TabsContent>
-        )}
+      </div>
+      )}
 
-        {activeTab === "attendance" && (
-        <TabsContent value="attendance" className="space-y-6 mt-0">
+      {activeTab === "attendance" && (
+      <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="glass-card border-0">
@@ -368,11 +369,11 @@ export default function StudentAnalyticsPage() {
               </Card>
             </motion.div>
           </div>
-        </TabsContent>
-        )}
+      </div>
+      )}
 
-        {activeTab === "insights" && (
-        <TabsContent value="insights" className="space-y-6 mt-0">
+      {activeTab === "insights" && (
+      <div className="space-y-6">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <Card className="glass-card border-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
               <CardContent className="p-4 md:p-6">
@@ -428,9 +429,8 @@ export default function StudentAnalyticsPage() {
               </CardContent>
             </Card>
           </motion.div>
-        </TabsContent>
-        )}
-      </Tabs>
+      </div>
+      )}
     </div>
   )
 }

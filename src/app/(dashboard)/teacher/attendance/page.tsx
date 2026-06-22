@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { Search, CheckCircle2, Clock, AlertTriangle, User, History, Camera, QrCode, ScanLine } from "lucide-react"
@@ -87,116 +87,122 @@ export default function TeacherAttendancePage() {
         <p className="text-sm text-muted-foreground">Mark and view student attendance</p>
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="mark" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Mark</TabsTrigger>
           <TabsTrigger value="scan" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><ScanLine className="h-4 w-4 mr-1" /> Scan QR</TabsTrigger>
           <TabsTrigger value="today" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today</TabsTrigger>
         </TabsList>
+      </Tabs>
 
-        <TabsContent value="mark" className="mt-4 space-y-4">
-          <div className="flex gap-2">
-            <select
-              className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-            >
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search student..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
+      {activeTab === "mark" && (
+      <div className="mt-4 space-y-4">
+        <div className="flex gap-2">
+          <select
+            className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+          >
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search student..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            {filtered.length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">No students found</div>
-            ) : (
-              filtered.map((student) => {
-                const marked = isMarked(student.id)
-                return (
-                  <Card key={student.id} className={`border-0 glass-card ${marked ? "opacity-60" : ""}`}>
-                    <CardContent className="p-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">{student.firstName[0]}{student.lastName[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">{student.firstName} {student.lastName}</p>
-                          <p className="text-xs text-muted-foreground">{student.classId ? classes.find((c) => c.id === student.classId)?.name || "Unassigned" : "Unassigned"}</p>
-                        </div>
+        <div className="space-y-2">
+          {filtered.length === 0 ? (
+            <div className="text-center py-8 text-sm text-muted-foreground">No students found</div>
+          ) : (
+            filtered.map((student) => {
+              const marked = isMarked(student.id)
+              return (
+                <Card key={student.id} className={`border-0 glass-card ${marked ? "opacity-60" : ""}`}>
+                  <CardContent className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="text-xs">{student.firstName[0]}{student.lastName[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{student.firstName} {student.lastName}</p>
+                        <p className="text-xs text-muted-foreground">{student.classId ? classes.find((c) => c.id === student.classId)?.name || "Unassigned" : "Unassigned"}</p>
                       </div>
-                      <div className="flex gap-1">
-                        {marked ? (
-                          <Badge className="bg-green-500/15 text-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Done</Badge>
-                        ) : (
-                          <>
-                            <Button size="sm" variant="outline" className="h-8 text-green-600 border-green-200" onClick={() => markStudent(student.id, "present")}>
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Present
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-8 text-amber-600 border-amber-200" onClick={() => markStudent(student.id, "late")}>
-                              <Clock className="h-3 w-3 mr-1" /> Late
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })
-            )}
-          </div>
-        </TabsContent>
+                    </div>
+                    <div className="flex gap-1">
+                      {marked ? (
+                        <Badge className="bg-green-500/15 text-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Done</Badge>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" className="h-8 text-green-600 border-green-200" onClick={() => markStudent(student.id, "present")}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Present
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-8 text-amber-600 border-amber-200" onClick={() => markStudent(student.id, "late")}>
+                            <Clock className="h-3 w-3 mr-1" /> Late
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
+        </div>
+      </div>
+      )}
 
-        <TabsContent value="scan" className="mt-4">
-          <QRScanner
-            onScan={handleQRScan}
-            title="Scan Student ID Card"
-            description="Position the student's ID card QR code within the camera frame to mark attendance"
-          />
-          <div className="mt-4">
-            <Card className="border-0 glass-card">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
-                  <QrCode className="h-4 w-4" />
-                  The QR code on the student ID card front contains attendance data. Students marked late if scanned after 9:00 AM.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="today" className="mt-4">
+      {activeTab === "scan" && (
+      <div className="mt-4">
+        <QRScanner
+          onScan={handleQRScan}
+          title="Scan Student ID Card"
+          description="Position the student's ID card QR code within the camera frame to mark attendance"
+        />
+        <div className="mt-4">
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
-              {logs.filter((l) => l.date === today).length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">No attendance marked today</div>
-              ) : (
-                <div className="space-y-2">
-                  {logs.filter((l) => l.date === today).reverse().map((log) => {
-                    const student = students.find((s) => s.id === log.userId)
-                    return (
-                      <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">{student ? `${student.firstName[0]}${student.lastName[0]}` : "?"}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{student ? `${student.firstName} ${student.lastName}` : log.userId}</p>
-                            <p className="text-xs text-muted-foreground">{log.time} via {log.method}</p>
-                          </div>
-                        </div>
-                        <Badge className={log.status === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{log.status}</Badge>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <QrCode className="h-4 w-4" />
+                The QR code on the student ID card front contains attendance data. Students marked late if scanned after 9:00 AM.
+              </p>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+      )}
+
+      {activeTab === "today" && (
+      <div className="mt-4">
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4">
+            {logs.filter((l) => l.date === today).length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">No attendance marked today</div>
+            ) : (
+              <div className="space-y-2">
+                {logs.filter((l) => l.date === today).reverse().map((log) => {
+                  const student = students.find((s) => s.id === log.userId)
+                  return (
+                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">{student ? `${student.firstName[0]}${student.lastName[0]}` : "?"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{student ? `${student.firstName} ${student.lastName}` : log.userId}</p>
+                          <p className="text-xs text-muted-foreground">{log.time} via {log.method}</p>
+                        </div>
+                      </div>
+                      <Badge className={log.status === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{log.status}</Badge>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      )}
     </div>
   )
 }
