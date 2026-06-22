@@ -4,7 +4,7 @@ import { useRef, useState } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { PrintableLessonNote } from "@/components/PrintableLessonNote"
-import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { downloadPng, downloadPdf, openPrintWindow, captureElement } from "@/lib/capture"
 import { Download, Printer, FileText, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
