@@ -94,7 +94,7 @@ export default function AdminIDCardsPage() {
       const slug = tab === "students" ? "Student" : "Staff"
       if (list.length === 0) { toast.error("No items to export"); setBulkExporting(false); return }
 
-      const pdf = new jsPDF({ orientation: orientation === "portrait" ? "portrait" : "landscape", unit: "px", format: [canvas.width, canvas.height] })
+      const pdf = new jsPDF({ orientation: orientation === "portrait" ? "portrait" : "landscape", unit: "px", format: [340, 480] })
 
       for (let i = 0; i < list.length; i++) {
         const item = list[i]
