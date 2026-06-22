@@ -24,7 +24,7 @@ export function AppShell({ children, title, navItems, bottomNavItems, user, scho
   const { isMobile } = useMobile()
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar
         items={navItems}
         collapsed={sidebarCollapsed}
@@ -35,7 +35,7 @@ export function AppShell({ children, title, navItems, bottomNavItems, user, scho
 
       <div
         className={cn(
-          "flex flex-1 flex-col transition-all duration-300",
+          "flex flex-1 flex-col overflow-hidden transition-all duration-300",
           "md:ml-64",
           sidebarCollapsed && "md:ml-[72px]"
         )}
@@ -49,7 +49,7 @@ export function AppShell({ children, title, navItems, bottomNavItems, user, scho
 
         <AnnouncementsTicker role={role} />
 
-        <main className={cn("flex-1", isMobile ? "pb-20" : "pb-6")}>
+        <main className={cn("flex-1 overflow-y-auto", isMobile ? "pb-20" : "pb-6")}>
           <div className="animate-in">{children}</div>
         </main>
       </div>
