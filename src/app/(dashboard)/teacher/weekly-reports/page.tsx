@@ -346,7 +346,7 @@ export default function TeacherWeeklyReportsPage() {
 
           <div>
             <h4 className="text-sm font-semibold mb-3">Subject Performance</h4>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+            <div className="space-y-3">
               {form.subjectPerformances.map((sp: any, i: number) => (
                 <Card key={sp.subjectId} className="border-0 glass-card">
                   <CardContent className="p-3 space-y-2">

@@ -85,7 +85,7 @@ export default function ParentWeeklyReportsPage() {
     await new Promise((r) => setTimeout(r, 300))
     try {
       const html2canvas = (await import("html2canvas")).default
-      const jsPDF = (await import("jspdf")).default
+      const { jsPDF } = await import("jspdf")
       const el = document.getElementById("weekly-report-preview")
       if (!el) return
       const canvas = await html2canvas(el, { scale: 2, useCORS: true })

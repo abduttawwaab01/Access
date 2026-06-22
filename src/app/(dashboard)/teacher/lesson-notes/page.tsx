@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, FileText, Sparkles, Search, X, Eye, EyeOff, CheckCircle2, Clock, HelpCircle, ChevronDown, ChevronRight, ScanLine } from "lucide-react"
+import { Plus, Pencil, Trash2, FileText, Sparkles, Search, X, Eye, EyeOff, CheckCircle2, Clock, HelpCircle, ChevronDown, ChevronRight, ScanLine, BookOpen } from "lucide-react"
 import ImageToText from "@/components/ImageToText"
+import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -35,14 +36,19 @@ export default function LessonNotesPage() {
   const [quiz, setQuiz] = useState<any[]>([])
   const [quizOpen, setQuizOpen] = useState(true)
   const [ocrOpen, setOcrOpen] = useState(false)
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [viewerNote, setViewerNote] = useState<any>(null)
+  const [school, setSchool] = useState<any>(null)
 
   const fetchData = async () => {
-    const [notesRes, classesRes] = await Promise.all([
+    const [notesRes, classesRes, schoolRes] = await Promise.all([
       fetch(`/api/lesson-notes?teacherId=${teacherId}`),
       fetch("/api/classes"),
+      fetch("/api/school"),
     ])
     setItems(await notesRes.json())
     setClasses(await classesRes.json())
+    setSchool(await schoolRes.json())
     setLoading(false)
   }
 
@@ -224,6 +230,9 @@ export default function LessonNotesPage() {
                           {statusIcon(item.status)}
                           {item.status}
                         </Badge>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => { setViewerNote(item); setViewerOpen(true) }} title="View / Teach">
+                          <BookOpen className="h-3.5 w-3.5" />
+                        </Button>
                         {item.status === "draft" && (
                           <>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
@@ -244,8 +253,34 @@ export default function LessonNotesPage() {
         </div>
       )}
 
+      {viewerNote && (
+        <LessonNoteViewer
+          open={viewerOpen}
+          onOpenChange={setViewerOpen}
+          data={{
+            schoolName: school?.name || "Access School",
+            schoolLogo: school?.logo || "",
+            schoolMotto: school?.motto || "",
+            schoolAddress: school?.address || "",
+            schoolPhone: school?.phone || "",
+            schoolEmail: school?.email || "",
+            title: viewerNote.title,
+            subject: viewerNote.subject,
+            className: getClassName(viewerNote.classId)?.name + (getClassName(viewerNote.classId)?.arm ? ` ${getClassName(viewerNote.classId).arm}` : "") || "",
+            week: viewerNote.week,
+            term: viewerNote.term,
+            session: viewerNote.session || "",
+            teacherName: viewerNote.creatorName || teacherName,
+            content: viewerNote.content || "",
+            resources: viewerNote.resources || "",
+            quiz: viewerNote.quiz || [],
+            createdAt: viewerNote.createdAt,
+          }}
+        />
+      )}
+
       <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Lesson Note" : "New Lesson Note"}>
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70dvh] pb-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Title</Label>
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Introduction to Algebra" className="h-12" required />

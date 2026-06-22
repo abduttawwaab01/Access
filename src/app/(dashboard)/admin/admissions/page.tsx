@@ -50,7 +50,7 @@ export default function AdminAdmissionsPage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((app) => (
-            <div key={app.id} className="glass-card flex items-center justify-between rounded-xl p-5">
+            <div key={app.id} className="glass-card flex flex-col sm:flex-row sm:items-center justify-between rounded-xl p-5 gap-3">
               <div className="space-y-1">
                 <p className="font-semibold">{app.firstName} {app.lastName}</p>
                 <p className="text-sm text-muted-foreground">{app.email}</p>

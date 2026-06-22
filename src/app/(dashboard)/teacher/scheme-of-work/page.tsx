@@ -244,7 +244,7 @@ export default function SchemeOfWorkPage() {
       )}
 
       <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Scheme of Work" : "New Scheme of Work"}>
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70dvh] pb-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Title</Label>
             <Input value={form.title} onChange={(e) => updateForm("title", e.target.value)} placeholder="e.g. SS1 Mathematics Scheme" className="h-12" required />

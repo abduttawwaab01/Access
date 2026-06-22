@@ -202,9 +202,9 @@ export default function SchemeOfWorkPage() {
       <PageHeader title="Scheme of Work" description="Create and manage termly teaching schemes" actionLabel="New Scheme" onAction={openCreate} />
       <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
         title="Delete Scheme" description={`Permanently delete ${confirmDelete?.title}? This cannot be undone.`} />
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-col sm:flex-row flex-wrap gap-2">
         <Select value={filterClass} onValueChange={(v) => v && setFilterClass(v)}>
-          <SelectTrigger className="h-9 w-40"><SelectValue placeholder="All Classes" /></SelectTrigger>
+          <SelectTrigger className="h-9 w-full sm:w-40"><SelectValue placeholder="All Classes" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Classes</SelectItem>
             {classes.map((c) => (
@@ -214,7 +214,7 @@ export default function SchemeOfWorkPage() {
         </Select>
 
         <Select value={filterSubject} onValueChange={(v) => v && setFilterSubject(v)}>
-          <SelectTrigger className="h-9 w-44"><SelectValue placeholder="All Subjects" /></SelectTrigger>
+          <SelectTrigger className="h-9 w-full sm:w-44"><SelectValue placeholder="All Subjects" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Subjects</SelectItem>
             {subjects.map((s) => (
@@ -341,7 +341,7 @@ export default function SchemeOfWorkPage() {
             <Input id="title" placeholder="e.g. SS1 Mathematics First Term Scheme" value={form.title} onChange={(e) => update("title", e.target.value)} className="h-12" required />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="classId">Class</Label>
               <Select value={form.classId} onValueChange={(v) => update("classId", v)}>
@@ -366,7 +366,7 @@ export default function SchemeOfWorkPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="term">Term</Label>
               <Select value={form.term} onValueChange={(v) => update("term", v)}>

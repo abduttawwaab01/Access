@@ -222,7 +222,7 @@ export default function TeachersPage() {
 
       <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Staff" : "New Staff Member"}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>First Name</Label>
               <Input value={form.firstName} onChange={(e) => update("firstName", e.target.value)} className="h-12" required />
@@ -236,7 +236,7 @@ export default function TeachersPage() {
             <Label>Email</Label>
             <Input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className="h-12" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Role</Label>
               <Select value={form.role} onValueChange={(v) => update("role", v)}>
@@ -270,7 +270,7 @@ export default function TeachersPage() {
         <div className="space-y-5">
           <div className="space-y-2">
             <Label>Classes</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {classes.map((c) => {
                 const active = selectedClassIds.includes(c.id)
                 return (
@@ -291,7 +291,7 @@ export default function TeachersPage() {
             {filteredSubjects.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">Select at least one class to see available subjects.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {filteredSubjects.map((s) => {
                   const active = selectedSubjectIds.includes(s.id)
                   return (
@@ -309,7 +309,7 @@ export default function TeachersPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+          <div className="flex items-center justify-between rounded-xl border border-border p-3 flex-wrap gap-2">
             <div>
               <Label className="text-sm font-medium">Class Teacher</Label>
               <p className="text-xs text-muted-foreground">Mark as homeroom teacher for selected classes</p>

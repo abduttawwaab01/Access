@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { toast } from "sonner"
 import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, User } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
+import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
 export default function AdminReportCardsPage() {
@@ -61,8 +62,8 @@ export default function AdminReportCardsPage() {
 
   const subjectData = termResults.reduce((acc: any, r) => {
     if (!acc[r.subject]) acc[r.subject] = { subject: r.subject, totalScore: 0, totalMax: 0, count: 0 }
-    acc[r.subject].totalScore += r.score
-    acc[r.subject].totalMax += r.total
+    acc[r.subject].totalScore += r.score || r.caScore + r.examScore || 0
+    acc[r.subject].totalMax += r.totalMax || r.total || 100
     acc[r.subject].count++
     return acc
   }, {})
@@ -86,13 +87,17 @@ export default function AdminReportCardsPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: "2024/2025",
+    session: termResults[0]?.session || "2024/2025",
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
-      score: r.score,
-      total: r.total,
+      score: r.score || r.total || 0,
+      total: r.totalMax || r.total || 100,
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",
+      caScore: r.caScore,
+      examScore: r.examScore,
+      caTotal: r.caTotal,
+      examTotal: r.examTotal,
     })),
     domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
       ? [
@@ -131,25 +136,10 @@ export default function AdminReportCardsPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const { default: jsPDF } = await import("jspdf")
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false })
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF("p", "mm", "a4")
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      let heightLeft = pdfHeight
-      let position = 0
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
-      heightLeft -= pageHeight
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight
-        pdf.addPage()
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
-        heightLeft -= pageHeight
-      }
-      pdf.save(`Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
+      await downloadPdf(
+        reportRef.current,
+        `Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`
+      )
       toast.success("Report card downloaded as PDF")
     } catch (err) {
       console.error(err)
@@ -162,12 +152,10 @@ export default function AdminReportCardsPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
-      const link = document.createElement("a")
-      link.download = `Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`
-      link.href = canvas.toDataURL("image/png")
-      link.click()
+      await downloadPng(
+        reportRef.current,
+        `Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`
+      )
       toast.success("Report card downloaded as PNG")
     } catch {
       toast.error("Failed to export")
@@ -175,7 +163,10 @@ export default function AdminReportCardsPage() {
     setExporting(false)
   }
 
-  const handlePrint = () => window.print()
+  const handlePrint = () => {
+    if (!reportRef.current) return
+    openPrintWindow(reportRef.current, `Report Card - ${reportData?.studentName || ""}`)
+  }
 
   const handleShareWhatsApp = () => {
     if (!reportData) return

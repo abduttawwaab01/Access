@@ -79,7 +79,7 @@ export default function AdminAnnouncementsPage() {
     <div className="p-4 md:p-6 space-y-6">
       <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
         title="Delete Announcement" description="Permanently delete this announcement? This cannot be undone." />
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-2xl font-bold">Announcements</h2>
           <p className="text-sm text-muted-foreground">Send announcements to staff, parents, or students</p>
@@ -140,10 +140,10 @@ export default function AdminAnnouncementsPage() {
         )}
       </AnimatePresence>
 
-      <div className="flex items-center gap-3">
-        <Filter className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
         <Select value={filterAudience} onValueChange={(v) => { if (v) setFilterAudience(v) }}>
-          <SelectTrigger className="w-40 h-9 text-xs"><SelectValue placeholder="All Audiences" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-40 h-9 text-xs"><SelectValue placeholder="All Audiences" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Audiences</SelectItem>
             <SelectItem value="all">Everyone</SelectItem>
@@ -153,7 +153,7 @@ export default function AdminAnnouncementsPage() {
           </SelectContent>
         </Select>
         <Select value={filterPriority} onValueChange={(v) => { if (v) setFilterPriority(v) }}>
-          <SelectTrigger className="w-36 h-9 text-xs"><SelectValue placeholder="All Priorities" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-36 h-9 text-xs"><SelectValue placeholder="All Priorities" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Priorities</SelectItem>
             <SelectItem value="high">High</SelectItem>
@@ -161,7 +161,7 @@ export default function AdminAnnouncementsPage() {
             <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground ml-auto">{filtered.length} announcement{filtered.length !== 1 ? "s" : ""}</span>
+        <span className="text-xs text-muted-foreground sm:ml-auto">{filtered.length} announcement{filtered.length !== 1 ? "s" : ""}</span>
       </div>
 
       {loading ? (

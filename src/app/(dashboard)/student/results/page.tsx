@@ -68,7 +68,7 @@ export default function StudentResultsPage() {
         <Card className="glass-card border-0">
           <CardContent className="p-4 md:p-5">
             <h3 className="font-semibold mb-3">Term Comparison</h3>
-            <div className="h-48">
+            <div className="h-48 min-h-[180px] min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={termCompareData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                   <XAxis dataKey="term" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />

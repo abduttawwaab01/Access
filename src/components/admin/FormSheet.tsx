@@ -18,13 +18,13 @@ export function FormSheet({ open, onOpenChange, title, description, children }: 
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className={isMobile ? "h-[85dvh] rounded-t-2xl" : "sm:max-w-lg"}
+        className={isMobile ? "h-[85dvh] rounded-t-2xl overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}
       >
         <SheetHeader className="mb-6 text-left">
           <SheetTitle>{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}
         </SheetHeader>
-        {children}
+        <div className="pb-6">{children}</div>
       </SheetContent>
     </Sheet>
   )

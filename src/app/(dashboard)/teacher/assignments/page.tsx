@@ -151,7 +151,7 @@ export default function AssignmentsPage() {
       )}
 
       <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Assignment" : "New Assignment"}>
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70dvh] pb-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Title</Label>
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Algebra Homework Set 1" className="h-12" required />

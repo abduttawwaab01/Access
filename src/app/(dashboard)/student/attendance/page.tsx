@@ -61,8 +61,8 @@ export default function StudentAttendancePage() {
           <CardContent className="p-4 md:p-5">
             <h3 className="font-semibold mb-1">Attendance Rate</h3>
             <p className="text-xs text-muted-foreground mb-4">{rate}% overall attendance</p>
-            <div className="h-48 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={200}>
+            <div className="h-48 min-h-[180px] min-w-0 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}

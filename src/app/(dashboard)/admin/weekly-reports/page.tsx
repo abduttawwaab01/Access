@@ -218,7 +218,7 @@ export default function AdminWeeklyReportsPage() {
     await new Promise((r) => setTimeout(r, 300))
     try {
       const html2canvas = (await import("html2canvas")).default
-      const jsPDF = (await import("jspdf")).default
+      const { jsPDF } = await import("jspdf")
       const el = document.getElementById("weekly-report-preview")
       if (!el) return
       const canvas = await html2canvas(el, { scale: 2, useCORS: true })
@@ -496,7 +496,7 @@ export default function AdminWeeklyReportsPage() {
 
           <div>
             <h4 className="text-sm font-semibold mb-3">Subject Performance</h4>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+            <div className="space-y-3">
               {form.subjectPerformances.map((sp: any, i: number) => (
                 <Card key={sp.subjectId} className="border-0 glass-card">
                   <CardContent className="p-3 space-y-2">

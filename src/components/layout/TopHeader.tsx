@@ -70,7 +70,7 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
             {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
-          <Button variant="ghost" size="icon" className="text-muted-foreground relative" onClick={() => router.push("/notifications")}>
+          <Button variant="ghost" size="icon" className="text-muted-foreground relative" onClick={() => router.push(`/${user?.role}/notifications`)}>
             <Bell className="h-5 w-5" />
             <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
               3

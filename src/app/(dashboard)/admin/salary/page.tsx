@@ -84,7 +84,7 @@ export default function AdminSalaryPage() {
         <p className="text-sm text-muted-foreground">Staff salary structures, payroll, and payment confirmation</p>
       </motion.div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Total Staff", value: staff.length, icon: Users, color: "bg-blue-500/15 text-blue-600" },
           { label: "Total Paid", value: `₦${(getTotalPaid() ?? 0).toLocaleString()}`, icon: DollarSign, color: "bg-green-500/15 text-green-600" },
@@ -124,7 +124,7 @@ export default function AdminSalaryPage() {
                       </div>
                       {isEditing ? (
                         <div className="mt-4 space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div><label className="text-xs text-muted-foreground">Base Salary (₦)</label><Input type="number" value={editForm.baseSalary} onChange={(e) => setEditForm({ ...editForm, baseSalary: e.target.value })} /></div>
                             <div><label className="text-xs text-muted-foreground">Bank Name</label><Input value={editForm.bankName} onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })} /></div>
                             <div><label className="text-xs text-muted-foreground">Account Number</label><Input value={editForm.accountNumber} onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })} /></div>
@@ -151,7 +151,7 @@ export default function AdminSalaryPage() {
         </TabsContent>
 
         <TabsContent value="payroll" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="font-semibold">{currentMonth} {currentYear} Payroll</h3>
             <Button onClick={initializeMonthlyPayroll}><Plus className="h-4 w-4 mr-1" /> Initialize Payroll</Button>
           </div>
@@ -164,17 +164,17 @@ export default function AdminSalaryPage() {
                   {salaryRecords.filter((r) => r.month === currentMonth && r.year === currentYear).map((rec) => {
                     const s = staff.find((st) => st.id === rec.staffId)
                     return (
-                      <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8"><AvatarFallback className="text-xs">{s ? `${s.firstName[0]}${s.lastName[0]}` : "?"}</AvatarFallback></Avatar>
-                          <div><p className="text-sm font-medium">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
+                      <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 flex-wrap gap-2">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-xs">{s ? `${s.firstName[0]}${s.lastName[0]}` : "?"}</AvatarFallback></Avatar>
+                          <div className="min-w-0"><p className="text-sm font-medium truncate">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 shrink-0">
                           <p className="font-mono font-bold">₦{(rec.amount ?? 0).toLocaleString()}</p>
                           {rec.status === "paid" ? (
-                            <Badge className="bg-green-500/15 text-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Paid</Badge>
+                            <Badge className="bg-green-500/15 text-green-600 shrink-0"><CheckCircle2 className="h-3 w-3 mr-1" /> Paid</Badge>
                           ) : (
-                            <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={() => markPaid(rec.id)}><CheckCircle2 className="h-4 w-4 mr-1" /> Mark Paid</Button>
+                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => markPaid(rec.id)}><CheckCircle2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Mark Paid</span></Button>
                           )}
                         </div>
                       </div>

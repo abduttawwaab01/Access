@@ -105,7 +105,7 @@ export default function ParentAttendancePage() {
             <Card className="glass-card border-0">
               <CardContent className="p-4">
                 <p className="text-sm font-semibold mb-3">Attendance Breakdown</p>
-                <div className="h-48">
+                <div className="h-48 min-h-[180px] min-w-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} innerRadius={45} paddingAngle={4} dataKey="value">

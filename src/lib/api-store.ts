@@ -1,51 +1,62 @@
 // In-memory data store for development
+// Data persisted in globalThis to survive HMR in dev mode
 // Swap with Prisma queries when database is connected
 
 const uid = () => String(Date.now()) + Math.random().toString(36).slice(2, 8)
 
-let sessions: any[] = []
-let terms: any[] = []
-let classes: any[] = []
-let subjects: any[] = []
-let students: any[] = []
-let parents: any[] = []
+const PERSIST = "__opencode_store_v1"
 
-let staff: any[] = []
+function g<T>(key: string, init: T): T {
+  if (typeof globalThis === "undefined") return init
+  const root = ((globalThis as any)[PERSIST] as Record<string, any>) || ((globalThis as any)[PERSIST] = {})
+  return (root[key] ?? (root[key] = init))
+}
 
-let teacherAssignments: any[] = []
-let lessonNotes: any[] = []
-let schemeOfWorks: any[] = []
-let assignments: any[] = []
-let timetable: any[] = []
-let announcements: any[] = []
-let results: any[] = []
-let attendanceRecords: any[] = []
-let fees: any[] = []
-let parentLinks: any[] = []
-let attendanceLogs: any[] = []
-let attendanceQRCodes: any[] = []
-let reportCards: any[] = []
-let topics: any[] = []
+let sessions: any[] = g("sessions", [])
+let terms: any[] = g("terms", [])
+let classes: any[] = g("classes", [])
+let subjects: any[] = g("subjects", [])
+let students: any[] = g("students", [])
+let parents: any[] = g("parents", [])
 
-let lessonQuizResults: any[] = []
-let questions: any[] = []
-let exams: any[] = []
-let examSessions: any[] = []
-let submissions: any[] = []
+let staff: any[] = g("staff", [])
 
-let bankDetails: any = { id: "b1", bankName: "", accountName: "", accountNumber: "", branch: "", swiftCode: "", schoolId: "1", updatedAt: "" }
-let feeStructures: any[] = []
-let payments: any[] = []
-let salaryRecords: any[] = []
-let salaryStructures: any[] = []
-let documents: any[] = []
+let teacherAssignments: any[] = g("teacherAssignments", [])
+let lessonNotes: any[] = g("lessonNotes", [])
+let schemeOfWorks: any[] = g("schemeOfWorks", [])
+let assignments: any[] = g("assignments", [])
+let timetable: any[] = g("timetable", [])
+let announcements: any[] = g("announcements", [])
+let results: any[] = g("results", [])
+let attendanceRecords: any[] = g("attendanceRecords", [])
+let fees: any[] = g("fees", [])
+let parentLinks: any[] = g("parentLinks", [])
+let attendanceLogs: any[] = g("attendanceLogs", [])
+let attendanceQRCodes: any[] = g("attendanceQRCodes", [])
+let reportCards: any[] = g("reportCards", [])
+let topics: any[] = g("topics", [])
 
-let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superAdminPassword: "successor", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "", schoolQRCode: "", studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] }, staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] } }
+let lessonQuizResults: any[] = g("lessonQuizResults", [])
+let questions: any[] = g("questions", [])
+let exams: any[] = g("exams", [])
+let examSessions: any[] = g("examSessions", [])
+let submissions: any[] = g("submissions", [])
 
-let admissionApplications: any[] = []
-let superAnnouncements: any[] = []
-let feedbackTickets: any[] = []
-let weeklyReports: any[] = []
+let bankDetails: any = g("bankDetails", { id: "b1", bankName: "", accountName: "", accountNumber: "", branch: "", swiftCode: "", schoolId: "1", updatedAt: "" })
+let feeStructures: any[] = g("feeStructures", [])
+let payments: any[] = g("payments", [])
+let salaryRecords: any[] = g("salaryRecords", [])
+let salaryStructures: any[] = g("salaryStructures", [])
+let documents: any[] = g("documents", [])
+
+let gradingConfigData: any = g("gradingConfigData", { id: "gc_1", caMax: 40, examMax: 60, gradeBoundaries: [{ min: 75, grade: "A", remark: "Excellent" }, { min: 65, grade: "B", remark: "Very Good" }, { min: 55, grade: "C", remark: "Good" }, { min: 45, grade: "D", remark: "Fair" }, { min: 0, grade: "F", remark: "Needs Improvement" }], updatedAt: "" })
+
+let schoolSettingsData: any = g("schoolSettingsData", { loginEnabled: true, expirationDate: null, superAdminPassword: "successor", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "", schoolQRCode: "", studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] }, staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] } })
+
+let admissionApplications: any[] = g("admissionApplications", [])
+let superAnnouncements: any[] = g("superAnnouncements", [])
+let feedbackTickets: any[] = g("feedbackTickets", [])
+let weeklyReports: any[] = g("weeklyReports", [])
 
 export const store = {
   sessions: {
@@ -150,11 +161,60 @@ export const store = {
     update: (id: string, data: any) => { const idx = announcements.findIndex((a) => a.id === id); if (idx === -1) return null; announcements[idx] = { ...announcements[idx], ...data }; return announcements[idx] },
     delete: (id: string) => { const idx = announcements.findIndex((a) => a.id === id); if (idx === -1) return false; announcements.splice(idx, 1); return true },
   },
+  gradingConfig: {
+    get: () => gradingConfigData,
+    update: (data: any) => { gradingConfigData = { ...gradingConfigData, ...data, updatedAt: new Date().toISOString() }; return gradingConfigData },
+  },
   results: {
     getAll: () => results,
     getByStudent: (studentId: string) => results.filter((r) => r.studentId === studentId),
     getByStudentAndTerm: (studentId: string, term: string) => results.filter((r) => r.studentId === studentId && r.term === term),
-    create: (data: any) => { const item = { id: uid(), ...data }; results.push(item); return item },
+    getByClassAndSubject: (classId: string, subjectId: string, term?: string, session?: string) => {
+      const studentIds = students.filter((s) => s.classId === classId).map((s) => s.id)
+      let result = results.filter((r) => studentIds.includes(r.studentId) && r.subjectId === subjectId)
+      if (term) result = result.filter((r) => r.term === term)
+      if (session) result = result.filter((r) => r.session === session)
+      return result
+    },
+    create: (data: any) => {
+      const gc = gradingConfigData
+      const caScore = data.caScore ?? 0
+      const examScore = data.examScore ?? 0
+      const caTotal = data.caTotal ?? gc.caMax
+      const examTotal = data.examTotal ?? gc.examMax
+      const total = caScore + examScore
+      const totalMax = caTotal + examTotal
+      const pct = totalMax > 0 ? (total / totalMax) * 100 : 0
+      const boundaries = gc.gradeBoundaries || []
+      let grade = "F", remark = "Needs Improvement"
+      for (const b of boundaries) {
+        if (pct >= b.min) { grade = b.grade; remark = b.remark }
+      }
+      const item = { id: uid(), ...data, caScore, examScore, caTotal, examTotal, total, score: total, totalMax, grade, remark, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      results.push(item)
+      return item
+    },
+    update: (id: string, data: any) => {
+      const idx = results.findIndex((r) => r.id === id)
+      if (idx === -1) return null
+      const gc = gradingConfigData
+      const existing = results[idx]
+      const caScore = data.caScore ?? existing.caScore ?? 0
+      const examScore = data.examScore ?? existing.examScore ?? 0
+      const caTotal = data.caTotal ?? existing.caTotal ?? gc.caMax
+      const examTotal = data.examTotal ?? existing.examTotal ?? gc.examMax
+      const total = caScore + examScore
+      const totalMax = caTotal + examTotal
+      const pct = totalMax > 0 ? (total / totalMax) * 100 : 0
+      const boundaries = gc.gradeBoundaries || []
+      let grade = "F", remark = "Needs Improvement"
+      for (const b of boundaries) {
+        if (pct >= b.min) { grade = b.grade; remark = b.remark }
+      }
+      results[idx] = { ...results[idx], ...data, caScore, examScore, caTotal, examTotal, total, score: total, totalMax, grade, remark, updatedAt: new Date().toISOString() }
+      return results[idx]
+    },
+    delete: (id: string) => { const idx = results.findIndex((r) => r.id === id); if (idx === -1) return false; results.splice(idx, 1); return true },
   },
   attendance: {
     getAll: () => attendanceRecords,

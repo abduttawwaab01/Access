@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2, CreditCard, QrCode, Download, Key, Eye, EyeOff } from "lucide-react"
+import { Save, Palette, Building2, ImageIcon, FileText, Quote, Info, Loader2, CreditCard, QrCode, Download, Key, Eye, EyeOff, GraduationCap, Plus, Trash2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { compressAndUpload } from "@/lib/imageUtils"
 
@@ -120,7 +120,7 @@ export default function SchoolSettingsPage() {
                 <Label htmlFor="name">School Name</Label>
                 <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} className="h-12" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="shortName">Short Name</Label>
                   <Input id="shortName" value={form.shortName} onChange={(e) => update("shortName", e.target.value)} className="h-12" />
@@ -130,7 +130,7 @@ export default function SchoolSettingsPage() {
                   <Input id="email" type="email" value={form.email} onChange={(e) => update("email", e.target.value)} className="h-12" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <Input id="phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} className="h-12" />
@@ -167,7 +167,7 @@ export default function SchoolSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
                 <div className="h-20 w-20 shrink-0 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30">
                   {logoPreview ? (
                     <img src={logoPreview} alt="School Logo" className="h-full w-full object-contain" />
@@ -175,7 +175,7 @@ export default function SchoolSettingsPage() {
                     <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
                   )}
                 </div>
-                <div className="space-y-2 flex-1">
+                <div className="space-y-2 w-full sm:flex-1">
                   <Label htmlFor="logoUpload" className="cursor-pointer">
                     <span className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-medium transition-all hover:bg-muted min-h-[44px]">
                       {logoUploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Compressing...</> : <><ImageIcon className="h-4 w-4" /> Upload Image</>}
@@ -210,7 +210,7 @@ export default function SchoolSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
                   <div key={key} className="space-y-2">
                     <Label className="capitalize">{key.replace("Color", " Color")}</Label>
@@ -351,7 +351,122 @@ export default function SchoolSettingsPage() {
 
       <UserPasswordManager />
       <SchoolQRCodeSettings />
+      <GradingConfigSettings />
     </div>
+  )
+}
+
+function GradingConfigSettings() {
+  const [config, setConfig] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/grading-config").then((r) => r.json()).then((data) => {
+      setConfig(data)
+      setLoading(false)
+    })
+  }, [])
+
+  const updateConfig = (field: string, value: any) => setConfig((prev: any) => ({ ...prev, [field]: value }))
+
+  const addBoundary = () => {
+    const boundaries = config?.gradeBoundaries || []
+    const lastMin = boundaries.length > 0 ? boundaries[boundaries.length - 1].min - 10 : 0
+    updateConfig("gradeBoundaries", [...boundaries, { min: Math.max(0, lastMin), grade: "", remark: "" }])
+  }
+
+  const removeBoundary = (idx: number) => {
+    const boundaries = config?.gradeBoundaries || []
+    updateConfig("gradeBoundaries", boundaries.filter((_: any, i: number) => i !== idx))
+  }
+
+  const updateBoundary = (idx: number, field: string, value: any) => {
+    const boundaries = config?.gradeBoundaries || []
+    boundaries[idx] = { ...boundaries[idx], [field]: value }
+    updateConfig("gradeBoundaries", [...boundaries])
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await fetch("/api/grading-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      })
+      toast.success("Grading configuration saved")
+    } catch {
+      toast.error("Failed to save")
+    }
+    setSaving(false)
+  }
+
+  if (loading) return null
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
+      <Card className="glass-card border-0">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <GraduationCap className="h-4 w-4 text-primary" />
+            Grading Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">Configure CA/Exam score limits and grade boundaries used for report cards.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>CA Maximum Score</Label>
+              <Input type="number" min={0} max={100} value={config?.caMax ?? 40}
+                onChange={(e) => updateConfig("caMax", Number(e.target.value))} className="h-12" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Exam Maximum Score</Label>
+              <Input type="number" min={0} max={100} value={config?.examMax ?? 60}
+                onChange={(e) => updateConfig("examMax", Number(e.target.value))} className="h-12" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Grade Boundaries</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addBoundary}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add
+              </Button>
+            </div>
+            <div className="space-y-1.5">
+              {(config?.gradeBoundaries || []).map((b: any, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Input type="number" min={0} max={100} value={b.min}
+                      onChange={(e) => updateBoundary(i, "min", Number(e.target.value))}
+                      placeholder="Min %" className="h-10 text-xs" />
+                  </div>
+                  <div className="w-20">
+                    <Input value={b.grade} onChange={(e) => updateBoundary(i, "grade", e.target.value)}
+                      placeholder="Grade" className="h-10 text-xs text-center font-bold" maxLength={2} />
+                  </div>
+                  <div className="flex-[2]">
+                    <Input value={b.remark} onChange={(e) => updateBoundary(i, "remark", e.target.value)}
+                      placeholder="Remark" className="h-10 text-xs" />
+                  </div>
+                  {i > 0 && (
+                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-danger" onClick={() => removeBoundary(i)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground">Boundaries are checked top-down (highest min first). The last boundary must have min=0.</p>
+          </div>
+          <Button type="button" onClick={handleSave} disabled={saving} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 w-full">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+            Save Grading Config
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -424,7 +539,7 @@ function SchoolQRCodeSettings() {
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs font-mono"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={handleDownload} className="flex-1">
               <Download className="h-4 w-4 mr-1" /> Download PNG
             </Button>
@@ -487,7 +602,7 @@ function UserPasswordManager() {
           <p className="text-xs text-muted-foreground">Reset passwords for any student, teacher, or parent account.</p>
           <div className="space-y-2">
             <Label>User Type</Label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               {(["students", "staff", "parents"] as const).map((t) => (
                 <button key={t} type="button"
                   className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${userType === t ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}

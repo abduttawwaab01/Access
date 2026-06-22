@@ -290,9 +290,9 @@ export default function AdminAttendancePage() {
           <Card className="border-0 glass-card">
             <CardContent className="p-4 space-y-4">
               <p className="text-sm text-muted-foreground">Enter a student ID code or staff code to mark attendance</p>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input placeholder="Enter QR code (e.g. STU-ALICE-001)" value={manualCode} onChange={(e) => setManualCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleManualCheckIn()} />
-                <Button onClick={handleManualCheckIn}><Search className="h-4 w-4 mr-1" /> Find</Button>
+                <Button onClick={handleManualCheckIn} className="shrink-0"><Search className="h-4 w-4 mr-1" /> Find</Button>
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground">Quick codes:</p>

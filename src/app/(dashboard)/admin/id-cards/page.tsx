@@ -74,7 +74,7 @@ export default function AdminIDCardsPage() {
         link.click()
         toast.success("ID card downloaded as PNG")
       } else {
-        const { default: jsPDF } = await import("jspdf")
+        const { jsPDF } = await import("jspdf")
         const pdf = new jsPDF(orientation === "portrait" ? "p" : "l", "mm", orientation === "portrait" ? "a4" : "a4")
         const pdfWidth = orientation === "portrait" ? 210 : 297
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width
@@ -89,7 +89,7 @@ export default function AdminIDCardsPage() {
     setBulkExporting(true)
     try {
       const html2canvas = (await import("html2canvas")).default
-      const { default: jsPDF } = await import("jspdf")
+      const { jsPDF } = await import("jspdf")
       const list = tab === "students" ? filteredStudents : filteredStaff
       const slug = tab === "students" ? "Student" : "Staff"
       if (list.length === 0) { toast.error("No items to export"); setBulkExporting(false); return }

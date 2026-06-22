@@ -62,7 +62,9 @@ export function BottomNav({ items }: BottomNavProps) {
         <div className="flex items-center justify-around py-2">
           {items.map((item) => {
             const Icon = iconMap[item.icon] || LayoutDashboard
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const pathParts = item.href.split("/").filter(Boolean)
+            const isRoot = pathParts.length === 1
+            const isActive = pathname === item.href || (!isRoot && pathname.startsWith(item.href + "/"))
 
             return (
               <Link

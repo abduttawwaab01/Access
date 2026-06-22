@@ -609,21 +609,26 @@ export function generateResults(
   for (const student of students) {
     const classSubjects = subjects.filter((s) => s.classId === student.classId)
     for (const sub of classSubjects) {
-      const score = getRandomScore(35, 98)
-      const total = 100
-      const { grade, remark } = getGradeAndRemark(score, total)
+      const caScore = getRandomScore(15, 38)
+      const examScore = getRandomScore(20, 58)
+      const total = caScore + examScore
+      const { grade, remark } = getGradeAndRemark(total, 100)
       result.push({
         id: nextId("res"),
         studentId: student.id,
         subject: sub.name,
         subjectId: sub.id,
-        score,
+        caScore,
+        examScore,
+        caTotal: 40,
+        examTotal: 60,
         total,
+        score: total,
+        totalMax: 100,
         grade,
         remark,
         term: CURRENT_TERM,
         session: CURRENT_SESSION,
-        examType: "final",
         createdAt: now(),
         updatedAt: now(),
       })

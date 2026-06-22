@@ -185,7 +185,7 @@ export default function ParentDashboard() {
                     initial={{ scaleY: 0, opacity: 0 }}
                     animate={{ scaleY: 1, opacity: 1 }}
                     transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
-                    className="h-40 origin-bottom"
+                    className="h-40 min-h-[160px] min-w-0 origin-bottom"
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>

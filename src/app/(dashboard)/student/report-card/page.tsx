@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Download, Printer, Send, Share2, FileText, DownloadCloud, Award } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
 import { useSession } from "next-auth/react"
+import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 
 export default function StudentReportCardPage() {
   const { data: session } = useSession()
@@ -126,25 +127,10 @@ export default function StudentReportCardPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const { default: jsPDF } = await import("jspdf")
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false })
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF("p", "mm", "a4")
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      let heightLeft = pdfHeight
-      let position = 0
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
-      heightLeft -= pageHeight
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight
-        pdf.addPage()
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight)
-        heightLeft -= pageHeight
-      }
-      pdf.save(`Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
+      await downloadPdf(
+        reportRef.current,
+        `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`
+      )
       toast.success("Report card downloaded as PDF")
     } catch (err) {
       console.error(err)
@@ -157,12 +143,10 @@ export default function StudentReportCardPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const html2canvas = (await import("html2canvas")).default
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
-      const link = document.createElement("a")
-      link.download = `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`
-      link.href = canvas.toDataURL("image/png")
-      link.click()
+      await downloadPng(
+        reportRef.current,
+        `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`
+      )
       toast.success("Report card downloaded as PNG")
     } catch {
       toast.error("Failed to export")
@@ -171,7 +155,8 @@ export default function StudentReportCardPage() {
   }
 
   const handlePrint = () => {
-    window.print()
+    if (!reportRef.current) return
+    openPrintWindow(reportRef.current, `Report Card - ${reportData.studentName}`)
   }
 
   const handleShareWhatsApp = () => {

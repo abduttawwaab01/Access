@@ -29,6 +29,7 @@ const adminNav: NavItem[] = [
   { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
   { label: "Announcements", href: "/admin/announcements", icon: "Megaphone" },
   { label: "Reports", href: "/admin/reports", icon: "FileText" },
+  { label: "Results", href: "/admin/results", icon: "BarChart3" },
   { label: "Report Cards", href: "/admin/report-cards", icon: "Award" },
   { label: "Weekly Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
   { label: "Settings", href: "/admin/settings", icon: "Settings" },
@@ -49,6 +50,7 @@ const teacherNav: NavItem[] = [
   { label: "Weekly Reports", href: "/teacher/weekly-reports", icon: "ClipboardList" },
   { label: "CBT Engine", href: "/teacher/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/teacher/question-bank", icon: "HelpCircle" },
+  { label: "Results", href: "/teacher/results", icon: "BarChart3" },
   { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
 ]
 
@@ -81,16 +83,16 @@ const studentNav: NavItem[] = [
 const adminBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: "LayoutDashboard" },
   { label: "Students", href: "/admin/students", icon: "Users" },
+  { label: "Results", href: "/admin/results", icon: "BarChart3" },
   { label: "AI Assistant", href: "/admin/ai-assistant", icon: "BotMessageSquare" },
-  { label: "Weekly Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
-  { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
+  { label: "Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
   { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
 ]
 
 const teacherBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
+  { label: "Results", href: "/teacher/results", icon: "BarChart3" },
   { label: "AI Assistant", href: "/teacher/ai-assistant", icon: "BotMessageSquare" },
-  { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: "FileText" },
   { label: "Classes", href: "/teacher/classes", icon: "BookOpen" },
   { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
 ]

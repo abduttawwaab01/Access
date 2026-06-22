@@ -157,7 +157,7 @@ export default function StudentDashboard() {
                 initial={{ scaleY: 0, opacity: 0 }}
                 animate={{ scaleY: 1, opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
-                className="h-48 origin-bottom"
+                className="h-48 min-h-[180px] min-w-0 origin-bottom"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>

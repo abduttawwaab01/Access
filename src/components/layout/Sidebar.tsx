@@ -108,7 +108,9 @@ export function Sidebar({ items, collapsed, onToggle, user, schoolName, classNam
         <div className={cn("flex flex-col gap-1", collapsed && "items-center")}>
           {items.map((item) => {
             const Icon = iconMap[item.icon] || LayoutDashboard
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const pathParts = item.href.split("/").filter(Boolean)
+            const isRoot = pathParts.length === 1
+            const isActive = pathname === item.href || (!isRoot && pathname.startsWith(item.href + "/"))
 
             return (
               <Link

@@ -136,7 +136,7 @@ export default function ClassesPage() {
             <Label htmlFor="name">Grade/Class Name</Label>
             <Input id="name" placeholder="e.g. Grade 10" value={form.name} onChange={(e) => update("name", e.target.value)} className="h-12" required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="arm">Arm/Stream</Label>
               <Input id="arm" placeholder="e.g. A, B, C" value={form.arm} onChange={(e) => update("arm", e.target.value)} className="h-12" />

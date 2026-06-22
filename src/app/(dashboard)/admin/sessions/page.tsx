@@ -91,7 +91,7 @@ export default function SessionsPage() {
                           <p className="font-semibold">{item.name}</p>
                           {item.isCurrent && <Badge className="bg-primary/10 text-primary text-[10px] border-0">Current</Badge>}
                         </div>
-                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {item.startDate} - {item.endDate}</span>
                           <span>{item.termCount || 0} terms</span>
                         </div>
@@ -119,7 +119,7 @@ export default function SessionsPage() {
             <Label htmlFor="name">Session Name</Label>
             <Input id="name" placeholder="e.g. 2024/2025 Academic Session" value={form.name} onChange={(e) => update("name", e.target.value)} className="h-12" required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
               <Input id="startDate" type="date" value={form.startDate} onChange={(e) => update("startDate", e.target.value)} className="h-12" required />

@@ -30,13 +30,24 @@ import {
 import { generateAllQuestions, generateExams, generateExamSessionsAndSubmissions } from "./questions"
 import { SEED_SCHOOL } from "./data"
 
-let seeded = false
+const SEED_FLAG = "__opencode_seed_done"
+
+function isSeeded(): boolean {
+  if (typeof globalThis === "undefined") return false
+  return !!(globalThis as any)[SEED_FLAG]
+}
+
+function markSeeded(): void {
+  if (typeof globalThis !== "undefined") {
+    (globalThis as any)[SEED_FLAG] = true
+  }
+}
 
 export function runSeed(store: any) {
-  if (seeded) return
+  if (isSeeded()) return
   // Guard: only seed if store is empty
   if (store.classes.getAll().length > 0) {
-    seeded = true
+    markSeeded()
     return
   }
 
@@ -189,7 +200,7 @@ export function runSeed(store: any) {
   const feedbackTickets = generateFeedbackTickets()
   feedbackTickets.forEach((t) => (store as any).feedbackTickets.create(t))
 
-  seeded = true
+  markSeeded()
   console.log("[Seed] Seeding complete!")
   console.log(`  - ${createdClasses.length} classes`)
   console.log(`  - ${createdSubjects.length} subjects`)

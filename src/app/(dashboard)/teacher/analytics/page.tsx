@@ -159,7 +159,7 @@ export default function TeacherAnalyticsPage() {
             <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Class Enrollment</h3>
               <p className="text-xs text-muted-foreground mb-4">Students per class</p>
-              <div className="h-48">
+              <div className="h-48 min-h-[180px] min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={studentsPerClass} margin={{ top: 5, right: 5, bottom: 20, left: 0 }} layout="vertical">
                     <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -180,7 +180,7 @@ export default function TeacherAnalyticsPage() {
             <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Attendance Breakdown</h3>
               <p className="text-xs text-muted-foreground mb-4">Present / Absent / Late</p>
-              <div className="h-48 flex items-center justify-center">
+              <div className="h-48 min-h-[180px] min-w-0 flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={[

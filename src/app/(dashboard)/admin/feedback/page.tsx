@@ -74,7 +74,7 @@ export default function AdminFeedbackPage() {
               const Icon = cfg.icon
               return (
                 <div key={t.id} className="glass-card rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <MessageSquare className="h-4 w-4 text-muted-foreground" />

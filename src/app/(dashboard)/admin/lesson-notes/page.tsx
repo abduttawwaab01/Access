@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Pencil, FileText, Search, X, CheckCircle, XCircle, ChevronDown, ChevronRight, HelpCircle, ScanLine, Sparkles, Eye, EyeOff, Clock, Plus, Trash2 } from "lucide-react"
+import { Pencil, FileText, Search, X, CheckCircle, XCircle, ChevronDown, ChevronRight, HelpCircle, ScanLine, Sparkles, Eye, EyeOff, Clock, Plus, Trash2, BookOpen } from "lucide-react"
 import ImageToText from "@/components/ImageToText"
+import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -32,13 +33,17 @@ export default function AdminLessonNotes() {
   const [quizOpen, setQuizOpen] = useState(true)
   const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft", createdBy: "" })
   const [quiz, setQuiz] = useState<any[]>([])
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const [viewerNote, setViewerNote] = useState<any>(null)
+  const [school, setSchool] = useState<any>(null)
 
   useEffect(() => {
     Promise.all([
       fetch("/api/lesson-notes").then((r) => r.json()),
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/staff").then((r) => r.json()),
-    ]).then(([d, c, s]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setLoading(false) })
+      fetch("/api/school").then((r) => r.json()),
+    ]).then(([d, c, s, sch]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setSchool(sch); setLoading(false) })
   }, [])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
@@ -158,7 +163,7 @@ export default function AdminLessonNotes() {
       <PageHeader title="Lesson Notes" description={`${notes.length} notes from teachers`} />
       <ConfirmDialog open={false} onOpenChange={() => {}} onConfirm={() => {}} title="" description="" />
 
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 pl-9" />
@@ -222,6 +227,9 @@ export default function AdminLessonNotes() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => { setViewerNote(item); setViewerOpen(true) }} title="View / Teach">
+                          <BookOpen className="h-3.5 w-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)} title="Edit note">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -269,8 +277,34 @@ export default function AdminLessonNotes() {
         </div>
       )}
 
+      {viewerNote && (
+        <LessonNoteViewer
+          open={viewerOpen}
+          onOpenChange={setViewerOpen}
+          data={{
+            schoolName: school?.name || "Access School",
+            schoolLogo: school?.logo || "",
+            schoolMotto: school?.motto || "",
+            schoolAddress: school?.address || "",
+            schoolPhone: school?.phone || "",
+            schoolEmail: school?.email || "",
+            title: viewerNote.title,
+            subject: viewerNote.subject,
+            className: getClassName(viewerNote.classId)?.name + (getClassName(viewerNote.classId)?.arm ? ` ${getClassName(viewerNote.classId).arm}` : "") || "",
+            week: viewerNote.week,
+            term: viewerNote.term,
+            session: viewerNote.session || "",
+            teacherName: viewerNote.creatorName || getStaffName(viewerNote.createdBy),
+            content: viewerNote.content || "",
+            resources: viewerNote.resources || "",
+            quiz: viewerNote.quiz || [],
+            createdAt: viewerNote.createdAt,
+          }}
+        />
+      )}
+
       <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Lesson Note" : "New Lesson Note"}>
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70dvh] pb-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Title</Label>
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} className="h-12" required />
@@ -286,7 +320,7 @@ export default function AdminLessonNotes() {
               </Select>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
               <Input value={form.subject} onChange={(e) => update("subject", e.target.value)} placeholder="e.g. Mathematics" className="h-12" required />
@@ -301,7 +335,7 @@ export default function AdminLessonNotes() {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Week</Label>
               <Input type="number" value={form.week} onChange={(e) => update("week", e.target.value)} className="h-12" />
@@ -330,14 +364,14 @@ export default function AdminLessonNotes() {
             </Select>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <Label>Content</Label>
               <div className="flex items-center gap-1">
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setOcrOpen(!ocrOpen)}>
-                  <ScanLine className="h-3 w-3 mr-1" /> Extract from Image
+                  <ScanLine className="h-3 w-3 mr-1" /><span>Extract Image</span>
                 </Button>
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate}>
-                  <Sparkles className="h-3 w-3 mr-1" /> Generate
+                  <Sparkles className="h-3 w-3 mr-1" /><span>Generate</span>
                 </Button>
               </div>
             </div>
@@ -378,7 +412,7 @@ export default function AdminLessonNotes() {
                       </Button>
                     </div>
                     <Input value={q.questionText} onChange={(e) => updateQuestion(q.id, "questionText", e.target.value)} placeholder="Question text" className="h-10" />
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <Label className="text-xs">Type</Label>
                         <Select value={q.type} onValueChange={(v) => updateQuestion(q.id, "type", v)}>

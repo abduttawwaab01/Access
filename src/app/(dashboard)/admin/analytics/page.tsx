@@ -211,7 +211,7 @@ export default function AdminAnalyticsPage() {
                   <div className="h-48 md:h-64 min-h-[180px] relative flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={[{ name: "Male", value: maleCount || 1 }, { name: "Female", value: femaleCount || 1 }]} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value">
+                        <Pie data={[{ name: "Male", value: maleCount || 1 }, { name: "Female", value: femaleCount || 1 }]} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={4} dataKey="value">
                           <Cell fill="#3b82f6" />
                           <Cell fill="#ec4899" />
                         </Pie>
@@ -344,7 +344,7 @@ export default function AdminAnalyticsPage() {
                   <div className="h-48 md:h-64 min-h-[180px] relative flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={attendanceData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
+                        <Pie data={attendanceData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
                           {attendanceData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i]} />)}
                         </Pie>
                         <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: 12 }} />
@@ -386,7 +386,7 @@ export default function AdminAnalyticsPage() {
                           <Pie data={[
                             { name: "Paid", value: Math.max(feeSummary.paid, 1) },
                             { name: "Outstanding", value: Math.max(feeSummary.outstanding, 1) },
-                          ]} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
+                          ]} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
                             <Cell fill="#22c55e" />
                             <Cell fill="#ef4444" />
                           </Pie>

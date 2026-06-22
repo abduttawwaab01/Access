@@ -251,7 +251,7 @@ export default function QuestionBankPage() {
       <PageHeader title="Question Bank" description="Manage and approve questions for exams" actionLabel="Add Question" onAction={openCreate} />
       <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
         title="Delete Question" description={`Permanently delete this question? This cannot be undone.`} />
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {[
           { label: "Total Questions", value: totalCount, color: "text-primary" },
           { label: "Approved", value: approvedCount, color: "text-green-600" },
@@ -350,11 +350,11 @@ export default function QuestionBankPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3"
+          className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3"
         >
           <CheckSquare className="h-4 w-4 text-primary" />
           <span className="text-sm text-muted-foreground">{selected.size} selected</span>
-          <Button size="sm" className="ml-auto h-8 animated-gradient border-0 text-white shadow-lg shadow-primary/25" onClick={handleBulkApprove} disabled={bulkLoading}>
+          <Button size="sm" className="sm:ml-auto h-8 animated-gradient border-0 text-white shadow-lg shadow-primary/25" onClick={handleBulkApprove} disabled={bulkLoading}>
             {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
             Approve Selected
           </Button>
@@ -562,7 +562,7 @@ export default function QuestionBankPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="classId">Class</Label>
               <Select value={form.classId} onValueChange={(v) => update("classId", v)}>
@@ -582,7 +582,7 @@ export default function QuestionBankPage() {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="topic">Topic</Label>
               <Select value={form.topic} onValueChange={(v) => update("topic", v)}>

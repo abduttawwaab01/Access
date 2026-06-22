@@ -152,7 +152,7 @@ export default function AdminDocumentsPage() {
     setExporting(doc.id)
     try {
       const html2canvas = (await import("html2canvas")).default
-      const jsPDF = (await import("jspdf")).default
+      const { jsPDF } = await import("jspdf")
       const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true })
       const imgData = canvas.toDataURL("image/png")
       const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width / 2, canvas.height / 2] })
@@ -441,22 +441,22 @@ export default function AdminDocumentsPage() {
       {previewDoc && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-4 pb-4 overflow-auto" onClick={() => setPreviewDoc(null)}>
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-3xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-              <div>
-                <h3 className="font-semibold text-gray-900 text-base">{previewDoc.title}</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b bg-gray-50 gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-base truncate">{previewDoc.title}</h3>
                 <p className="text-xs text-gray-500">{previewDoc.reference} &bull; {new Date(previewDoc.generatedAt).toLocaleDateString()}</p>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0 flex-wrap">
                 <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => exportAsPng(previewDoc)} disabled={exporting === previewDoc.id}>
-                  {exporting === previewDoc.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ImageIcon className="h-4 w-4 mr-1" />}
-                  PNG
+                  {exporting === previewDoc.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                  <span className="hidden sm:inline ml-1">PNG</span>
                 </Button>
                 <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => exportAsPdf(previewDoc)} disabled={exporting === previewDoc.id}>
-                  {exporting === previewDoc.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
-                  PDF
+                  {exporting === previewDoc.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4" />}
+                  <span className="hidden sm:inline ml-1">PDF</span>
                 </Button>
                 <Button variant="ghost" size="sm" className="text-gray-600" onClick={printDocument}>
-                  <Printer className="h-4 w-4 mr-1" /> Print
+                  <Printer className="h-4 w-4" /><span className="hidden sm:inline ml-1">Print</span>
                 </Button>
                 <Button variant="ghost" size="sm" className="text-gray-600 ml-2" onClick={() => setPreviewDoc(null)}>
                   <X className="h-4 w-4" />

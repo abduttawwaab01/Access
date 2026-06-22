@@ -12,6 +12,10 @@ interface SubjectResult {
   total: number
   grade: string
   remark: string
+  caScore?: number
+  examScore?: number
+  caTotal?: number
+  examTotal?: number
 }
 
 interface Domain {
@@ -161,10 +165,11 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
               <tr className="bg-indigo-50 text-left">
                 <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700" style={{ width: "4%" }}>#</th>
                 <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700">Subject</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>Score</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>Total</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>%</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>Grade</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "9%" }}>CA Score</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "9%" }}>Exam Score</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "9%" }}>Total</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "7%" }}>%</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "7%" }}>Grade</th>
                 <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700">Remark</th>
               </tr>
             </thead>
@@ -175,8 +180,9 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
                   <tr key={r.subject} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
                     <td className="border border-gray-200 px-1.5 py-1 text-center text-muted-foreground">{i + 1}</td>
                     <td className="border border-gray-200 px-1.5 py-1 font-medium">{r.subject}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.caScore ?? "-"}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.examScore ?? "-"}</td>
                     <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.score}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.total}</td>
                     <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{pct}%</td>
                     <td className="border border-gray-200 px-1.5 py-1 text-center">
                       <span className="inline-block font-bold px-1.5 py-0.5 rounded" style={{
@@ -203,7 +209,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
         <div className="grid grid-cols-2 gap-3 print:gap-2" style={{ marginBottom: compact ? "4pt" : "8pt" }}>
           <div>
             <h3 className="font-bold uppercase tracking-wider text-indigo-800" style={{ fontSize: "6.5pt", marginBottom: "2pt" }}>Performance Radar</h3>
-            <div style={{ height: chartHeight }}>
+            <div style={{ height: chartHeight, minWidth: 0, minHeight: chartHeight }}>
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData}>
                   <PolarGrid stroke="#e5e7eb" />
@@ -216,7 +222,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
           </div>
           <div>
             <h3 className="font-bold uppercase tracking-wider text-indigo-800" style={{ fontSize: "6.5pt", marginBottom: "2pt" }}>Score Distribution</h3>
-            <div style={{ height: chartHeight }}>
+            <div style={{ height: chartHeight, minWidth: 0, minHeight: chartHeight }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 2, right: 2, bottom: 2, left: -10 }}>
                   <XAxis dataKey="subject" tick={{ fontSize: compact ? 5.5 : 6.5, fill: "#6b7280" }} />
