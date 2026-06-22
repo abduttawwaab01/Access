@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button-enhanced"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -59,9 +59,29 @@ export default function AdminIDCardsPage() {
   )
 
   const exportSingleCard = async (format: "png" | "pdf") => {
-    if (!cardRef.current) return
+    const item = tab === "students" ? selectedStudent : selectedStaff
+    if (!item || !school) return
     try {
-      const canvas = await captureElement(cardRef.current, { scale: 3, backgroundColor: "#ffffff" })
+      const html = showBack
+        ? (tab === "students"
+            ? renderStudentCardBackHTML(item, school, idCardConfig, orientation)
+            : renderStaffCardBackHTML(item, school, staffIdCardConfig, orientation))
+        : (tab === "students"
+            ? renderStudentCardHTML(item, school, classes, orientation)
+            : renderStaffCardHTML(item, school, orientation))
+
+      const container = document.createElement("div")
+      container.style.position = "fixed"
+      container.style.left = "-9999px"
+      container.style.top = "0"
+      container.style.background = "#ffffff"
+      container.style.padding = "20px"
+      container.innerHTML = html
+      document.body.appendChild(container)
+
+      const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
+      document.body.removeChild(container)
+
       const imgData = canvas.toDataURL("image/png")
       const name = tab === "students" && selectedStudent
         ? `${selectedStudent.firstName}_${selectedStudent.lastName}_ID`
@@ -136,11 +156,19 @@ export default function AdminIDCardsPage() {
   }
 
   const handlePrintCard = () => {
-    if (!cardRef.current) return
-    const html = cardRef.current.outerHTML
+    const item = tab === "students" ? selectedStudent : selectedStaff
+    if (!item || !school) return
+    const html = showBack
+      ? (tab === "students"
+          ? renderStudentCardBackHTML(item, school, idCardConfig, orientation)
+          : renderStaffCardBackHTML(item, school, staffIdCardConfig, orientation))
+      : (tab === "students"
+          ? renderStudentCardHTML(item, school, classes, orientation)
+          : renderStaffCardHTML(item, school, orientation))
+
     const win = window.open("", "_blank")
     if (!win) return
-    win.document.write(`<html><head><title>ID Card</title><style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5}img{max-width:100%}</style></head><body>${html}</body></html>`)
+    win.document.write(`<html><head><title>ID Card</title><style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;margin:0}@media print{@page{margin:0}body{margin:0}}</style></head><body>${html}</body></html>`)
     win.document.close()
     win.focus()
     setTimeout(() => win.print(), 500)
@@ -178,9 +206,9 @@ export default function AdminIDCardsPage() {
 
       {!selectedStudent && !selectedStaff ? (
         <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearch("") }}>
-          <TabsList className="flex flex-wrap w-full gap-1.5">
-            <TabsTrigger value="students" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-4 w-4 mr-1" /> Student ID Cards</TabsTrigger>
-            <TabsTrigger value="staff" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><GraduationCap className="h-4 w-4 mr-1" /> Staff ID Cards</TabsTrigger>
+          <TabsList className="flex flex-nowrap w-full gap-2 overflow-x-auto scrollbar-hide">
+            <TabsTrigger value="students" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[140px]"><Users className="h-4 w-4 mr-1.5" /> Student ID Cards</TabsTrigger>
+            <TabsTrigger value="staff" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[140px]"><GraduationCap className="h-4 w-4 mr-1.5" /> Staff ID Cards</TabsTrigger>
           </TabsList>
 
           <TabsContent value="students" className="mt-4 space-y-4">
@@ -189,8 +217,8 @@ export default function AdminIDCardsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search students by name or ID..." className="pl-9 h-12" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkExporting || filteredStudents.length === 0} className="shrink-0">
-                <FileDown className="h-4 w-4 mr-1" /> {bulkExporting ? "Exporting..." : `Export All (${filteredStudents.length})`}
+              <Button variant="outline" size="default" onClick={handleBulkExport} disabled={bulkExporting || filteredStudents.length === 0} className="shrink-0 min-w-[140px]">
+                <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -225,8 +253,8 @@ export default function AdminIDCardsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search staff by name or ID..." className="pl-9 h-12" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkExporting || filteredStaff.length === 0} className="shrink-0">
-                <FileDown className="h-4 w-4 mr-1" /> {bulkExporting ? "Exporting..." : `Export All (${filteredStaff.length})`}
+              <Button variant="outline" size="default" onClick={handleBulkExport} disabled={bulkExporting || filteredStaff.length === 0} className="shrink-0 min-w-[140px]">
+                <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

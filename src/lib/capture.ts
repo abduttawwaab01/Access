@@ -1,9 +1,25 @@
+function inlineComputedStyles(source: Element, target: Element) {
+  const computed = window.getComputedStyle(source)
+  for (let i = 0; i < computed.length; i++) {
+    const prop = computed[i]
+    try {
+      ;(target as HTMLElement).style.setProperty(prop, computed.getPropertyValue(prop))
+    } catch {}
+  }
+  const sourceChildren = source.children
+  const targetChildren = target.children
+  for (let i = 0; i < sourceChildren.length && i < targetChildren.length; i++) {
+    inlineComputedStyles(sourceChildren[i], targetChildren[i])
+  }
+}
+
 export async function captureElement(
   element: HTMLElement,
-  options?: { scale?: number; backgroundColor?: string }
+  options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<HTMLCanvasElement> {
   const scale = options?.scale ?? 2
   const backgroundColor = options?.backgroundColor ?? "#ffffff"
+  const shouldInlineStyles = options?.inlineStyles ?? true
 
   let html2canvasFn: any
 
@@ -29,7 +45,7 @@ export async function captureElement(
     backgroundColor,
     logging: false,
     allowTaint: false,
-    onclone: (clonedDoc: Document) => {
+    onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
       const style = clonedDoc.createElement("style")
       style.textContent = `
         .animated-gradient {
@@ -43,6 +59,12 @@ export async function captureElement(
         }
       `
       clonedDoc.head.appendChild(style)
+
+      if (shouldInlineStyles) {
+        try {
+          inlineComputedStyles(element, clonedElement)
+        } catch {}
+      }
     },
   })
 
@@ -51,7 +73,7 @@ export async function captureElement(
 
 export async function elementToPngBlob(
   element: HTMLElement,
-  options?: { scale?: number; backgroundColor?: string }
+  options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<Blob> {
   try {
     const canvas = await captureElement(element, options)
@@ -69,7 +91,7 @@ export async function elementToPngBlob(
 
 export async function elementToDataUrl(
   element: HTMLElement,
-  options?: { scale?: number; backgroundColor?: string }
+  options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<string> {
   try {
     const canvas = await captureElement(element, options)
@@ -83,7 +105,7 @@ export async function elementToDataUrl(
 export async function downloadPng(
   element: HTMLElement,
   filename: string,
-  options?: { scale?: number; backgroundColor?: string }
+  options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<void> {
   try {
     const canvas = await captureElement(element, options)
@@ -100,7 +122,7 @@ export async function downloadPng(
 export async function downloadPdf(
   element: HTMLElement,
   filename: string,
-  options?: { scale?: number; backgroundColor?: string }
+  options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<void> {
   const canvas = await captureElement(element, { ...options, scale: 2 })
   const dataUrl = canvas.toDataURL("image/png")
