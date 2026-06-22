@@ -9,7 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { toast } from "sonner"
 import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, User } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
-import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { downloadPng, downloadPdf, openPrintWindow, captureElement } from "@/lib/capture"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
 export default function AdminReportCardsPage() {
