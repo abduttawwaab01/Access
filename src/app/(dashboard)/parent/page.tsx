@@ -229,17 +229,17 @@ export default function ParentDashboard() {
                       className="group relative overflow-hidden rounded-xl border border-border/50 transition-all duration-200 hover:border-primary/20 hover:shadow-md"
                     >
                       <Card className="glass-card border-0">
-                        <CardContent className="flex items-center gap-3 p-4">
+                        <CardContent className="flex items-center gap-2 md:gap-3 p-3 md:p-4">
                           <div className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3",
+                            "flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3",
                             item.gradient,
                           )}>
-                            <Icon className="h-5 w-5 text-white" />
+                            <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{item.label}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs md:text-sm font-medium truncate">{item.label}</p>
                           </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground/60 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5" />
+                          <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0 text-muted-foreground/60 transition-all duration-200 group-hover:text-primary group-hover:translate-x-0.5" />
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -253,15 +253,15 @@ export default function ParentDashboard() {
             <div className="grid grid-cols-2 gap-3">
               <motion.div whileHover={{ scale: 1.02, y: -2 }} className="group relative">
                 <Card className="glass-card border-0 overflow-hidden transition-all duration-200 group-hover:shadow-[0_0_25px_-5px_hsl(var(--primary)/0.2)]">
-                  <CardContent className="p-4">
-                    <p className="text-xs font-semibold text-muted-foreground mb-3">Attendance</p>
+                  <CardContent className="p-3 md:p-4">
+                    <p className="text-[11px] md:text-xs font-semibold text-muted-foreground mb-2 md:mb-3">Attendance</p>
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                        <div className="flex justify-between text-[11px] md:text-xs text-muted-foreground mb-1.5">
                           <span>Present</span>
                           <span className="text-emerald-600 font-medium">{attendance.present || 0}</span>
                         </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div className="h-1.5 md:h-2 overflow-hidden rounded-full bg-muted">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${attendance.total > 0 ? ((attendance.present || 0) / attendance.total) * 100 : 0}%` }}
@@ -276,7 +276,7 @@ export default function ParentDashboard() {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
-                        className="mt-3 flex gap-3 text-[10px] text-muted-foreground"
+                        className="mt-2 md:mt-3 flex gap-2 md:gap-3 text-[10px] text-muted-foreground"
                       >
                         <span className="flex items-center gap-1">
                           <span className="h-2 w-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500" />
@@ -294,25 +294,25 @@ export default function ParentDashboard() {
 
               <motion.div whileHover={{ scale: 1.02, y: -2 }} className="group relative">
                 <Card className="glass-card border-0 overflow-hidden transition-all duration-200 group-hover:shadow-[0_0_25px_-5px_hsl(var(--primary)/0.2)]">
-                  <CardContent className="p-4">
-                    <p className="text-xs font-semibold text-muted-foreground mb-3">Fees</p>
-                    <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                  <CardContent className="p-3 md:p-4">
+                    <p className="text-[11px] md:text-xs font-semibold text-muted-foreground mb-2 md:mb-3">Fees</p>
+                    <p className="text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
                       ${fees.paid || 0}
                     </p>
-                    <p className="text-xs text-muted-foreground">of ${fees.total || 0} total</p>
+                    <p className="text-[11px] md:text-xs text-muted-foreground">of ${fees.total || 0} total</p>
                     {fees.outstanding > 0 && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-                        className="mt-2"
+                        className="mt-1.5 md:mt-2"
                       >
                         <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300/30 bg-amber-500/5">
                           ${fees.outstanding} outstanding
                         </Badge>
                       </motion.div>
                     )}
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="mt-2 md:mt-3 h-1 overflow-hidden rounded-full bg-muted">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${fees.total > 0 ? ((fees.paid || 0) / fees.total) * 100 : 0}%` }}

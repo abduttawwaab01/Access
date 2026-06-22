@@ -73,10 +73,10 @@ export default function AdminDashboard() {
             <motion.div key={stat.label} variants={cardVariants} whileHover={{ scale: 1.03, rotate: 0.5 }} className="group relative">
               <Card className="glass-card relative overflow-hidden border-0 transition-shadow duration-300 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)]">
                 <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                <CardContent className="p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br", gradient, "shadow-lg shadow-primary/20")}>
-                      <Icon className="h-4 w-4 text-white" />
+                <CardContent className="p-3 md:p-4">
+                  <div className="mb-2 md:mb-3 flex items-center justify-between">
+                    <div className={cn("flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-gradient-to-br", gradient, "shadow-lg shadow-primary/20")}>
+                      <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-white" />
                     </div>
                     <motion.span
                       initial={{ opacity: 0, x: 8 }}
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
                       {stat.change}
                     </motion.span>
                   </div>
-                  <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
+                  <p className="text-xl md:text-2xl font-bold tracking-tight">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </CardContent>
               </Card>
@@ -122,34 +122,34 @@ export default function AdminDashboard() {
                 className="relative space-y-3"
               >
                 <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary via-purple-500 to-secondary opacity-30" />
-                {[
-                  { action: "New student enrolled", detail: "John Doe - Grade 10A", time: "2 min ago" },
-                  { action: "Exam completed", detail: "Mathematics Mid-Term - 85% pass rate", time: "1 hour ago" },
-                  { action: "Attendance marked", detail: "Grade 12 - 96% present today", time: "3 hours ago" },
-                  { action: "Fee payment received", detail: "Sarah Smith - $500 tuition", time: "5 hours ago" },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    variants={itemVariants}
-                    whileHover={{ x: 4, transition: { duration: 0.2 } }}
-                    className="group relative flex items-start gap-3 rounded-lg border border-border/50 p-3 transition-all duration-200 hover:border-primary/20 hover:bg-primary/[0.02] hover:shadow-sm"
-                  >
+                  {[
+                    { action: "New student enrolled", detail: "John Doe - Grade 10A", time: "2 min ago" },
+                    { action: "Exam completed", detail: "Mathematics Mid-Term - 85% pass rate", time: "1 hour ago" },
+                    { action: "Attendance marked", detail: "Grade 12 - 96% present today", time: "3 hours ago" },
+                    { action: "Fee payment received", detail: "Sarah Smith - $500 tuition", time: "5 hours ago" },
+                  ].map((item, i) => (
                     <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.4 + i * 0.06, type: "spring", stiffness: 300 }}
-                      className="relative mt-1.5 h-3.5 w-3.5 shrink-0"
+                      key={i}
+                      variants={itemVariants}
+                      whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                      className="group relative flex items-start gap-2 md:gap-3 rounded-lg border border-border/50 p-2.5 md:p-3 transition-all duration-200 hover:border-primary/20 hover:bg-primary/[0.02] hover:shadow-sm"
                     >
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-purple-500 opacity-30 blur-sm" />
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-purple-500" />
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.4 + i * 0.06, type: "spring", stiffness: 300 }}
+                        className="relative mt-1 h-3 w-3 shrink-0"
+                      >
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-purple-500 opacity-30 blur-sm" />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-purple-500" />
+                      </motion.div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs md:text-sm font-medium truncate">{item.action}</p>
+                        <p className="text-[11px] md:text-xs text-muted-foreground truncate">{item.detail}</p>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">{item.time}</span>
                     </motion.div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.action}</p>
-                      <p className="text-xs text-muted-foreground truncate">{item.detail}</p>
-                    </div>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">{item.time}</span>
-                  </motion.div>
-                ))}
+                  ))}
               </motion.div>
             </CardContent>
           </Card>
@@ -178,15 +178,15 @@ export default function AdminDashboard() {
                       key={action.label}
                       whileHover={{ scale: 1.04, y: -2 }}
                       whileTap={{ scale: 0.97 }}
-                      className="group relative flex flex-col items-center gap-2 overflow-hidden rounded-xl border border-border/50 p-4 transition-all duration-300 hover:border-primary/30"
+                      className="group relative flex flex-col items-center gap-1.5 md:gap-2 overflow-hidden rounded-xl border border-border/50 p-3 md:p-4 transition-all duration-300 hover:border-primary/30"
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-secondary/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                       <div className={cn(
-                        "relative rounded-xl bg-gradient-to-br from-primary/10 to-purple-500/10 p-2.5 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20",
+                        "relative rounded-xl bg-gradient-to-br from-primary/10 to-purple-500/10 p-2 md:p-2.5 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-primary/20",
                       )}>
-                        <Icon className="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-3" />
+                        <Icon className="h-4 w-4 md:h-5 md:w-5 text-primary transition-transform duration-300 group-hover:rotate-3" />
                       </div>
-                      <span className="relative text-xs font-medium">{action.label}</span>
+                      <span className="relative text-[11px] md:text-xs font-medium text-center leading-tight">{action.label}</span>
                     </motion.button>
                   )
                 })}

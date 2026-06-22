@@ -123,17 +123,17 @@ export default function StudentDashboard() {
             <motion.div key={stat.label} variants={cardVariants} whileHover={{ scale: 1.03, y: -3 }} className="group relative">
               <Card className="glass-card relative overflow-hidden border-0 transition-all duration-300 group-hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.25)]">
                 <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
-                      <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
+                      <p className="text-[11px] md:text-xs text-muted-foreground mb-1">{stat.label}</p>
+                      <p className="text-xl md:text-2xl font-bold tracking-tight">{stat.value}</p>
                     </div>
                     <div className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg shadow-primary/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3",
+                      "flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg shadow-primary/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3",
                       gradient,
                     )}>
-                      <Icon className="h-5 w-5 text-white" />
+                      <Icon className="h-4 w-4 md:h-5 md:w-5 text-white" />
                     </div>
                   </div>
                 </CardContent>
@@ -215,18 +215,18 @@ export default function StudentDashboard() {
                     <motion.div
                       whileHover={{ x: 4, scale: 1.01 }}
                       whileTap={{ scale: 0.98 }}
-                      className="group flex items-center justify-between rounded-xl border border-border/50 p-3 transition-all duration-200 hover:border-primary/20 hover:bg-primary/[0.02] hover:shadow-sm"
+                      className="group flex items-center justify-between rounded-xl border border-border/50 p-2.5 md:p-3 transition-all duration-200 hover:border-primary/20 hover:bg-primary/[0.02] hover:shadow-sm"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                         <div className={cn(
-                          "flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3",
+                          "flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3",
                           link.color,
                         )}>
-                          <TrendingUp className="h-4 w-4 text-white" />
+                          <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium">{link.label}</span>
+                        <span className="text-xs md:text-sm font-medium truncate">{link.label}</span>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground/60 transition-colors duration-200 group-hover:text-primary group-hover:translate-x-0.5" />
+                      <ArrowRight className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0 text-muted-foreground/60 transition-colors duration-200 group-hover:text-primary group-hover:translate-x-0.5" />
                     </motion.div>
                   </Link>
                 ))}
