@@ -128,10 +128,25 @@ export default function StudentReportCardPage() {
     setExporting(true)
     try {
       const { jsPDF } = await import("jspdf")
-      const canvas = await captureElement(reportRef.current, { scale: 2 })
+      const canvas = await captureElement(reportRef.current, { scale: 3 })
       const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+      const pdfW = 595
+      const pdfH = 842
+      const margin = 30
+      const imgAspect = canvas.width / canvas.height
+      const pdfAspect = pdfW / pdfH
+      let drawW: number, drawH: number
+      if (imgAspect > pdfAspect) {
+        drawW = pdfW - margin * 2
+        drawH = drawW / imgAspect
+      } else {
+        drawH = pdfH - margin * 2
+        drawW = drawH * imgAspect
+      }
+      const offsetX = (pdfW - drawW) / 2
+      const offsetY = (pdfH - drawH) / 2
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
+      pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
       pdf.save(`Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
       toast.success("Report card downloaded as PDF")
     } catch (err) {
@@ -147,7 +162,8 @@ export default function StudentReportCardPage() {
     try {
       await downloadPng(
         reportRef.current,
-        `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`
+        `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`,
+        { scale: 3 }
       )
       toast.success("Report card downloaded as PNG")
     } catch {

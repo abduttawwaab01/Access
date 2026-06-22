@@ -35,10 +35,5 @@
       ]
     }
   ],
-  "redirects": [
-    { "source": "/admin", "destination": "/admin/analytics", "permanent": false },
-    { "source": "/teacher", "destination": "/teacher/analytics", "permanent": false },
-    { "source": "/parent", "destination": "/parent/results", "permanent": false },
-    { "source": "/student", "destination": "/student/cbt", "permanent": false }
-  ]
+  "redirects": []
 }

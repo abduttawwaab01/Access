@@ -13,6 +13,25 @@ function inlineComputedStyles(source: Element, target: Element) {
   }
 }
 
+function getFontLinks(): string {
+  return `<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">`
+}
+
+function copyCssVariables(sourceDoc: Document, targetDoc: Document): void {
+  const props = ["--font-geist-sans", "--font-geist-mono", "--font-arabic"]
+  const sourceHtml = sourceDoc.documentElement
+  const targetHtml = targetDoc.documentElement
+  for (const prop of props) {
+    const val = sourceHtml.style.getPropertyValue(prop) ||
+      getComputedStyle(sourceHtml).getPropertyValue(prop)
+    if (val) {
+      targetHtml.style.setProperty(prop, val)
+    }
+  }
+}
+
 export async function captureElement(
   element: HTMLElement,
   options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
@@ -44,8 +63,14 @@ export async function captureElement(
     useCORS: true,
     backgroundColor,
     logging: false,
-    allowTaint: false,
+    allowTaint: true,
     onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+      const fontLinkEl = clonedDoc.createElement("head")
+      fontLinkEl.innerHTML = getFontLinks()
+      for (const child of Array.from(fontLinkEl.children)) {
+        clonedDoc.head.appendChild(child)
+      }
+
       const style = clonedDoc.createElement("style")
       style.textContent = `
         .animated-gradient {
@@ -59,6 +84,8 @@ export async function captureElement(
         }
       `
       clonedDoc.head.appendChild(style)
+
+      copyCssVariables(document, clonedDoc)
 
       if (shouldInlineStyles) {
         try {
@@ -124,7 +151,7 @@ export async function downloadPdf(
   filename: string,
   options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<void> {
-  const canvas = await captureElement(element, { ...options, scale: 2 })
+  const canvas = await captureElement(element, { ...options, scale: 3 })
   const dataUrl = canvas.toDataURL("image/png")
 
   let JsPdfClass: any
@@ -136,8 +163,23 @@ export async function downloadPdf(
     throw new Error("jspdf library failed to load")
   }
 
-  const pdf = new JsPdfClass({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
-  pdf.addImage(dataUrl, "PNG", 0, 0, canvas.width, canvas.height)
+  const pdfW = 595
+  const pdfH = 842
+  const imgAspect = canvas.width / canvas.height
+  const pdfAspect = pdfW / pdfH
+  let drawW: number, drawH: number
+  if (imgAspect > pdfAspect) {
+    drawW = pdfW - 40
+    drawH = drawW / imgAspect
+  } else {
+    drawH = pdfH - 40
+    drawW = drawH * imgAspect
+  }
+  const offsetX = (pdfW - drawW) / 2
+  const offsetY = (pdfH - drawH) / 2
+
+  const pdf = new JsPdfClass({ orientation: "portrait", unit: "pt", format: "a4" })
+  pdf.addImage(dataUrl, "PNG", offsetX, offsetY, drawW, drawH)
   pdf.save(filename)
 }
 
@@ -158,8 +200,12 @@ export function openPrintWindow(element: HTMLElement, title?: string): void {
     })
     .join("")
 
-  const fontLink = document.querySelector<HTMLLinkElement>('link[rel="stylesheet"][href*="fonts"]')
-  const fontLinkTag = fontLink ? `<link rel="stylesheet" href="${fontLink.href}">` : ""
+  const sourceHtml = document.documentElement
+  const cssVarProps = ["--font-geist-sans", "--font-geist-mono", "--font-arabic"]
+  const cssVarStyles = cssVarProps.map((p) => {
+    const val = sourceHtml.style.getPropertyValue(p) || getComputedStyle(sourceHtml).getPropertyValue(p)
+    return val ? `${p}: ${val};` : ""
+  }).filter(Boolean).join("")
 
   const scriptContent = "window.onload=function(){setTimeout(function(){window.print();window.close()},300)}"
   printWindow.document.write(`
@@ -167,9 +213,10 @@ export function openPrintWindow(element: HTMLElement, title?: string): void {
     <html>
     <head>
       <title>${title || "Print"}</title>
-      ${fontLinkTag}
+      ${getFontLinks()}
       <style>${styles}</style>
       <style>
+        :root { ${cssVarStyles} }
         @page { size: A4; margin: 0; }
         body { margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background: #fff; }
       </style>

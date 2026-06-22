@@ -27,8 +27,8 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ userData, onSave, isAdmin = false }: ProfilePageProps) {
   const [formData, setFormData] = useState<Partial<UserData>>({
-    name: userData.name,
-    email: userData.email,
+    name: userData.name || "",
+    email: userData.email || "",
     phone: userData.phone || "",
   })
 
@@ -93,11 +93,11 @@ export default function ProfilePage({ userData, onSave, isAdmin = false }: Profi
                 <div className="flex flex-col items-center text-center">
                   <div className="relative">
                     <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-2xl font-bold mb-4">
-                      {userData.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      {(userData.name || "U").split(' ').map(n => n[0]).join('').toUpperCase()}
                     </div>
                   </div>
-                  <h3 className="text-lg font-semibold mb-1">{userData.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{userData.email}</p>
+                  <h3 className="text-lg font-semibold mb-1">{userData.name || "Unknown"}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{userData.email || ""}</p>
                   <Badge variant="outline" className="text-xs">
                     {userData.role}
                   </Badge>

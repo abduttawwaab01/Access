@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Search, Download, Printer, Users, GraduationCap, RefreshCw, Edit3, Eye, EyeOff, ArrowLeft, QrCode, RotateCw, FileDown } from "lucide-react"
 import { captureElement } from "@/lib/capture"
+import { createRoot } from "react-dom/client"
 import { StudentIDCardFront } from "@/components/id-card/StudentIDCardFront"
 import { StudentIDCardBack } from "@/components/id-card/StudentIDCardBack"
 import { StaffIDCardFront } from "@/components/id-card/StaffIDCardFront"
@@ -58,36 +59,43 @@ export default function AdminIDCardsPage() {
     `${s.firstName} ${s.lastName} ${s.staffId}`.toLowerCase().includes(search.toLowerCase())
   )
 
+  const renderCardForExport = (container: HTMLElement) => {
+    const root = createRoot(container)
+    if (tab === "students" && selectedStudent) {
+      if (showBack) {
+        root.render(<StudentIDCardBack student={selectedStudent} school={school!} config={idCardConfig} orientation={orientation} />)
+      } else {
+        root.render(<StudentIDCardFront student={selectedStudent} school={school!} classes={classes} orientation={orientation} />)
+      }
+    } else if (selectedStaff) {
+      if (showBack) {
+        root.render(<StaffIDCardBack staff={selectedStaff} school={school!} config={staffIdCardConfig} orientation={orientation} />)
+      } else {
+        root.render(<StaffIDCardFront staff={selectedStaff} school={school!} orientation={orientation} />)
+      }
+    }
+    return root
+  }
+
   const exportSingleCard = async (format: "png" | "pdf") => {
     const item = tab === "students" ? selectedStudent : selectedStaff
     if (!item || !school) return
     try {
-      const html = showBack
-        ? (tab === "students"
-            ? renderStudentCardBackHTML(item, school, idCardConfig, orientation)
-            : renderStaffCardBackHTML(item, school, staffIdCardConfig, orientation))
-        : (tab === "students"
-            ? renderStudentCardHTML(item, school, classes, orientation)
-            : renderStaffCardHTML(item, school, orientation))
-
-      const cardW = orientation === "landscape" ? 600 : 340
-      const cardH = orientation === "landscape" ? 340 : 480
-
       const container = document.createElement("div")
-      container.style.position = "fixed"
-      container.style.left = "0"
+      container.style.position = "absolute"
+      container.style.left = "-9999px"
       container.style.top = "0"
       container.style.zIndex = "-1"
-      container.style.opacity = "0"
+      container.style.opacity = "1"
       container.style.pointerEvents = "none"
       container.style.background = "#ffffff"
-      container.style.width = `${cardW}px`
-      container.innerHTML = html
       document.body.appendChild(container)
 
-      await new Promise((r) => setTimeout(r, 200))
+      const root = renderCardForExport(container)
+      await new Promise((r) => setTimeout(r, 300))
 
       const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
+      root.unmount()
       document.body.removeChild(container)
 
       const imgData = canvas.toDataURL("image/png")
@@ -142,54 +150,64 @@ export default function AdminIDCardsPage() {
       const pdfH = isLandscape ? 595 : 842
       const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" })
 
+      const captureAndAdd = async (renderFn: (el: HTMLElement) => any): Promise<void> => {
+        const container = document.createElement("div")
+        container.style.position = "absolute"
+        container.style.left = "-9999px"
+        container.style.top = "0"
+        container.style.zIndex = "-1"
+        container.style.opacity = "1"
+        container.style.pointerEvents = "none"
+        container.style.background = "#ffffff"
+        document.body.appendChild(container)
+
+        const root = renderFn(container)
+        await new Promise((r) => setTimeout(r, 300))
+
+        const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
+        root.unmount()
+        document.body.removeChild(container)
+
+        const imgData = canvas.toDataURL("image/png")
+        const imgAspect = canvas.width / canvas.height
+        const pdfAspect = pdfW / pdfH
+        let drawW, drawH
+        if (imgAspect > pdfAspect) {
+          drawW = pdfW - 40
+          drawH = drawW / imgAspect
+        } else {
+          drawH = pdfH - 40
+          drawW = drawH * imgAspect
+        }
+        const offsetX = (pdfW - drawW) / 2
+        const offsetY = (pdfH - drawH) / 2
+        pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
+      }
+
       for (let i = 0; i < list.length; i++) {
         const item = list[i]
-
-        const captureAndAdd = async (html: string): Promise<void> => {
-          const cardW = isLandscape ? 600 : 340
-          const container = document.createElement("div")
-          container.style.position = "fixed"
-          container.style.left = "0"
-          container.style.top = "0"
-          container.style.zIndex = "-1"
-          container.style.opacity = "0"
-          container.style.pointerEvents = "none"
-          container.style.background = "#ffffff"
-          container.style.width = `${cardW}px`
-          container.innerHTML = html
-          document.body.appendChild(container)
-
-          await new Promise((r) => setTimeout(r, 200))
-
-          const canvas = await captureElement(container, { scale: 2, backgroundColor: "#ffffff" })
-          document.body.removeChild(container)
-          const imgData = canvas.toDataURL("image/png")
-          const imgAspect = canvas.width / canvas.height
-          const pdfAspect = pdfW / pdfH
-          let drawW, drawH
-          if (imgAspect > pdfAspect) {
-            drawW = pdfW - 40
-            drawH = drawW / imgAspect
-          } else {
-            drawH = pdfH - 40
-            drawW = drawH * imgAspect
-          }
-          const offsetX = (pdfW - drawW) / 2
-          const offsetY = (pdfH - drawH) / 2
-          pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
-        }
-
         if (i > 0) pdf.addPage()
-        const frontHTML = tab === "students"
-          ? `<div>${renderStudentCardHTML(item, school, classes, orientation)}</div>`
-          : `<div>${renderStaffCardHTML(item, school, orientation)}</div>`
-        await captureAndAdd(frontHTML)
+
+        await captureAndAdd((el: HTMLElement) => {
+          const root = createRoot(el)
+          if (tab === "students") {
+            root.render(<StudentIDCardFront student={item} school={school!} classes={classes} orientation={orientation} />)
+          } else {
+            root.render(<StaffIDCardFront staff={item} school={school!} orientation={orientation} />)
+          }
+          return root
+        })
 
         pdf.addPage()
-        const backHTML = tab === "students"
-          ? `<div>${renderStudentCardBackHTML(item, school, idCardConfig, orientation)}</div>`
-          : `<div>${renderStaffCardBackHTML(item, school, staffIdCardConfig, orientation)}</div>`
-        await captureAndAdd(backHTML)
+        await captureAndAdd((el: HTMLElement) => {
+          const root = createRoot(el)
+          if (tab === "students") {
+            root.render(<StudentIDCardBack student={item} school={school!} config={idCardConfig} orientation={orientation} />)
+          } else {
+            root.render(<StaffIDCardBack staff={item} school={school!} config={staffIdCardConfig} orientation={orientation} />)
+          }
+          return root
+        })
       }
 
       pdf.save(`${slug}_ID_Cards_Bulk.pdf`)
@@ -198,23 +216,38 @@ export default function AdminIDCardsPage() {
     setBulkExporting(false)
   }
 
-  const handlePrintCard = () => {
+  const handlePrintCard = async () => {
     const item = tab === "students" ? selectedStudent : selectedStaff
     if (!item || !school) return
-    const html = showBack
-      ? (tab === "students"
-          ? renderStudentCardBackHTML(item, school, idCardConfig, orientation)
-          : renderStaffCardBackHTML(item, school, staffIdCardConfig, orientation))
-      : (tab === "students"
-          ? renderStudentCardHTML(item, school, classes, orientation)
-          : renderStaffCardHTML(item, school, orientation))
+    try {
+      const container = document.createElement("div")
+      container.style.position = "absolute"
+      container.style.left = "-9999px"
+      container.style.top = "0"
+      container.style.zIndex = "-1"
+      container.style.opacity = "1"
+      container.style.pointerEvents = "none"
+      container.style.background = "#ffffff"
+      document.body.appendChild(container)
 
-    const win = window.open("", "_blank")
-    if (!win) return
-    win.document.write(`<html><head><title>ID Card</title><style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;margin:0}@media print{@page{margin:0}body{margin:0}}</style></head><body>${html}</body></html>`)
-    win.document.close()
-    win.focus()
-    setTimeout(() => win.print(), 500)
+      const root = renderCardForExport(container)
+      await new Promise((r) => setTimeout(r, 300))
+
+      const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
+      root.unmount()
+      document.body.removeChild(container)
+
+      const imgData = canvas.toDataURL("image/png")
+      const win = window.open("", "_blank")
+      if (!win) return
+      win.document.write(`<html><head><title>ID Card</title><style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;margin:0}@media print{@page{margin:0}body{margin:0}}img{max-width:100%;height:auto}</style></head><body><img src="${imgData}" /></body></html>`)
+      win.document.close()
+      win.focus()
+      setTimeout(() => win.print(), 500)
+    } catch (err) {
+      console.error("Print error:", err)
+      toast.error("Failed to print")
+    }
   }
 
   const handleSaveConfig = async () => {
@@ -521,275 +554,4 @@ function Info({ label, value }: { label: string; value?: string }) {
   )
 }
 
-function renderStudentCardHTML(student: any, school: any, classes: any[], orientation: "portrait" | "landscape" = "portrait") {
-  const cls = classes.find((c) => c.id === student.classId)
-  const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase()
-  if (orientation === "landscape") {
-    return `
-    <div style="width:600px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif;display:flex;flex-direction:row">
-      <div style="width:220px;background:linear-gradient(135deg,#6366f1,#06b6d4);padding:20px;color:white;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:300px">
-        <div style="text-align:center">
-          ${school.logo ? `<img src="${school.logo}" style="height:56px;width:56px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);object-fit:cover;margin:0 auto 8px" />` : `<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:bold">S</div>`}
-          <p style="font-size:14px;font-weight:bold;margin:0">${school.name}</p>
-          <p style="font-size:9px;letter-spacing:1px;opacity:0.8;margin-top:2px;font-weight:500">STUDENT ID CARD</p>
-        </div>
-        <div style="background:white;border-radius:8px;padding:6px;border:1px solid rgba(255,255,255,0.3)">
-          <div style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999">QR</div>
-        </div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column">
-        <div style="flex:1;padding:20px;display:flex;flex-direction:column;justify-content:center">
-          <div style="display:flex;gap:16px;margin-bottom:16px">
-            <div style="width:80px;height:80px;border-radius:12px;border:2px solid rgba(99,102,241,0.2);overflow:hidden;flex-shrink:0">
-              ${student.passportPhoto ? `<img src="${student.passportPhoto}" style="width:100%;height:100%;object-fit:cover" />` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(6,182,212,0.1))"><span style="font-size:20px;font-weight:bold;color:#6366f1">${initials}</span></div>`}
-            </div>
-            <div>
-              <p style="font-size:18px;font-weight:bold;color:#111;margin:0">${student.firstName} ${student.lastName}</p>
-              <p style="font-size:12px;color:#6b7280;margin:2px 0;font-weight:500">${cls?.name || "N/A"}</p>
-              <span style="display:inline-flex;align-items:center;background:#f3f4f6;border-radius:999px;padding:2px 12px;font-size:9px;color:#6b7280">ID: ${student.studentId}</span>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:10px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:10px">
-            ${student.dateOfBirth ? `<span style="font-weight:500;color:#9ca3af">DOB</span><span style="text-align:right">${new Date(student.dateOfBirth).toLocaleDateString()}</span>` : ""}
-            ${student.gender ? `<span style="font-weight:500;color:#9ca3af">Gender</span><span style="text-align:right">${student.gender}</span>` : ""}
-            ${student.bloodGroup ? `<span style="font-weight:500;color:#9ca3af">Blood</span><span style="text-align:right">${student.bloodGroup}</span>` : ""}
-          </div>
-          <div style="margin-top:12px;font-size:9px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px">
-            <p style="font-weight:500;color:#6b7280;margin:0">${school.name}</p>
-            ${school.address ? `<p style="margin:2px 0 0">${school.address}</p>` : ""}
-          </div>
-        </div>
-        <div style="background:linear-gradient(135deg,rgba(99,102,241,0.05),rgba(6,182,212,0.05));padding:6px 12px;text-align:center;font-size:7px;color:#9ca3af">Valid for current session • Scan QR for attendance</div>
-      </div>
-    </div>`
-  }
-  const qrData = JSON.stringify({ type: "student", id: student.id, code: student.studentId })
-  return `
-    <div style="width:340px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif">
-      <div style="background:linear-gradient(135deg,#6366f1,#06b6d4);padding:20px;text-align:center;color:white">
-        ${school.logo ? `<img src="${school.logo}" style="height:48px;width:48px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);object-fit:cover;margin:0 auto 4px" />` : `<div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-weight:bold;font-size:18px">S</div>`}
-        <p style="font-size:14px;font-weight:bold;margin:0">${school.name}</p>
-        <p style="font-size:10px;opacity:0.8;margin:2px 0 0">STUDENT ID CARD</p>
-      </div>
-      <div style="padding:20px;display:flex;gap:16px;background:white">
-        <div style="width:80px;height:80px;border-radius:12px;border:2px solid rgba(99,102,241,0.2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(6,182,212,0.1))">
-          ${student.passportPhoto ? `<img src="${student.passportPhoto}" style="width:100%;height:100%;object-fit:cover" />` : `<span style="font-size:20px;font-weight:bold;color:#6366f1">${initials}</span>`}
-        </div>
-        <div style="flex:1;min-width:0">
-          <p style="font-size:14px;font-weight:bold;color:#111;margin:0">${student.firstName} ${student.lastName}</p>
-          <p style="font-size:12px;color:#6b7280;margin:2px 0">${cls?.name || "N/A"}</p>
-          <p style="font-size:10px;color:#9ca3af;margin:0">ID: ${student.studentId}</p>
-          ${student.gender ? `<p style="font-size:10px;color:#9ca3af;margin:2px 0">Gender: ${student.gender}</p>` : ""}
-        </div>
-      </div>
-      <div style="background:#f9fafb;padding:10px 20px;border-top:1px solid #e5e7eb;text-align:center;font-size:9px;color:#9ca3af">Valid for current session</div>
-    </div>
-  `
-}
 
-function renderStudentCardBackHTML(student: any, school: any, config: any, orientation: "portrait" | "landscape" = "portrait") {
-  const cfg = config || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official school use only.\n4. Students must present this card for identification and attendance purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] }
-  if (orientation === "landscape") {
-    return `
-    <div style="width:600px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif;display:flex;flex-direction:row">
-      <div style="width:220px;background:linear-gradient(135deg,#1e293b,#334155);padding:20px;color:white;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:300px">
-        <p style="font-size:14px;font-weight:bold;text-align:center;margin:0">${cfg.backTitle || "Student Information"}</p>
-        <div style="background:white;border-radius:8px;padding:6px;border:1px solid rgba(255,255,255,0.3)">
-          <div style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999">QR</div>
-        </div>
-        <div style="text-align:center;font-size:9px;opacity:0.8">
-          <p style="font-weight:500;margin:0">${school.name}</p>
-          ${school.phone ? `<p style="margin:2px 0 0">${school.phone}</p>` : ""}
-        </div>
-      </div>
-      <div style="flex:1;padding:20px;display:flex;flex-direction:column">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;flex:1">
-          ${renderRow("Full Name", `${student.firstName} ${student.lastName}`)}
-          ${renderRow("Student ID", student.studentId)}
-          ${student.dateOfBirth ? renderRow("Date of Birth", new Date(student.dateOfBirth).toLocaleDateString()) : ""}
-          ${student.gender ? renderRow("Gender", student.gender) : ""}
-          ${cfg.showBloodGroup ? renderRow("Blood Group", cfg.customBloodGroup || student.bloodGroup || "") : ""}
-          ${cfg.showAddress ? renderRow("Address", cfg.customAddress || student.address || "") : ""}
-          ${student.email ? renderRow("Email", student.email) : ""}
-          ${student.phone ? renderRow("Phone", student.phone) : ""}
-          ${student.parentName ? renderRow("Parent/Guardian", student.parentName) : ""}
-          ${cfg.showEmergencyContact ? renderRow("Emergency", cfg.customEmergencyContact || student.parentPhone || "") : ""}
-        </div>
-        ${cfg.showMedicalNotes ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px;margin-top:8px"><p style="font-size:9px;font-weight:600;color:#b91c1c;margin:0 0 2px">Medical Notes</p><p style="font-size:10px;color:#dc2626;margin:0">${cfg.customMedicalNotes || student.medicalNotes || ""}</p></div>` : ""}
-        ${cfg.showRules && cfg.rulesText ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px"><p style="font-size:7px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">Rules & Regulations</p><pre style="font-size:7px;color:#92400e;line-height:1.3;white-space:pre-wrap;font-family:sans-serif;margin:0">${cfg.rulesText}</pre></div>` : ""}
-      </div>
-    </div>`
-  }
-  return `
-    <div style="width:340px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif;display:flex;flex-direction:column;min-height:480px">
-      <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:14px;text-align:center;color:white">
-        <p style="font-size:14px;font-weight:bold;margin:0">${cfg.backTitle || "Student Information"}</p>
-      </div>
-      <div style="flex:1;padding:20px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
-          ${renderRow("Full Name", `${student.firstName} ${student.lastName}`)}
-          ${renderRow("Student ID", student.studentId)}
-          ${student.dateOfBirth ? renderRow("Date of Birth", new Date(student.dateOfBirth).toLocaleDateString()) : ""}
-          ${student.gender ? renderRow("Gender", student.gender) : ""}
-          ${cfg.showBloodGroup ? renderRow("Blood Group", cfg.customBloodGroup || student.bloodGroup || "") : ""}
-          ${cfg.showAddress ? renderRow("Address", cfg.customAddress || student.address || "") : ""}
-          ${student.email ? renderRow("Email", student.email) : ""}
-          ${student.phone ? renderRow("Phone", student.phone) : ""}
-          ${student.parentName ? renderRow("Parent/Guardian", student.parentName) : ""}
-          ${cfg.showEmergencyContact ? renderRow("Emergency", cfg.customEmergencyContact || student.parentPhone || "") : ""}
-        </div>
-        ${cfg.showMedicalNotes ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-top:12px"><p style="font-size:10px;font-weight:600;color:#b91c1c;margin:0 0 4px">Medical Notes</p><p style="font-size:12px;color:#dc2626;margin:0">${cfg.customMedicalNotes || student.medicalNotes || ""}</p></div>` : ""}
-      </div>
-      ${cfg.showRules && cfg.rulesText ? `<div style="padding:8px 20px;border-top:1px solid #e5e7eb;background:#fffbeb"><p style="font-size:8px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">Rules & Regulations</p><pre style="font-size:7px;color:#92400e;line-height:1.3;white-space:pre-wrap;font-family:sans-serif;margin:0">${cfg.rulesText}</pre></div>` : ""}
-      <div style="border-top:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:16px">
-        <div style="background:white;border-radius:8px;padding:4px;border:1px solid #e5e7eb;display:inline-block">
-          <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:6px;color:#999">QR</div>
-        </div>
-        <div style="font-size:10px;color:#6b7280;text-align:center">
-          <p style="font-weight:600;color:#374151;margin:0">${school.name}</p>
-          ${school.phone ? `<p style="margin:2px 0 0">${school.phone}</p>` : ""}
-          ${school.email ? `<p style="font-size:9px;margin:2px 0 0">${school.email}</p>` : ""}
-        </div>
-      </div>
-    </div>`
-}
-
-function renderStaffCardHTML(staff: any, school: any, orientation: "portrait" | "landscape" = "portrait") {
-  const initials = `${staff.firstName?.[0] || ""}${staff.lastName?.[0] || ""}`.toUpperCase()
-  if (orientation === "landscape") {
-    return `
-    <div style="width:600px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif;display:flex;flex-direction:row">
-      <div style="width:220px;background:linear-gradient(135deg,#4338ca,#7c3aed,#4338ca);padding:20px;color:white;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:300px">
-        <div style="text-align:center">
-          ${school.logo ? `<img src="${school.logo}" style="height:56px;width:56px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);object-fit:cover;margin:0 auto 8px" />` : `<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-weight:bold">S</div>`}
-          <p style="font-size:14px;font-weight:bold;margin:0">${school.name}</p>
-          <p style="font-size:9px;letter-spacing:1px;opacity:0.8;margin-top:2px;font-weight:500">STAFF ID CARD</p>
-        </div>
-        <div style="background:white;border-radius:8px;padding:6px;border:1px solid rgba(255,255,255,0.3)">
-          <div style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999">QR</div>
-        </div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column">
-        <div style="flex:1;padding:20px;display:flex;flex-direction:column;justify-content:center">
-          <div style="display:flex;gap:16px;margin-bottom:16px">
-            <div style="width:80px;height:80px;border-radius:12px;border:2px solid #c7d2fe;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#faf5ff)">
-              <span style="font-size:20px;font-weight:bold;color:#4338ca">${initials}</span>
-            </div>
-            <div>
-              <p style="font-size:18px;font-weight:bold;color:#111;margin:0">${staff.firstName} ${staff.lastName}</p>
-              <p style="font-size:12px;font-weight:600;color:#4338ca;margin:2px 0">${staff.role || "Staff"}</p>
-              ${staff.department ? `<p style="font-size:11px;color:#6b7280;margin:0">${staff.department}</p>` : ""}
-              <span style="display:inline-flex;align-items:center;background:#f3f4f6;border-radius:999px;padding:2px 12px;font-size:9px;color:#6b7280">${staff.staffId}</span>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:10px;color:#6b7280;border-top:1px solid #e5e7eb;padding-top:10px">
-            ${staff.email ? `<span style="font-weight:500;color:#9ca3af">Email</span><span style="text-align:right;overflow:hidden;text-overflow:ellipsis">${staff.email}</span>` : ""}
-            ${staff.phone ? `<span style="font-weight:500;color:#9ca3af">Phone</span><span style="text-align:right">${staff.phone}</span>` : ""}
-            ${staff.gender ? `<span style="font-weight:500;color:#9ca3af">Gender</span><span style="text-align:right">${staff.gender}</span>` : ""}
-          </div>
-          <div style="margin-top:12px;font-size:9px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:8px">
-            <p style="font-weight:500;color:#6b7280;margin:0">${school.name}</p>
-            ${school.address ? `<p style="margin:2px 0 0">${school.address}</p>` : ""}
-          </div>
-        </div>
-        <div style="background:linear-gradient(135deg,#eef2ff,#faf5ff);padding:6px 12px;text-align:center;font-size:7px;color:#818cf8;border-top:1px solid #e0e7ff">Authorized personnel • Scan QR for verification</div>
-      </div>
-    </div>`
-  }
-  return `
-    <div style="width:340px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif">
-      <div style="background:linear-gradient(135deg,#4338ca,#7c3aed,#4338ca);padding:20px;text-align:center;color:white">
-        ${school.logo ? `<img src="${school.logo}" style="height:44px;width:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);object-fit:cover;margin:0 auto 4px" />` : `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-weight:bold;font-size:16px">S</div>`}
-        <p style="font-size:14px;font-weight:bold;margin:0">${school.name}</p>
-        <p style="font-size:10px;opacity:0.8;margin:2px 0 0">STAFF IDENTIFICATION CARD</p>
-      </div>
-      <div style="padding:20px;display:flex;gap:16px;align-items:center;background:white">
-        <div style="width:80px;height:80px;border-radius:12px;border:2px solid #c7d2fe;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#faf5ff)">
-          <span style="font-size:20px;font-weight:bold;color:#4338ca">${initials}</span>
-        </div>
-        <div style="flex:1;min-width:0">
-          <p style="font-size:15px;font-weight:bold;color:#111;margin:0">${staff.firstName} ${staff.lastName}</p>
-          <p style="font-size:12px;font-weight:500;color:#4338ca;margin:2px 0">${staff.role || "Staff"}</p>
-          ${staff.department ? `<p style="font-size:11px;color:#6b7280;margin:0">${staff.department}</p>` : ""}
-          <p style="font-size:10px;color:#9ca3af;margin:2px 0">${staff.staffId}</p>
-        </div>
-      </div>
-      <div style="border-top:1px solid #e5e7eb;padding:10px 20px;display:flex;justify-content:space-between;font-size:10px;color:#6b7280;background:linear-gradient(135deg,#eef2ff,#faf5ff)">
-        <span>${staff.email || ""}</span>
-        <span>${staff.phone || ""}</span>
-      </div>
-    </div>
-  `
-}
-
-function renderStaffCardBackHTML(staff: any, school: any, config: any, orientation: "portrait" | "landscape" = "portrait") {
-  const cfg = config || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official staff use only.\n4. Staff must present this card for identification and access purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] }
-  if (orientation === "landscape") {
-    return `
-    <div style="width:600px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif;display:flex;flex-direction:row">
-      <div style="width:220px;background:linear-gradient(135deg,#1e293b,#334155);padding:20px;color:white;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:300px">
-        <p style="font-size:14px;font-weight:bold;text-align:center;margin:0">${cfg.backTitle || "Staff Information"}</p>
-        <div style="background:white;border-radius:8px;padding:6px;border:1px solid rgba(255,255,255,0.3)">
-          <div style="width:90px;height:90px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999">QR</div>
-        </div>
-        <div style="text-align:center;font-size:9px;opacity:0.8">
-          <p style="font-weight:500;margin:0">${school.name}</p>
-          ${school.phone ? `<p style="margin:2px 0 0">${school.phone}</p>` : ""}
-        </div>
-      </div>
-      <div style="flex:1;padding:20px;display:flex;flex-direction:column">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;flex:1">
-          ${renderRow("Full Name", `${staff.firstName} ${staff.lastName}`)}
-          ${renderRow("Staff ID", staff.staffId)}
-          ${staff.role ? renderRow("Role", staff.role) : ""}
-          ${cfg.showDepartment ? renderRow("Department", cfg.customDepartment || staff.department || "") : ""}
-          ${staff.gender ? renderRow("Gender", staff.gender) : ""}
-          ${staff.qualification ? renderRow("Qualification", staff.qualification) : ""}
-          ${staff.employmentDate ? renderRow("Employed", new Date(staff.employmentDate).toLocaleDateString()) : ""}
-          ${staff.email ? renderRow("Email", staff.email) : ""}
-          ${staff.phone ? renderRow("Phone", staff.phone) : ""}
-          ${staff.address ? renderRow("Address", staff.address) : ""}
-          ${cfg.showEmergencyContact ? renderRow("Emergency", cfg.customEmergencyContact || staff.emergencyContact || "") : ""}
-        </div>
-        ${cfg.showRules && cfg.rulesText ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px"><p style="font-size:7px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">Rules & Regulations</p><pre style="font-size:7px;color:#92400e;line-height:1.3;white-space:pre-wrap;font-family:sans-serif;margin:0">${cfg.rulesText}</pre></div>` : ""}
-      </div>
-    </div>`
-  }
-  return `
-    <div style="width:340px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12);border:1px solid #e5e7eb;font-family:sans-serif;display:flex;flex-direction:column;min-height:480px">
-      <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:14px;text-align:center;color:white">
-        <p style="font-size:14px;font-weight:bold;margin:0">${cfg.backTitle || "Staff Information"}</p>
-      </div>
-      <div style="flex:1;padding:20px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px">
-          ${renderRow("Full Name", `${staff.firstName} ${staff.lastName}`)}
-          ${renderRow("Staff ID", staff.staffId)}
-          ${staff.role ? renderRow("Role", staff.role) : ""}
-          ${cfg.showDepartment ? renderRow("Department", cfg.customDepartment || staff.department || "") : ""}
-          ${staff.gender ? renderRow("Gender", staff.gender) : ""}
-          ${staff.qualification ? renderRow("Qualification", staff.qualification) : ""}
-          ${staff.employmentDate ? renderRow("Employed", new Date(staff.employmentDate).toLocaleDateString()) : ""}
-          ${staff.email ? renderRow("Email", staff.email) : ""}
-          ${staff.phone ? renderRow("Phone", staff.phone) : ""}
-          ${staff.address ? renderRow("Address", staff.address) : ""}
-          ${cfg.showEmergencyContact ? renderRow("Emergency", cfg.customEmergencyContact || staff.emergencyContact || "") : ""}
-        </div>
-      </div>
-      ${cfg.showRules && cfg.rulesText ? `<div style="padding:8px 20px;border-top:1px solid #e5e7eb;background:#fffbeb"><p style="font-size:8px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">Rules & Regulations</p><pre style="font-size:7px;color:#92400e;line-height:1.3;white-space:pre-wrap;font-family:sans-serif;margin:0">${cfg.rulesText}</pre></div>` : ""}
-      <div style="border-top:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:16px">
-        <div style="background:white;border-radius:8px;padding:4px;border:1px solid #e5e7eb;display:inline-block">
-          <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:6px;color:#999">QR</div>
-        </div>
-        <div style="font-size:10px;color:#6b7280;text-align:center">
-          <p style="font-weight:600;color:#374151;margin:0">${school.name}</p>
-          ${school.phone ? `<p style="margin:2px 0 0">${school.phone}</p>` : ""}
-          ${school.email ? `<p style="font-size:9px;margin:2px 0 0">${school.email}</p>` : ""}
-        </div>
-      </div>
-    </div>`
-}
-
-function renderRow(label: string, value: string) {
-  if (!value) return ""
-  return `<div style="min-width:0"><p style="font-size:10px;color:#9ca3af;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin:0">${label}</p><p style="font-size:12px;color:#374151;margin:2px 0 0;overflow:hidden;text-overflow:ellipsis">${value}</p></div>`
-}

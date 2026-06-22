@@ -8,12 +8,11 @@ export default function StudentProfilePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch student user data from API
     fetch("/api/student/profile")
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to fetch profile")
         setUserData(data)
-        setLoading(false)
       })
       .catch((error) => {
         console.error("Failed to fetch student profile:", error)
@@ -22,11 +21,10 @@ export default function StudentProfilePage() {
   }, [])
 
   const handleSave = async (data: any) => {
-    // Call API to update student profile
     const response = await fetch("/api/student/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, id: userData?.id })
     })
     
     if (!response.ok) {

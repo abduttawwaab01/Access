@@ -8,12 +8,11 @@ export default function ParentProfilePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch parent user data from API
     fetch("/api/parent/profile")
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || "Failed to fetch profile")
         setUserData(data)
-        setLoading(false)
       })
       .catch((error) => {
         console.error("Failed to fetch parent profile:", error)
@@ -22,11 +21,10 @@ export default function ParentProfilePage() {
   }, [])
 
   const handleSave = async (data: any) => {
-    // Call API to update parent profile
     const response = await fetch("/api/parent/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, id: userData?.id })
     })
     
     if (!response.ok) {

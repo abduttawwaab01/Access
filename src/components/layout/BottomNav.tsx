@@ -62,11 +62,12 @@ export function BottomNav({ items }: BottomNavProps) {
         <div className="flex items-center justify-around py-2">
           {items.map((item) => {
             const Icon = iconMap[item.icon] || LayoutDashboard
-            const normalizedPathname = pathname.replace(/\/+$/, "") || "/"
-            const normalizedHref = item.href.replace(/\/+$/, "") || "/"
-            const pathParts = normalizedHref.split("/").filter(Boolean)
-            const isRoot = pathParts.length === 1
-            const isActive = normalizedPathname === normalizedHref || (!isRoot && normalizedPathname.startsWith(normalizedHref + "/"))
+            const currentParts = pathname.replace(/\/+$/, "").split("/").filter(Boolean)
+            const navParts = item.href.replace(/\/+$/, "").split("/").filter(Boolean)
+            const isRoot = navParts.length <= 1
+            const isActive = isRoot
+              ? currentParts.length === navParts.length && currentParts.every((part, i) => part === navParts[i])
+              : currentParts.length >= navParts.length && currentParts.slice(0, navParts.length).every((part, i) => part === navParts[i])
 
             return (
               <Link

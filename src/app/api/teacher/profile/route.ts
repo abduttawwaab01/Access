@@ -3,8 +3,12 @@ import { store } from "@/lib/api-store"
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId") || "teacher-1"
-    const user = store.staff.getById(userId)
+    const userId = request.nextUrl.searchParams.get("userId") || "stf_1001"
+    let user = store.staff.getById(userId)
+    
+    if (!user) {
+      user = store.staff.getAll().find((s: any) => s.role === "teacher")
+    }
     
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
@@ -12,10 +16,10 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       id: user.id,
-      name: `${user.firstName} ${user.lastName}`,
-      email: user.email,
-      phone: user.phone,
-      role: "teacher"
+      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+      email: user.email || "",
+      phone: user.phone || "",
+      role: user.role || "teacher"
     })
   } catch (error) {
     console.error("Error fetching teacher profile:", error)
@@ -26,9 +30,15 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const userId = body.id || "teacher-1"
+    const userId = body.id || "stf_1001"
     
-    const updated = store.staff.update(userId, {
+    let current = store.staff.getById(userId)
+    if (!current) {
+      current = store.staff.getAll().find((s: any) => s.role === "teacher")
+    }
+    const targetId = current?.id || userId
+    
+    const updated = store.staff.update(targetId, {
       firstName: body.name?.split(" ")[0] || "",
       lastName: body.name?.split(" ").slice(1).join(" ") || "",
       email: body.email,
@@ -41,10 +51,10 @@ export async function PUT(request: NextRequest) {
     
     return NextResponse.json({
       id: updated.id,
-      name: `${updated.firstName} ${updated.lastName}`,
-      email: updated.email,
-      phone: updated.phone,
-      role: "teacher"
+      name: `${updated.firstName || ""} ${updated.lastName || ""}`.trim(),
+      email: updated.email || "",
+      phone: updated.phone || "",
+      role: updated.role || "teacher"
     })
   } catch (error) {
     console.error("Error updating teacher profile:", error)
