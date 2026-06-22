@@ -493,7 +493,10 @@ function SchoolQRCodeSettings() {
       link.href = canvas.toDataURL("image/png")
       link.click()
       toast.success("QR code downloaded")
-    } catch { toast.error("Failed to download") }
+    } catch (err) {
+      console.error("QR download error:", err)
+      toast.error("Failed to download")
+    }
   }
 
   const handleSaveQR = async () => {

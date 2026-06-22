@@ -221,14 +221,12 @@ export default function AdminAttendancePage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="scanner" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><QrCode className="h-4 w-4 mr-1" /> QR Scanner</TabsTrigger>
-            <TabsTrigger value="manual" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
-            <TabsTrigger value="logs" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today's Logs</TabsTrigger>
-            <TabsTrigger value="codes" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Shield className="h-4 w-4 mr-1" /> QR Codes</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="scanner" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><QrCode className="h-4 w-4 mr-1" /> QR Scanner</TabsTrigger>
+          <TabsTrigger value="manual" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
+          <TabsTrigger value="logs" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today's Logs</TabsTrigger>
+          <TabsTrigger value="codes" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Shield className="h-4 w-4 mr-1" /> QR Codes</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="scanner" className="mt-4">
           <Card className="border-0 glass-card">

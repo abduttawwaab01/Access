@@ -10,7 +10,8 @@ export async function captureElement(
   try {
     const mod = await import("html2canvas")
     html2canvasFn = mod.default || mod
-  } catch {
+  } catch (err) {
+    console.error("Failed to load html2canvas:", err)
     throw new Error("html2canvas library failed to load")
   }
 
@@ -18,6 +19,7 @@ export async function captureElement(
     html2canvasFn = (html2canvasFn as any)?.default
   }
   if (typeof html2canvasFn !== "function") {
+    console.error("html2canvas is not available")
     throw new Error("html2canvas is not available")
   }
 
@@ -51,21 +53,31 @@ export async function elementToPngBlob(
   element: HTMLElement,
   options?: { scale?: number; backgroundColor?: string }
 ): Promise<Blob> {
-  const canvas = await captureElement(element, options)
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob)
-      else reject(new Error("Canvas toBlob returned null"))
-    }, "image/png")
-  })
+  try {
+    const canvas = await captureElement(element, options)
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error("Canvas toBlob returned null"))
+      }, "image/png")
+    })
+  } catch (err) {
+    console.error("Failed to convert element to PNG blob:", err)
+    throw err
+  }
 }
 
 export async function elementToDataUrl(
   element: HTMLElement,
   options?: { scale?: number; backgroundColor?: string }
 ): Promise<string> {
-  const canvas = await captureElement(element, options)
-  return canvas.toDataURL("image/png")
+  try {
+    const canvas = await captureElement(element, options)
+    return canvas.toDataURL("image/png")
+  } catch (err) {
+    console.error("Failed to convert element to PNG data URL:", err)
+    throw err
+  }
 }
 
 export async function downloadPng(
@@ -73,11 +85,16 @@ export async function downloadPng(
   filename: string,
   options?: { scale?: number; backgroundColor?: string }
 ): Promise<void> {
-  const dataUrl = await elementToDataUrl(element, options)
-  const link = document.createElement("a")
-  link.download = filename
-  link.href = dataUrl
-  link.click()
+  try {
+    const canvas = await captureElement(element, options)
+    const link = document.createElement("a")
+    link.download = filename
+    link.href = canvas.toDataURL("image/png")
+    link.click()
+  } catch (err) {
+    console.error("PNG export error:", err)
+    throw err
+  }
 }
 
 export async function downloadPdf(
@@ -85,47 +102,29 @@ export async function downloadPdf(
   filename: string,
   options?: { scale?: number; backgroundColor?: string }
 ): Promise<void> {
-  const dataUrl = await elementToDataUrl(element, { ...options, scale: 2 })
+  const canvas = await captureElement(element, { ...options, scale: 2 })
+  const dataUrl = canvas.toDataURL("image/png")
 
   let JsPdfClass: any
   try {
     const mod = await import("jspdf")
     JsPdfClass = mod.jsPDF
-  } catch {
+  } catch (err) {
+    console.error("Failed to load jspdf:", err)
     throw new Error("jspdf library failed to load")
   }
 
-  const pdf = new JsPdfClass("p", "mm", "a4")
-  const pdfWidth = pdf.internal.pageSize.getWidth()
-
-  const img = new Image()
-  await new Promise<void>((resolve) => {
-    img.onload = () => resolve()
-    img.onerror = () => resolve()
-    img.src = dataUrl
-  })
-
-  const pdfHeight = (img.height * pdfWidth) / img.width
-  let heightLeft = pdfHeight
-  let position = 0
-  const pageHeight = pdf.internal.pageSize.getHeight()
-
-  pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, pdfHeight)
-  heightLeft -= pageHeight
-
-  while (heightLeft > 0) {
-    position = heightLeft - pdfHeight
-    pdf.addPage()
-    pdf.addImage(dataUrl, "PNG", 0, position, pdfWidth, pdfHeight)
-    heightLeft -= pageHeight
-  }
-
+  const pdf = new JsPdfClass({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+  pdf.addImage(dataUrl, "PNG", 0, 0, canvas.width, canvas.height)
   pdf.save(filename)
 }
 
 export function openPrintWindow(element: HTMLElement, title?: string): void {
   const printWindow = window.open("", "_blank")
-  if (!printWindow) return
+  if (!printWindow) {
+    console.error("Failed to open print window")
+    return
+  }
 
   const styles = Array.from(document.styleSheets)
     .map((ss) => {

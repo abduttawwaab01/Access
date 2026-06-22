@@ -47,7 +47,8 @@ export function SchoolQRCodeDownload() {
       link.href = canvas.toDataURL("image/png")
       link.click()
       toast.success("QR code downloaded")
-    } catch {
+    } catch (err) {
+      console.error("QR download error:", err)
       toast.error("Failed to download")
     }
   }

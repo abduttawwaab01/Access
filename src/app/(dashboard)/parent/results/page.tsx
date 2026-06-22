@@ -63,21 +63,19 @@ export default function ParentResultsPage() {
         <p className="text-sm text-muted-foreground">Track academic progress</p>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {children.map((c) => (
           <button key={c.id} onClick={() => setActiveChildId(c.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all snap-start ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
           >{c.name.split(" ")[0]}</button>
         ))}
       </div>
 
       {!loading && terms.length > 0 && (
         <Tabs value={activeTerm} onValueChange={setActiveTerm}>
-          <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-            <TabsList className="inline-flex w-max gap-1.5">
-              {terms.map((t) => <TabsTrigger key={t} value={t} className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">{t}</TabsTrigger>)}
-            </TabsList>
-          </div>
+          <TabsList className="flex flex-wrap w-full gap-1.5">
+            {terms.map((t) => <TabsTrigger key={t} value={t} className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">{t}</TabsTrigger>)}
+          </TabsList>
         </Tabs>
       )}
 
@@ -113,7 +111,7 @@ export default function ParentResultsPage() {
             <CardContent className="p-4">
               <p className="text-sm font-semibold mb-3">Subject Scores</p>
               <div className="overflow-x-auto">
-                <div className="h-48 md:h-56 min-h-[160px] min-w-[350px]">
+                <div className="h-48 md:h-56 min-h-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={comparisonData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                     <XAxis dataKey="subject" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />

@@ -66,14 +66,12 @@ export default function AdminReportsPage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="academic" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Award className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Academic</TabsTrigger>
-            <TabsTrigger value="subject" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Subject</TabsTrigger>
-            <TabsTrigger value="comparison" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Comparison</TabsTrigger>
-            <TabsTrigger value="enrollment" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Enrollment</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="academic" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Award className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Academic</TabsTrigger>
+          <TabsTrigger value="subject" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Subject</TabsTrigger>
+          <TabsTrigger value="comparison" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Comparison</TabsTrigger>
+          <TabsTrigger value="enrollment" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Enrollment</TabsTrigger>
+        </TabsList>
 
         {activeTab === "academic" && (
         <TabsContent value="academic" className="mt-4 space-y-4">
@@ -135,7 +133,7 @@ export default function AdminReportsPage() {
             <CardContent className="p-4">
               <h3 className="text-sm md:text-base font-semibold mb-3">Subject Average Comparison</h3>
               <div className="overflow-x-auto">
-                <div className="h-48 md:h-64 min-h-[180px] min-w-[350px]">
+                <div className="h-48 md:h-64 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={subjectChart} layout={subjectChart.length > 6 ? "vertical" : "horizontal"} margin={{ left: 0, right: 5 }}>
                     {subjectChart.length > 6 ? (

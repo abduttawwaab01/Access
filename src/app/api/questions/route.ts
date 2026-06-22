@@ -20,3 +20,41 @@ export async function POST(request: Request) {
   const item = store.questions.create(body)
   return NextResponse.json(item, { status: 201 })
 }
+
+export async function PUT(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const action = searchParams.get("action")
+  const body = await request.json()
+
+  if (action === "approveAll") {
+    const { ids, approvedBy } = body
+    if (!ids || !approvedBy) {
+      return NextResponse.json({ error: "ids and approvedBy are required" }, { status: 400 })
+    }
+    store.questions.approveAll(ids, approvedBy)
+    return NextResponse.json({ success: true })
+  }
+
+  if (action === "approve" && body.id) {
+    return NextResponse.json(store.questions.approve(body.id, body.approvedBy))
+  }
+
+  if (action === "reject" && body.id) {
+    return NextResponse.json(store.questions.reject(body.id))
+  }
+
+  if (action === "update" && body.id && body.data) {
+    return NextResponse.json(store.questions.update(body.id, body.data))
+  }
+
+  return NextResponse.json({ error: "invalid action" }, { status: 400 })
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const id = searchParams.get("id")
+  if (!id) {
+    return NextResponse.json({ error: "id required" }, { status: 400 })
+  }
+  return NextResponse.json({ deleted: store.questions.delete(id) })
+}

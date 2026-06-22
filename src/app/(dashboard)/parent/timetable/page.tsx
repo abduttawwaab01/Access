@@ -57,10 +57,10 @@ export default function ParentTimetablePage() {
         <p className="text-sm text-muted-foreground">View weekly class schedule</p>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {children.map((c) => (
           <button key={c.id} onClick={() => setActiveChildId(c.id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all snap-start ${activeChildId === c.id ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
           >{c.name.split(" ")[0]}</button>
         ))}
       </div>

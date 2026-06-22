@@ -136,13 +136,15 @@ export default function AdminReportCardsPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      await downloadPdf(
-        reportRef.current,
-        `Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`
-      )
+      const { jsPDF } = await import("jspdf")
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+      pdf.save(`Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
       toast.success("Report card downloaded as PDF")
     } catch (err) {
-      console.error(err)
+      console.error("PDF export error:", err)
       toast.error("Failed to export PDF")
     }
     setExporting(false)

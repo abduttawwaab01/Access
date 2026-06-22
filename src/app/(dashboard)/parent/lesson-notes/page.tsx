@@ -337,13 +337,13 @@ export default function ParentLessonNotesPage() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
           {children.map((c) => (
             <button
               key={c.id}
               onClick={() => handleChildChange(c.id)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all",
+                "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all snap-start",
                 activeChildId === c.id
                   ? "bg-primary text-white shadow-lg shadow-primary/25"
                   : "bg-muted text-muted-foreground hover:bg-primary/10"

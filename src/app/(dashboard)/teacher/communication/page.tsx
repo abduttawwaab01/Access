@@ -55,13 +55,11 @@ export default function CommunicationPage() {
       <PageHeader title="Communication" description="Announcements and messages" actionLabel="New Announcement" onAction={() => { setForm({ title: "", content: "", audience: "teachers", priority: "normal" }); setSheetOpen(true) }} />
 
       <Tabs value={tab} onValueChange={setTab} className="mb-4">
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">All</TabsTrigger>
-            <TabsTrigger value="teachers" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Teachers</TabsTrigger>
-            <TabsTrigger value="parents" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Parents</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">All</TabsTrigger>
+          <TabsTrigger value="teachers" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Teachers</TabsTrigger>
+          <TabsTrigger value="parents" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Parents</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       {loading ? (

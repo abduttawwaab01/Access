@@ -83,7 +83,7 @@ export default function ParentDashboard() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex gap-2 overflow-x-auto pb-1"
+        className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none"
       >
         {children.map((c, i) => (
           <motion.button

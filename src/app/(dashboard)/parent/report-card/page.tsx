@@ -121,13 +121,15 @@ export default function ParentReportCardPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      await downloadPdf(
-        reportRef.current,
-        `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`
-      )
+      const { jsPDF } = await import("jspdf")
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+      pdf.save(`Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
       toast.success("Report card downloaded as PDF")
     } catch (err) {
-      console.error(err)
+      console.error("PDF export error:", err)
       toast.error("Failed to export PDF")
     }
     setExporting(false)
@@ -182,12 +184,12 @@ export default function ParentReportCardPage() {
       </div>
 
       {children.length > 1 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2 overflow-x-auto pb-2 print:hidden">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none print:hidden">
           {children.map((child: any) => (
             <button
               key={child.id}
               onClick={() => setActiveChildId(child.id)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all shrink-0 ${
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all shrink-0 snap-start ${
                 activeChildId === child.id
                   ? "bg-primary text-white shadow-lg shadow-primary/25"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"

@@ -75,6 +75,20 @@ export default function SuperAdminPage() {
   return (
     <div className="min-h-dvh bg-[#0a0a0f]">
       <div className="p-4 lg:p-6 lg:ml-0">
+        <div className="mb-4 flex items-center justify-between lg:hidden">
+          <h1 className="text-lg font-semibold text-white capitalize">
+            {activeSection.replace(/([A-Z])/g, " $1").trim()}
+          </h1>
+          <button
+            onClick={() => {
+              const el = document.getElementById("superadmin-sidebar-toggle");
+              if (el) el.click();
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#12121a] border border-zinc-800 text-zinc-400"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+          </button>
+        </div>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSection}

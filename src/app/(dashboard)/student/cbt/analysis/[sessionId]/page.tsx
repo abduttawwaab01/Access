@@ -125,7 +125,10 @@ export default function ExamAnalysisPage() {
       link.href = canvas.toDataURL("image/png")
       link.click()
       toast.success("Analysis exported as PNG")
-    } catch { toast.error("Export failed") }
+    } catch (err) {
+      console.error("PNG export error:", err)
+      toast.error("Export failed")
+    }
     setExporting(false)
   }
 

@@ -76,16 +76,14 @@ export default function ParentCommunicationPage() {
       </motion.div>
 
       <Tabs defaultValue="announcements">
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="announcements" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
-              <Megaphone className="h-4 w-4 mr-1.5" /> Announcements
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
-              <MessageSquare className="h-4 w-4 mr-1.5" /> Message Teachers
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="announcements" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
+            <Megaphone className="h-4 w-4 mr-1.5" /> Announcements
+          </TabsTrigger>
+          <TabsTrigger value="messages" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
+            <MessageSquare className="h-4 w-4 mr-1.5" /> Message Teachers
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="announcements" className="mt-4 space-y-3">
           {loading ? (

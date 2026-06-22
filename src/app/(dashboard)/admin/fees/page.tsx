@@ -125,14 +125,12 @@ export default function AdminFeesPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
-            <TabsTrigger value="bank" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Building className="h-4 w-4 mr-1" /> Bank Details</TabsTrigger>
-            <TabsTrigger value="structures" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Landmark className="h-4 w-4 mr-1" /> Fee Structures</TabsTrigger>
-            <TabsTrigger value="confirmations" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><CheckCircle2 className="h-4 w-4 mr-1" /> Confirm Payments {pendingCount > 0 && <Badge className="ml-1 bg-red-500 text-white text-[10px] px-1 py-0">{pendingCount}</Badge>}</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
+          <TabsTrigger value="bank" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Building className="h-4 w-4 mr-1" /> Bank Details</TabsTrigger>
+          <TabsTrigger value="structures" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Landmark className="h-4 w-4 mr-1" /> Fee Structures</TabsTrigger>
+          <TabsTrigger value="confirmations" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><CheckCircle2 className="h-4 w-4 mr-1" /> Confirm Payments {pendingCount > 0 && <Badge className="ml-1 bg-red-500 text-white text-[10px] px-1 py-0">{pendingCount}</Badge>}</TabsTrigger>
+        </TabsList>
 
         {activeTab === "overview" && (
         <TabsContent value="overview" className="mt-4 space-y-4">

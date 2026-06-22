@@ -43,6 +43,12 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(store.schemeOfWorks.reject(id))
   }
   if (action === "update" && data) {
+    const existing = store.schemeOfWorks.getById(id)
+    if (existing?.status === "published") {
+      data.status = "draft"
+      data.approvedBy = null
+      data.approvedAt = null
+    }
     return NextResponse.json(store.schemeOfWorks.update(id, data))
   }
   return NextResponse.json({ error: "invalid action" }, { status: 400 })

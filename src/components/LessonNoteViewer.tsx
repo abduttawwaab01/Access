@@ -42,9 +42,17 @@ export function LessonNoteViewer({ open, onOpenChange, data }: LessonNoteViewerP
     if (!reportRef.current) return
     setExporting("pdf")
     try {
-      await downloadPdf(reportRef.current, `${data.title.replace(/\s+/g, "_")}_Lesson_Note.pdf`)
+      const { jsPDF } = await import("jspdf")
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
+      pdf.save(`${data.title.replace(/\s+/g, "_")}_Lesson_Note.pdf`)
       toast.success("PDF downloaded")
-    } catch { toast.error("Failed to export PDF") }
+    } catch (err) {
+      console.error("PDF export error:", err)
+      toast.error("Failed to export PDF")
+    }
     setExporting("")
   }
 

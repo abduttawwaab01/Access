@@ -214,45 +214,37 @@ export default function AdminWeeklyReportsPage() {
   }
 
   const handleExportPDF = async (report: any) => {
+    if (!reportRef.current) return
     setExporting(true)
-    setPreviewReport(report)
-    await new Promise((r) => setTimeout(r, 300))
     try {
       const { jsPDF } = await import("jspdf")
-      const el = document.getElementById("weekly-report-preview")
-      if (!el) return
-      const canvas = await captureElement(el, { scale: 2 })
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
       const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF("p", "mm", "a4")
-      const pdfWidth = 210
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight)
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
       pdf.save(`Weekly_Report_${report.studentName.replace(/\s+/g, "_")}_Week${report.week}.pdf`)
       toast.success("PDF downloaded")
-    } catch {
+    } catch (err) {
+      console.error("PDF export error:", err)
       toast.error("Failed to export PDF")
     }
-    setPreviewReport(null)
     setExporting(false)
   }
 
   const handleExportPNG = async (report: any) => {
+    if (!reportRef.current) return
     setExporting(true)
-    setPreviewReport(report)
-    await new Promise((r) => setTimeout(r, 300))
     try {
-      const el = document.getElementById("weekly-report-preview")
-      if (!el) return
-      const canvas = await captureElement(el, { scale: 2 })
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
       const link = document.createElement("a")
       link.download = `Weekly_Report_${report.studentName.replace(/\s+/g, "_")}_Week${report.week}.png`
       link.href = canvas.toDataURL("image/png")
       link.click()
       toast.success("PNG downloaded")
-    } catch {
+    } catch (err) {
+      console.error("PNG export error:", err)
       toast.error("Failed to export PNG")
     }
-    setPreviewReport(null)
     setExporting(false)
   }
 
@@ -303,7 +295,7 @@ export default function AdminWeeklyReportsPage() {
     <div className="p-4 md:p-6 space-y-6">
       <PageHeader         title="Weekly Reports" description="View and manage all weekly reports across classes" />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="border-0 glass-card">
           <CardContent className="p-3 md:p-4 text-center">
             <p className="text-xl md:text-2xl font-bold">{stats.total}</p>

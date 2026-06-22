@@ -132,6 +132,8 @@ export default function SchemeOfWorkPage() {
   }
 
   const [confirmDelete, setConfirmDelete] = useState<any>(null)
+  const [showEditWarning, setShowEditWarning] = useState(false)
+  const [selectedScheme, setSelectedScheme] = useState<Scheme | null>(null)
 
   const handleDelete = (item: Scheme) => setConfirmDelete(item)
 
@@ -141,6 +143,33 @@ export default function SchemeOfWorkPage() {
     if (res.ok) { toast.success("Deleted"); fetchData() }
     setConfirmDelete(null)
   }
+
+  const openEditWithConfirmation = (item: Scheme) => {
+    if (item.status === "published") {
+      setShowEditWarning(true);
+      setSelectedScheme(item);
+    } else {
+      openEdit(item);
+    }
+  };
+
+  const confirmEditPublished = async () => {
+    if (selectedScheme) {
+      const body = { action: "update", id: selectedScheme.id, ...form, weeks, createdBy: teacherId };
+      const res = await fetch("/api/scheme-of-work", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        toast.success("Scheme updated (status reset to draft for re-approval)");
+        setSheetOpen(false);
+        fetchData();
+      } else toast.error("Failed to update scheme");
+      setShowEditWarning(false);
+      setSelectedScheme(null);
+    }
+  };
 
   const toggleExpand = (id: string) => setExpanded((prev) => (prev === id ? null : id))
 
@@ -190,14 +219,22 @@ export default function SchemeOfWorkPage() {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Badge className={statusVariant(item.status)}>{item.status}</Badge>
-                          {item.status === "draft" && (
+                          {(item.status === "draft" || item.status === "published") && (
                             <>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8" 
+                                onClick={() => openEditWithConfirmation(item)}
+                                title={item.status === "published" ? "Edit (will reset to draft)" : "Edit"}
+                              >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              {item.status === "draft" && (
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                             </>
                           )}
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleExpand(item.id)}>
@@ -352,6 +389,26 @@ export default function SchemeOfWorkPage() {
           </Button>
         </form>
       </FormSheet>
+
+      {showEditWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md">
+            <h3 className="text-lg font-semibold mb-2">Warning</h3>
+            <p className="text-gray-600 mb-4">
+              Editing a published scheme will reset its status to "draft" and require re-approval.
+              Are you sure you want to continue?
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={confirmEditPublished} variant="destructive">
+                Yes, Edit
+              </Button>
+              <Button onClick={() => setShowEditWarning(false)} variant="outline">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

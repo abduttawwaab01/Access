@@ -84,12 +84,12 @@ export default function SubjectsPage() {
       <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
         title="Delete Subject" description={`Permanently delete ${confirmDelete?.name}? This cannot be undone.`} />
       {classes.length > 0 && (
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-          <Button variant={filterClass === "all" ? "default" : "outline"} size="sm" onClick={() => setFilterClass("all")} className="shrink-0 rounded-full">
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
+          <Button variant={filterClass === "all" ? "default" : "outline"} size="sm" onClick={() => setFilterClass("all")} className="shrink-0 rounded-full snap-start">
             All
           </Button>
           {classes.map((c) => (
-            <Button key={c.id} variant={filterClass === c.id ? "default" : "outline"} size="sm" onClick={() => setFilterClass(c.id)} className="shrink-0 rounded-full">
+            <Button key={c.id} variant={filterClass === c.id ? "default" : "outline"} size="sm" onClick={() => setFilterClass(c.id)} className="shrink-0 rounded-full snap-start">
               {c.name}{c.arm ? ` ${c.arm}` : ""}
             </Button>
           ))}

@@ -113,6 +113,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     <SuperAdminContext.Provider value={{ activeSection, setActiveSection: navigate }}>
       <div className="flex min-h-dvh bg-[#0a0a0f]">
         <button
+          id="superadmin-sidebar-toggle"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg bg-[#12121a] border border-zinc-800 text-zinc-400 lg:hidden"
         >

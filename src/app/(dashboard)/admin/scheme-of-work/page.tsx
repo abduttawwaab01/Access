@@ -59,6 +59,8 @@ export default function SchemeOfWorkPage() {
   const [editing, setEditing] = useState<Scheme | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
+  const teacherId = "1"
+
   const [filterClass, setFilterClass] = useState("all")
   const [filterSubject, setFilterSubject] = useState("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
@@ -287,6 +289,17 @@ export default function SchemeOfWorkPage() {
                               </Button>
                             </>
                           )}
+                          {item.status === "published" && item.createdBy === teacherId && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-blue-600" 
+                              onClick={() => openEdit(item)}
+                              title="Edit (will reset to draft)"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" className="text-muted-foreground">
                             {expandedId === item.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </Button>
@@ -427,6 +440,32 @@ export default function SchemeOfWorkPage() {
           </Button>
         </form>
       </FormSheet>
+
+      {editing?.status === "published" && editing?.createdBy === teacherId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md">
+            <h3 className="text-lg font-semibold mb-2">Warning</h3>
+            <p className="text-gray-600 mb-4">
+              Editing a published scheme will reset its status to "draft" and require re-approval.
+              Are you sure you want to continue?
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => {
+                  setEditing(null);
+                  setSheetOpen(false);
+                }} 
+                variant="destructive"
+              >
+                Yes, Edit
+              </Button>
+              <Button onClick={() => setEditing(null)} variant="outline">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

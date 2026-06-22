@@ -175,14 +175,12 @@ export default function AdminLessonNotes() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-4">
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">All</TabsTrigger>
-            <TabsTrigger value="pending" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Pending</TabsTrigger>
-            <TabsTrigger value="approved" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Approved</TabsTrigger>
-            <TabsTrigger value="rejected" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Rejected</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">All</TabsTrigger>
+          <TabsTrigger value="pending" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Pending</TabsTrigger>
+          <TabsTrigger value="approved" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Approved</TabsTrigger>
+          <TabsTrigger value="rejected" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Rejected</TabsTrigger>
+        </TabsList>
       </Tabs>
 
       {loading ? (

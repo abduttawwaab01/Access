@@ -81,45 +81,37 @@ export default function ParentWeeklyReportsPage() {
   })
 
   const handleExportPDF = async (report: any) => {
+    if (!reportRef.current) return
     setExporting(true)
-    setPreviewReport(report)
-    await new Promise((r) => setTimeout(r, 300))
     try {
       const { jsPDF } = await import("jspdf")
-      const el = document.getElementById("weekly-report-preview")
-      if (!el) return
-      const canvas = await captureElement(el, { scale: 2 })
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
       const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF("p", "mm", "a4")
-      const pdfWidth = 210
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight)
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
       pdf.save(`Weekly_Report_${report.studentName.replace(/\s+/g, "_")}_Week${report.week}.pdf`)
       toast.success("PDF downloaded")
-    } catch {
+    } catch (err) {
+      console.error("PDF export error:", err)
       toast.error("Failed to export PDF")
     }
-    setPreviewReport(null)
     setExporting(false)
   }
 
   const handleExportPNG = async (report: any) => {
+    if (!reportRef.current) return
     setExporting(true)
-    setPreviewReport(report)
-    await new Promise((r) => setTimeout(r, 300))
     try {
-      const el = document.getElementById("weekly-report-preview")
-      if (!el) return
-      const canvas = await captureElement(el, { scale: 2 })
+      const canvas = await captureElement(reportRef.current, { scale: 2 })
       const link = document.createElement("a")
       link.download = `Weekly_Report_${report.studentName.replace(/\s+/g, "_")}_Week${report.week}.png`
       link.href = canvas.toDataURL("image/png")
       link.click()
       toast.success("PNG downloaded")
-    } catch {
+    } catch (err) {
+      console.error("PNG export error:", err)
       toast.error("Failed to export PNG")
     }
-    setPreviewReport(null)
     setExporting(false)
   }
 
@@ -141,12 +133,12 @@ export default function ParentWeeklyReportsPage() {
       </motion.div>
 
       {children.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none">
           {children.map((child: any) => (
             <button
               key={child.id}
               onClick={() => setActiveChildId(child.id)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all shrink-0 ${
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all shrink-0 snap-start ${
                 activeChildId === child.id
                   ? "bg-primary text-white shadow-lg shadow-primary/25"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"

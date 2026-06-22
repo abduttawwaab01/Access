@@ -35,10 +35,6 @@ export async function PUT(request: NextRequest) {
   if (action === "approve" && questionId) {
     return NextResponse.json(store.questions.approve(questionId, approvedBy))
   }
-  if (action === "approveAll" && ids) {
-    store.questions.approveAll(ids, approvedBy)
-    return NextResponse.json({ success: true })
-  }
   if (action === "reject" && questionId) {
     return NextResponse.json(store.questions.reject(questionId))
   }

@@ -25,6 +25,23 @@ export async function GET(request: NextRequest) {
   if (action === "feedback") {
     return NextResponse.json(store.feedbackTickets.getAll())
   }
+  if (action === "updateFeedback") {
+    const { id, subject, message, priority } = body
+    const ticket = store.feedbackTickets.getById(id)
+    if (!ticket) {
+      return NextResponse.json({ success: false, error: "Ticket not found" }, { status: 404 })
+    }
+    const updated = store.feedbackTickets.update(id, { subject, message, priority }, ticket.from)
+    return NextResponse.json({ success: true, data: { ticket: updated } })
+  }
+  if (action === "deleteFeedback") {
+    const { id, from } = body
+    const success = store.feedbackTickets.delete(id, from)
+    if (!success) {
+      return NextResponse.json({ success: false, error: "Failed to delete ticket or unauthorized" }, { status: 403 })
+    }
+    return NextResponse.json({ success: true, message: "Ticket deleted" })
+  }
   return NextResponse.json({ error: "Unknown action" }, { status: 400 })
 }
 

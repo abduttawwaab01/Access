@@ -34,8 +34,14 @@ export default function AdminAnnouncementsPage() {
 
   const load = () => {
     setLoading(true)
-    fetch("/api/announcements").then((r) => r.json()).then((data) => {
-      setItems(Array.isArray(data) ? data : [])
+    Promise.all([
+      fetch("/api/announcements").then((r) => r.json()),
+      fetch("/api/superadmin?action=announcements").then((r) => r.json()),
+    ]).then(([regularData, superData]) => {
+      const regularItems = Array.isArray(regularData) ? regularData : []
+      const superItems = Array.isArray(superData) ? superData : []
+      const allItems = [...regularItems, ...superItems]
+      setItems(allItems)
       setLoading(false)
     }).catch(() => setLoading(false))
   }
@@ -63,9 +69,29 @@ export default function AdminAnnouncementsPage() {
 
   const confirmDeleteItem = async () => {
     if (!confirmDelete) return
-    const res = await fetch(`/api/announcements/${confirmDelete}`, { method: "DELETE" })
-    if (res.ok) { toast.success("Deleted"); load() }
-    else { toast.error("Failed to delete") }
+    let success = false
+    let error = "Failed to delete"
+    
+    // Try to delete from regular announcements first
+    const res1 = await fetch(`/api/announcements/${confirmDelete}`, { method: "DELETE" })
+    if (res1.ok) {
+      success = true
+    } else {
+      // If not found in regular announcements, try Super Admin announcements
+      const res2 = await fetch(`/api/superadmin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteAnnouncement", id: confirmDelete })
+      })
+      if (res2.ok) {
+        success = true
+      } else {
+        error = "Failed to delete"
+      }
+    }
+    
+    if (success) { toast.success("Deleted"); load() }
+    else { toast.error(error) }
     setConfirmDelete(null)
   }
 

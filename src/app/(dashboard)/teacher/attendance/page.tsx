@@ -88,13 +88,11 @@ export default function TeacherAttendancePage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-max gap-1.5">
-            <TabsTrigger value="mark" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Mark</TabsTrigger>
-            <TabsTrigger value="scan" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><ScanLine className="h-4 w-4 mr-1" /> Scan QR</TabsTrigger>
-            <TabsTrigger value="today" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="flex flex-wrap w-full gap-1.5">
+          <TabsTrigger value="mark" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Mark</TabsTrigger>
+          <TabsTrigger value="scan" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><ScanLine className="h-4 w-4 mr-1" /> Scan QR</TabsTrigger>
+          <TabsTrigger value="today" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="mark" className="mt-4 space-y-4">
           <div className="flex gap-2">
