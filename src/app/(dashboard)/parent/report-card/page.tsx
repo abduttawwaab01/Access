@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { Download, Printer, Send, FileText, DownloadCloud } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
 import { useParentChildren } from "@/hooks/useParentChildren"
-import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { downloadPng, downloadPdf, openPrintWindow, captureElement } from "@/lib/capture"
 
 export default function ParentReportCardPage() {
   const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
