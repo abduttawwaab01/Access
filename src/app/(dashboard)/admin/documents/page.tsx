@@ -172,15 +172,15 @@ export default function AdminDocumentsPage() {
     w.print()
   }
 
-  const filteredStudents = students.filter((s) => {
-    if (!genStudentSearch) return true
-    return `${s.firstName} ${s.lastName} ${s.studentId || ""}`.toLowerCase().includes(genStudentSearch.toLowerCase())
-  })
-
   const [letterType, setLetterType] = useState("acceptance")
   const [letterStudentId, setLetterStudentId] = useState("")
   const [showLetterForm, setShowLetterForm] = useState(false)
   const [genStudentSearch, setGenStudentSearch] = useState("")
+
+  const filteredStudents = students.filter((s) => {
+    if (!genStudentSearch) return true
+    return `${s.firstName} ${s.lastName} ${s.studentId || ""}`.toLowerCase().includes(genStudentSearch.toLowerCase())
+  })
 
   if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-24", "h-48"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
 
