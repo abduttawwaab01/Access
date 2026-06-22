@@ -203,10 +203,10 @@ export default function ParentAnalyticsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex flex-wrap w-full gap-1.5">
-          <TabsTrigger value="performance" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Performance</TabsTrigger>
-          <TabsTrigger value="subjects" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Subjects</TabsTrigger>
-          <TabsTrigger value="attendance" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Attendance</TabsTrigger>
-          <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Insights</TabsTrigger>
+          <TabsTrigger value="performance" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Performance</TabsTrigger>
+          <TabsTrigger value="subjects" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Subjects</TabsTrigger>
+          <TabsTrigger value="attendance" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Attendance</TabsTrigger>
+          <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Insights</TabsTrigger>
         </TabsList>
 
         {activeTab === "performance" && (

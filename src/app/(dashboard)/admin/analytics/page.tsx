@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button-enhanced"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend,
@@ -141,12 +142,12 @@ export default function AdminAnalyticsPage() {
           <h2 className="text-2xl font-bold">School Analytics</h2>
           <p className="text-sm text-muted-foreground">Performance trends, insights, and forecasting</p>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {["all", "term", "month"].map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all whitespace-nowrap min-w-[100px] ${
                 timeRange === range
                   ? "bg-primary text-primary-foreground shadow-md"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -194,13 +195,13 @@ export default function AdminAnalyticsPage() {
         ))}
       </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="flex flex-wrap w-full gap-1.5">
-          <TabsTrigger value="trends" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Trends</TabsTrigger>
-          <TabsTrigger value="comparison" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Comparison</TabsTrigger>
-          <TabsTrigger value="distribution" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Distribution</TabsTrigger>
-          <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">AI Insights</TabsTrigger>
-        </TabsList>
+       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+         <TabsList className="flex flex-nowrap w-full gap-2 overflow-x-auto scrollbar-hide">
+           <TabsTrigger value="trends" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[100px]">Trends</TabsTrigger>
+           <TabsTrigger value="comparison" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[100px]">Comparison</TabsTrigger>
+           <TabsTrigger value="distribution" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[100px]">Distribution</TabsTrigger>
+           <TabsTrigger value="insights" className="whitespace-nowrap px-4 py-2.5 text-sm font-medium rounded-lg transition-all data-[state=active]:animated-gradient data-[state=active]:text-white data-[state=active]:shadow-lg min-w-[100px]">AI Insights</TabsTrigger>
+         </TabsList>
 
         {activeTab === "trends" && (
         <TabsContent value="trends" className="space-y-6 mt-0">
