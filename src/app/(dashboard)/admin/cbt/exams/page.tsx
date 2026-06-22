@@ -26,8 +26,9 @@ export default function ExamsPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [filterSubject, setFilterSubject] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
+  const [filterType, setFilterType] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
+  const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
 
   const fetchData = async () => {
     const [eRes, sRes, cRes] = await Promise.all([
@@ -47,13 +48,13 @@ export default function ExamsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
+    setForm({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
     setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
     setEditing(item)
-    setForm({ title: item.title, description: item.description || "", duration: item.duration, shuffleQuestions: item.shuffleQuestions, showResults: item.showResults, subjectId: item.subjectId || "", classId: item.classId || "", requireFullscreen: item.requireFullscreen ?? true, tabSwitchLimit: item.tabSwitchLimit ?? 3, allowCopyPaste: item.allowCopyPaste ?? false, maxAttempts: item.maxAttempts ?? 0 })
+    setForm({ title: item.title, description: item.description || "", duration: item.duration, shuffleQuestions: item.shuffleQuestions, showResults: item.showResults, subjectId: item.subjectId || "", classId: item.classId || "", type: item.type || "regular", requireFullscreen: item.requireFullscreen ?? true, tabSwitchLimit: item.tabSwitchLimit ?? 3, allowCopyPaste: item.allowCopyPaste ?? false, maxAttempts: item.maxAttempts ?? 0 })
     setSheetOpen(true)
   }
 
@@ -96,6 +97,7 @@ export default function ExamsPage() {
   const filtered = items.filter((e) => {
     if (filterSubject !== "all" && e.subjectId !== filterSubject) return false
     if (filterStatus !== "all" && e.status !== filterStatus) return false
+    if (filterType !== "all" && e.type !== filterType) return false
     return true
   })
 
@@ -118,6 +120,14 @@ export default function ExamsPage() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="published">Published</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterType} onValueChange={(v) => { if (v) setFilterType(v) }}>
+          <SelectTrigger className="h-10 w-[130px]"><SelectValue placeholder="All types" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="regular">Regular</SelectItem>
+            <SelectItem value="entrance">Entrance</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -199,6 +209,16 @@ export default function ExamsPage() {
                 <SelectTrigger className="h-12"><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
                   {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Exam Type</Label>
+              <Select value={form.type} onValueChange={(v) => update("type", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Regular Exam</SelectItem>
+                  <SelectItem value="entrance">Entrance Exam</SelectItem>
                 </SelectContent>
               </Select>
             </div>

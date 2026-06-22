@@ -33,37 +33,39 @@ export function StudentIDCardFront({ student, school, classes, orientation = "po
             <QRCodeSVG value={qrData} size={90} level="M" />
           </div>
         </div>
-        <div className="flex-1 p-5 flex flex-col justify-center">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="h-20 w-20 rounded-xl border-2 border-primary/20 shadow overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10 shrink-0">
-              {student.passportPhoto ? (
-                <img src={student.passportPhoto} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center">
-                  <span className="text-xl font-bold text-primary">{initials}</span>
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 p-5 flex flex-col justify-center">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="h-20 w-20 rounded-xl border-2 border-primary/20 shadow overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10 shrink-0">
+                {student.passportPhoto ? (
+                  <img src={student.passportPhoto} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <span className="text-xl font-bold text-primary">{initials}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{student.firstName} {student.lastName}</p>
+                <p className="text-xs text-gray-500 font-medium">{studentClass}</p>
+                <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
+                  <span className="text-[9px] font-mono text-muted-foreground">ID: {student.studentId}</span>
                 </div>
-              )}
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900">{student.firstName} {student.lastName}</p>
-              <p className="text-xs text-gray-500 font-medium">{studentClass}</p>
-              <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
-                <span className="text-[9px] font-mono text-muted-foreground">ID: {student.studentId}</span>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5">
+              {student.dateOfBirth && <><span className="font-medium text-gray-400">DOB</span><span className="text-right">{new Date(student.dateOfBirth).toLocaleDateString()}</span></>}
+              {student.gender && <><span className="font-medium text-gray-400">Gender</span><span className="text-right">{student.gender}</span></>}
+              {student.bloodGroup && <><span className="font-medium text-gray-400">Blood</span><span className="text-right">{student.bloodGroup}</span></>}
+            </div>
+            <div className="mt-3 text-[9px] text-gray-400 leading-tight border-t border-gray-100 pt-2">
+              <p className="font-medium text-gray-500">{school.name}</p>
+              {school.address && <p>{school.address}</p>}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5">
-            {student.dateOfBirth && <><span className="font-medium text-gray-400">DOB</span><span className="text-right">{new Date(student.dateOfBirth).toLocaleDateString()}</span></>}
-            {student.gender && <><span className="font-medium text-gray-400">Gender</span><span className="text-right">{student.gender}</span></>}
-            {student.bloodGroup && <><span className="font-medium text-gray-400">Blood</span><span className="text-right">{student.bloodGroup}</span></>}
+          <div className="bg-gradient-to-r from-primary/5 to-secondary/5 px-3 py-1.5 text-center w-full">
+            <p className="text-[7px] text-muted-foreground">Valid for current session • Scan QR for attendance</p>
           </div>
-          <div className="mt-3 text-[9px] text-gray-400 leading-tight border-t border-gray-100 pt-2">
-            <p className="font-medium text-gray-500">{school.name}</p>
-            {school.address && <p>{school.address}</p>}
-          </div>
-        </div>
-        <div className="bg-gradient-to-r from-primary/5 to-secondary/5 px-3 py-1.5 text-center self-end w-full">
-          <p className="text-[7px] text-muted-foreground">Valid for current session • Scan QR for attendance</p>
         </div>
       </div>
     )

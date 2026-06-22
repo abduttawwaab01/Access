@@ -42,6 +42,81 @@ let exams: any[] = g("exams", [])
 let examSessions: any[] = g("examSessions", [])
 let submissions: any[] = g("submissions", [])
 
+// Auto-seed some initial data
+const seedExams = () => {
+  if (exams.length === 0) {
+    const now = new Date().toISOString()
+    const seededExams = [
+      {
+        id: "exam1",
+        title: "Mathematics Mid-Term",
+        description: "Mid-term examination for Mathematics",
+        duration: 60,
+        subjectId: "subject1",
+        classId: "class1",
+        type: "regular",
+        status: "published",
+        createdAt: now,
+        updatedAt: now,
+        questions: [],
+        shuffleQuestions: false,
+        showResults: true,
+        requireFullscreen: true,
+        tabSwitchLimit: 3,
+        allowCopyPaste: false,
+        maxAttempts: 1,
+        approvedBy: "admin1",
+        approvedAt: now,
+      },
+      {
+        id: "exam2",
+        title: "English Final Exam",
+        description: "Final examination for English language",
+        duration: 90,
+        subjectId: "subject2",
+        classId: "class1",
+        type: "regular",
+        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+        questions: [],
+        shuffleQuestions: true,
+        showResults: true,
+        requireFullscreen: true,
+        tabSwitchLimit: 5,
+        allowCopyPaste: false,
+        maxAttempts: 2,
+        approvedBy: null,
+        approvedAt: null,
+      },
+      {
+        id: "exam3",
+        title: "Entrance Exam 2024",
+        description: "Entrance examination for new students",
+        duration: 120,
+        subjectId: "subject3",
+        classId: null,
+        type: "entrance",
+        status: "published",
+        createdAt: now,
+        updatedAt: now,
+        questions: [],
+        shuffleQuestions: false,
+        showResults: true,
+        requireFullscreen: true,
+        tabSwitchLimit: 2,
+        allowCopyPaste: false,
+        maxAttempts: 1,
+        approvedBy: "admin1",
+        approvedAt: now,
+      },
+    ]
+    exams.push(...seededExams)
+  }
+}
+
+seedExams()
+
 let bankDetails: any = g("bankDetails", { id: "b1", bankName: "", accountName: "", accountNumber: "", branch: "", swiftCode: "", schoolId: "1", updatedAt: "" })
 let feeStructures: any[] = g("feeStructures", [])
 let payments: any[] = g("payments", [])
@@ -169,11 +244,12 @@ export const store = {
     getAll: () => results,
     getByStudent: (studentId: string) => results.filter((r) => r.studentId === studentId),
     getByStudentAndTerm: (studentId: string, term: string) => results.filter((r) => r.studentId === studentId && r.term === term),
-    getByClassAndSubject: (classId: string, subjectId: string, term?: string, session?: string) => {
+    getByClassAndSubject: (classId: string, subjectId: string, term?: string, session?: string, examId?: string) => {
       const studentIds = students.filter((s) => s.classId === classId).map((s) => s.id)
       let result = results.filter((r) => studentIds.includes(r.studentId) && r.subjectId === subjectId)
       if (term) result = result.filter((r) => r.term === term)
       if (session) result = result.filter((r) => r.session === session)
+      if (examId) result = result.filter((r) => r.examId === examId)
       return result
     },
     create: (data: any) => {
@@ -246,8 +322,8 @@ export const store = {
     autoPopulate: (classId: string, subjectId: string, counts: { topic: string; count: number; difficulty: string }[]) => { const pool = questions.filter((q) => q.classId === classId && q.subjectId === subjectId && q.approved); const selected: any[] = []; const used = new Set<string>(); counts.forEach(({ topic, count, difficulty }) => { const candidates = pool.filter((q) => q.topic === topic && q.difficulty === difficulty && !used.has(q.id)); candidates.slice(0, count).forEach((q) => { selected.push({ questionId: q.id, points: q.points }); used.add(q.id) }) }); return selected },
   },
   exams: {
-    getAll: (subjectId?: string, classId?: string) => { let result = [...exams]; if (subjectId) result = result.filter((e) => e.subjectId === subjectId); if (classId) result = result.filter((e) => e.classId === classId); return result },
-    getByTeacher: (teacherId: string) => { const ta = teacherAssignments.find((a) => a.teacherId === teacherId); if (!ta) return []; return exams.filter((e) => ta.classIds.includes(e.classId) && ta.subjectIds.includes(e.subjectId)) },
+    getAll: (subjectId?: string, classId?: string, type?: string) => { let result = [...exams]; if (subjectId) result = result.filter((e) => e.subjectId === subjectId); if (classId) result = result.filter((e) => e.classId === classId); if (type) result = result.filter((e) => e.type === type); return result },
+    getByTeacher: (teacherId: string, type?: string) => { const ta = teacherAssignments.find((a) => a.teacherId === teacherId); if (!ta) return []; let result = exams.filter((e) => ta.classIds.includes(e.classId) && ta.subjectIds.includes(e.subjectId)); if (type) result = result.filter((e) => e.type === type); return result },
     getById: (id: string) => exams.find((e) => e.id === id),
     create: (data: any) => { const now = new Date().toISOString(); const item = { id: uid(), ...data, status: data.status || "draft", createdAt: now, updatedAt: now }; exams.push(item); return item },
     update: (id: string, data: any) => { const idx = exams.findIndex((e) => e.id === id); if (idx === -1) return null; exams[idx] = { ...exams[idx], ...data, updatedAt: new Date().toISOString() }; return exams[idx] },
@@ -255,7 +331,11 @@ export const store = {
     approve: (id: string, approvedBy: string) => { const idx = exams.findIndex((e) => e.id === id); if (idx === -1) return null; exams[idx] = { ...exams[idx], status: "published", approvedBy, approvedAt: new Date().toISOString() }; return exams[idx] },
   },
   examSessions: {
-    getAll: (examId?: string) => examId ? examSessions.filter((s) => s.examId === examId) : examSessions,
+    getAll: (examId?: string, examType?: string) => {
+      let result = examId ? examSessions.filter((s) => s.examId === examId) : examSessions
+      if (examType) result = result.filter((s) => s.examType === examType)
+      return result
+    },
     getById: (id: string) => examSessions.find((s) => s.id === id),
     create: (data: any) => { const item = { id: uid(), ...data, status: "pending", tabSwitches: 0, flagged: false, createdAt: new Date().toISOString() }; examSessions.push(item); return item },
     update: (id: string, data: any) => { const idx = examSessions.findIndex((s) => s.id === id); if (idx === -1) return null; examSessions[idx] = { ...examSessions[idx], ...data }; return examSessions[idx] },
@@ -276,7 +356,7 @@ export const store = {
   schoolSettings: { get: () => schoolSettingsData, update: (data: any) => { schoolSettingsData = { ...schoolSettingsData, ...data }; return schoolSettingsData } },
   admissionApplications: { getAll: () => admissionApplications, getById: (id: string) => admissionApplications.find((a) => a.id === id), getByStatus: (status: string) => admissionApplications.filter((a) => a.status === status), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", appliedAt: new Date().toISOString() }; admissionApplications.push(item); return item }, update: (id: string, data: any) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return null; admissionApplications[idx] = { ...admissionApplications[idx], ...data }; return admissionApplications[idx] }, delete: (id: string) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return false; admissionApplications.splice(idx, 1); return true } },
   superAnnouncements: { getAll: () => superAnnouncements, getActive: () => superAnnouncements.filter((a) => a.active), getById: (id: string) => superAnnouncements.find((a) => a.id === id), create: (data: any) => { const item = { id: uid(), ...data, createdAt: new Date().toISOString(), active: true }; superAnnouncements.push(item); return item }, update: (id: string, data: any) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return null; superAnnouncements[idx] = { ...superAnnouncements[idx], ...data }; return superAnnouncements[idx] }, delete: (id: string) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return false; superAnnouncements.splice(idx, 1); return true } },
-  feedbackTickets: { getAll: () => feedbackTickets, getByStatus: (status: string) => feedbackTickets.filter((t) => t.status === status), getById: (id: string) => feedbackTickets.find((t) => t.id === id), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", createdAt: new Date().toISOString(), resolvedAt: null, resolution: null }; feedbackTickets.push(item); return item }, update: (id: string, data: any) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], ...data }; return feedbackTickets[idx] }, resolve: (id: string, resolution: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], status: "resolved", resolvedAt: new Date().toISOString(), resolution }; return feedbackTickets[idx] } },
+  feedbackTickets: { getAll: () => feedbackTickets, getByStatus: (status: string) => feedbackTickets.filter((t) => t.status === status), getById: (id: string) => feedbackTickets.find((t) => t.id === id), getByUser: (userId: string) => feedbackTickets.filter((t) => t.from === userId), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", createdAt: new Date().toISOString(), resolvedAt: null, resolution: null }; feedbackTickets.push(item); return item }, update: (id: string, data: any, userId?: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; if (userId && feedbackTickets[idx].from !== userId) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], ...data }; return feedbackTickets[idx] }, delete: (id: string, userId?: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return false; if (userId && feedbackTickets[idx].from !== userId) return false; feedbackTickets.splice(idx, 1); return true }, resolve: (id: string, resolution: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], status: "resolved", resolvedAt: new Date().toISOString(), resolution }; return feedbackTickets[idx] } },
   weeklyReports: {
     getAll: (filters?: { studentId?: string; classId?: string; week?: number; term?: string; session?: string; createdBy?: string; status?: string }) => {
       let result = [...weeklyReports]
@@ -364,5 +444,52 @@ try {
   // Seed may fail in serverless if module not bundled — log for debugging
   if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
     console.warn("[Store] Seed skipped:", (e as Error)?.message || e)
+  }
+}
+
+// Auto-seed exam sessions
+try {
+  if (examSessions.length === 0) {
+    const now = new Date().toISOString()
+    const seededSessions = [
+      {
+        id: "session1",
+        examId: "exam1",
+        examType: "regular",
+        status: "active",
+        startTime: new Date(Date.now() - 3600000).toISOString(),
+        endTime: new Date(Date.now() + 3600000).toISOString(),
+        tabSwitches: 0,
+        flagged: false,
+        createdAt: now,
+      },
+      {
+        id: "session2",
+        examId: "exam2",
+        examType: "regular",
+        status: "upcoming",
+        startTime: new Date(Date.now() + 7200000).toISOString(),
+        endTime: new Date(Date.now() + 10800000).toISOString(),
+        tabSwitches: 0,
+        flagged: false,
+        createdAt: now,
+      },
+      {
+        id: "session3",
+        examId: "exam3",
+        examType: "entrance",
+        status: "active",
+        startTime: new Date(Date.now() - 1800000).toISOString(),
+        endTime: new Date(Date.now() + 7200000).toISOString(),
+        tabSwitches: 0,
+        flagged: false,
+        createdAt: now,
+      },
+    ]
+    examSessions.push(...seededSessions)
+  }
+} catch (e) {
+  if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
+    console.warn("[Store] Seed exam sessions skipped:", (e as Error)?.message || e)
   }
 }

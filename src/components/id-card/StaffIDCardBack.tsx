@@ -5,11 +5,52 @@ import { QRCodeSVG } from "qrcode.react"
 interface StaffData { id?: string; firstName: string; lastName: string; staffId: string; role?: string; department?: string; phone?: string; email?: string; address?: string; qualification?: string; employmentDate?: string; gender?: string; emergencyContact?: string }
 interface SchoolData { name: string; phone?: string; email?: string; address?: string }
 interface IdCardConfig { backTitle?: string; showDepartment?: boolean; showEmergencyContact?: boolean; showRules?: boolean; rulesText?: string; customDepartment?: string; customEmergencyContact?: string; customFields?: { label: string; value: string }[] }
-interface Props { staff: StaffData; school: SchoolData; config?: IdCardConfig }
+interface Props { staff: StaffData; school: SchoolData; config?: IdCardConfig; orientation?: "portrait" | "landscape" }
 
-export function StaffIDCardBack({ staff, school, config }: Props) {
+export function StaffIDCardBack({ staff, school, config, orientation = "portrait" }: Props) {
   const cfg = config || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official staff use only.\n4. Staff must present this card for identification and access purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] }
   const qrData = JSON.stringify({ type: "staff", id: staff.id || staff.staffId, code: staff.staffId })
+
+  if (orientation === "landscape") {
+    return (
+      <div className="w-[600px] rounded-2xl overflow-hidden shadow-xl border border-border/40 bg-white flex flex-row">
+        <div className="relative bg-gradient-to-r from-slate-800 to-slate-900 p-5 text-white flex flex-col items-center justify-between min-h-[300px]" style={{ width: 220 }}>
+          <div className="text-center">
+            <p className="text-sm font-bold tracking-wide">{cfg.backTitle || "Staff Information"}</p>
+          </div>
+          <div className="bg-white rounded-lg p-1.5 border border-white/30">
+            <QRCodeSVG value={qrData} size={90} level="M" />
+          </div>
+          <div className="text-center text-[9px] opacity-80">
+            <p className="font-medium">{school.name}</p>
+            {school.phone && <p>{school.phone}</p>}
+          </div>
+        </div>
+        <div className="flex-1 p-5 flex flex-col">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 flex-1">
+            <InfoRow label="Full Name" value={`${staff.firstName} ${staff.lastName}`} />
+            <InfoRow label="Staff ID" value={staff.staffId} />
+            {staff.role && <InfoRow label="Role" value={staff.role} />}
+            {cfg.showDepartment && (cfg.customDepartment || staff.department) && <InfoRow label="Department" value={cfg.customDepartment || staff.department || ""} />}
+            {staff.gender && <InfoRow label="Gender" value={staff.gender} />}
+            {staff.qualification && <InfoRow label="Qualification" value={staff.qualification} />}
+            {staff.employmentDate && <InfoRow label="Employed" value={new Date(staff.employmentDate).toLocaleDateString()} />}
+            {staff.email && <InfoRow label="Email" value={staff.email} />}
+            {staff.phone && <InfoRow label="Phone" value={staff.phone} />}
+            {staff.address && <InfoRow label="Address" value={staff.address} />}
+            {cfg.showEmergencyContact && (cfg.customEmergencyContact || staff.emergencyContact) && <InfoRow label="Emergency" value={cfg.customEmergencyContact || staff.emergencyContact || ""} />}
+            {(cfg.customFields || []).filter((f) => f.value).map((f, i) => <InfoRow key={i} label={f.label} value={f.value} />)}
+          </div>
+          {cfg.showRules && cfg.rulesText && (
+            <div className="border-t border-gray-100 pt-2 mt-2">
+              <p className="text-[7px] font-semibold text-amber-800 uppercase tracking-wider mb-1">Rules & Regulations</p>
+              <pre className="text-[7px] text-amber-700 leading-tight whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-[340px] rounded-2xl overflow-hidden shadow-xl border border-border/40 bg-white flex flex-col min-h-[480px]">

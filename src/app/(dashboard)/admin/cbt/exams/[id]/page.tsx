@@ -89,20 +89,22 @@ export default function ExamDetailPage() {
         <Link href="/admin/cbt/exams" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3">
           <ArrowLeft className="h-4 w-4" /> Back to Exams
         </Link>
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold">{exam.title}</h2>
-              <Badge className={exam.status === "published" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{exam.status}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">{exam.description}</p>
-            <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-              <span>{getSubjectName(exam.subjectId)}</span>
-              <span>{exam.duration} min</span>
-              <span>{(exam.questions || []).length} questions</span>
-              <span>{(exam.questions || []).reduce((s: number, q: any) => s + (q.points || 0), 0)} pts</span>
-            </div>
-            <ExamDownload exam={exam} questions={(exam.questions || []).map((eq: any) => { const q = allQuestions.find((aq: any) => aq.id === eq.questionId); return q ? { ...q, points: eq.points } : null }).filter(Boolean)} />
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold">{exam.title}</h2>
+                  <Badge className={exam.status === "published" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{exam.status}</Badge>
+                  <Badge variant="outline" className={exam.type === "entrance" ? "bg-red-500/15 text-red-600" : "bg-blue-500/15 text-blue-600"}>{exam.type === "entrance" ? "Entrance" : "Regular"}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">{exam.description}</p>
+                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <span>{getSubjectName(exam.subjectId)}</span>
+                  <span className={exam.type === "entrance" ? "text-red-600" : "text-blue-600"}>Type: {exam.type === "entrance" ? "Entrance Exam" : "Regular Exam"}</span>
+                  <span>{exam.duration} min</span>
+                  <span>{(exam.questions || []).length} questions</span>
+                  <span>{(exam.questions || []).reduce((s: number, q: any) => s + (q.points || 0), 0)} pts</span>
+                </div>
+                <ExamDownload exam={exam} questions={(exam.questions || []).map((eq: any) => { const q = allQuestions.find((aq: any) => aq.id === eq.questionId); return q ? { ...q, points: eq.points } : null }).filter(Boolean)} />
           </div>
         </div>
       </div>

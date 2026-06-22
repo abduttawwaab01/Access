@@ -7,10 +7,15 @@ export async function GET(request: Request) {
   const classId = searchParams.get("classId")
   const subjectId = searchParams.get("subjectId")
   const term = searchParams.get("term") || undefined
+  const examId = searchParams.get("examId") || undefined
 
   if (classId && subjectId) {
     const session = searchParams.get("session") || undefined
-    return NextResponse.json(store.results.getByClassAndSubject(classId, subjectId, term, session))
+    let results = store.results.getByClassAndSubject(classId, subjectId, term, session)
+    if (examId) {
+      results = results.filter((r: any) => r.examId === examId)
+    }
+    return NextResponse.json(results)
   }
   if (studentId) {
     if (term) return NextResponse.json(store.results.getByStudentAndTerm(studentId, term))

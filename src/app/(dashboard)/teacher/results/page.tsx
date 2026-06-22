@@ -24,8 +24,10 @@ export default function TeacherResultsPage() {
   const [selectedClassId, setSelectedClassId] = useState("")
   const [selectedSubjectId, setSelectedSubjectId] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("")
+  const [selectedExamId, setSelectedExamId] = useState("")
   const [scores, setScores] = useState<Record<string, { caScore: string; examScore: string }>>({})
   const [terms, setTerms] = useState<any[]>([])
+  const [exams, setExams] = useState<any[]>([])
 
   const teacherId = (session?.user as any)?.id
 
@@ -38,7 +40,8 @@ export default function TeacherResultsPage() {
       fetch("/api/students").then((r) => r.json()),
       fetch("/api/terms").then((r) => r.json()),
       fetch("/api/grading-config").then((r) => r.json()),
-    ]).then(([assignments, cls, sub, stu, trm, gc]) => {
+      fetch("/api/exams?type=regular").then((r) => r.json()),
+    ]).then(([assignments, cls, sub, stu, trm, gc, examsData]) => {
       const assigns = Array.isArray(assignments) ? assignments : []
       const myAssignment = assigns.find((a: any) => a.teacherId === teacherId)
       setAssignment(myAssignment)
@@ -46,15 +49,18 @@ export default function TeacherResultsPage() {
       const allClasses = Array.isArray(cls) ? cls : []
       const allSubjects = Array.isArray(sub) ? sub : []
       const allStudents = Array.isArray(stu) ? stu : []
+      const allExams = Array.isArray(examsData) ? examsData : []
 
       if (myAssignment) {
         setClasses(allClasses.filter((c: any) => myAssignment.classIds?.includes(c.id)))
         setSubjects(allSubjects.filter((s: any) => myAssignment.subjectIds?.includes(s.id)))
         setStudents(allStudents.filter((s: any) => myAssignment.classIds?.includes(s.classId)))
+        setExams(allExams.filter((e: any) => myAssignment.classIds?.includes(e.classId) && myAssignment.subjectIds?.includes(e.subjectId)))
       } else {
         setClasses(allClasses)
         setSubjects(allSubjects)
         setStudents(allStudents)
+        setExams(allExams)
       }
       setTerms(Array.isArray(trm) ? trm : [])
       setGradingConfig(gc)
@@ -65,7 +71,8 @@ export default function TeacherResultsPage() {
   useEffect(() => {
     if (!selectedClassId || !selectedSubjectId || !selectedTerm) return
     setScores({})
-    fetch(`/api/results?classId=${selectedClassId}&subjectId=${selectedSubjectId}&term=${selectedTerm}`)
+    const url = `/api/results?classId=${selectedClassId}&subjectId=${selectedSubjectId}&term=${selectedTerm}${selectedExamId ? `&examId=${selectedExamId}` : ""}`
+    fetch(url)
       .then((r) => r.json())
       .then((data) => {
         setResults(Array.isArray(data) ? data : [])
@@ -78,7 +85,7 @@ export default function TeacherResultsPage() {
         })
         setScores(initial)
       })
-  }, [selectedClassId, selectedSubjectId, selectedTerm])
+  }, [selectedClassId, selectedSubjectId, selectedTerm, selectedExamId])
 
   const classSubjects = subjects.filter((s) => s.classId === selectedClassId)
   const classStudents = students.filter((s) => s.classId === selectedClassId).sort((a, b) => a.firstName?.localeCompare(b.firstName))
@@ -105,6 +112,7 @@ export default function TeacherResultsPage() {
           id: existing?.id || undefined,
           studentId: s.id,
           subjectId: selectedSubjectId,
+          examId: selectedExamId,
           subject: subjects.find((sub) => sub.id === selectedSubjectId)?.name || "",
           caScore: Number(sc?.caScore) || 0,
           examScore: Number(sc?.examScore) || 0,
@@ -122,7 +130,8 @@ export default function TeacherResultsPage() {
       const saved = await res.json()
       toast.success(`Saved ${saved.length} results`)
 
-      const fresh = await fetch(`/api/results?classId=${selectedClassId}&subjectId=${selectedSubjectId}&term=${selectedTerm}`)
+      const url = `/api/results?classId=${selectedClassId}&subjectId=${selectedSubjectId}&term=${selectedTerm}${selectedExamId ? `&examId=${selectedExamId}` : ""}`
+      const fresh = await fetch(url)
       const freshData = await fresh.json()
       setResults(Array.isArray(freshData) ? freshData : [])
     } catch (err) {
@@ -159,12 +168,12 @@ export default function TeacherResultsPage() {
 
       <Card className="glass-card border-0">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Class</Label>
               <select
                 value={selectedClassId}
-                onChange={(e) => { setSelectedClassId(e.target.value); setSelectedSubjectId(""); setResults([]); setScores({}) }}
+                onChange={(e) => { setSelectedClassId(e.target.value); setSelectedSubjectId(""); setSelectedExamId(""); setResults([]); setScores({}) }}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11"
               >
                 <option value="">Select class...</option>
@@ -175,12 +184,26 @@ export default function TeacherResultsPage() {
               <Label className="text-xs">Subject</Label>
               <select
                 value={selectedSubjectId}
-                onChange={(e) => setSelectedSubjectId(e.target.value)}
+                onChange={(e) => { setSelectedSubjectId(e.target.value); setSelectedExamId("") }}
                 disabled={!selectedClassId}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11"
               >
                 <option value="">Select subject...</option>
                 {classSubjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Exam</Label>
+              <select
+                value={selectedExamId}
+                onChange={(e) => setSelectedExamId(e.target.value)}
+                disabled={!selectedSubjectId}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11"
+              >
+                <option value="">Select exam...</option>
+                {exams.filter((e: any) => e.subjectId === selectedSubjectId && e.status === "published").map((e: any) => (
+                  <option key={e.id} value={e.id}>{e.title}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-1.5">

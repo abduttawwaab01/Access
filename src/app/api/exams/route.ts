@@ -5,7 +5,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const subjectId = searchParams.get("subjectId") || undefined
   const classId = searchParams.get("classId") || undefined
-  return NextResponse.json(store.exams.getAll(subjectId, classId))
+  const type = searchParams.get("type") || undefined
+  return NextResponse.json(store.exams.getAll(subjectId, classId, type))
 }
 
 export async function POST(request: Request) {
