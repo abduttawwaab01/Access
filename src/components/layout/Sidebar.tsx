@@ -108,9 +108,11 @@ export function Sidebar({ items, collapsed, onToggle, user, schoolName, classNam
         <div className={cn("flex flex-col gap-1", collapsed && "items-center")}>
           {items.map((item) => {
             const Icon = iconMap[item.icon] || LayoutDashboard
-            const pathParts = item.href.split("/").filter(Boolean)
+            const normalizedPathname = pathname.replace(/\/+$/, "") || "/"
+            const normalizedHref = item.href.replace(/\/+$/, "") || "/"
+            const pathParts = normalizedHref.split("/").filter(Boolean)
             const isRoot = pathParts.length === 1
-            const isActive = pathname === item.href || (!isRoot && pathname.startsWith(item.href + "/"))
+            const isActive = normalizedPathname === normalizedHref || (!isRoot && normalizedPathname.startsWith(normalizedHref + "/"))
 
             return (
               <Link
