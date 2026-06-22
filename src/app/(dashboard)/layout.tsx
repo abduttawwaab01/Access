@@ -57,6 +57,7 @@ const teacherNav: NavItem[] = [
 const parentNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
   { label: "My Children", href: "/parent/children", icon: "Users" },
+  { label: "Analytics", href: "/parent/analytics", icon: "BarChart3" },
   { label: "Weekly Reports", href: "/parent/weekly-reports", icon: "ClipboardList" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
   { label: "Report Card", href: "/parent/report-card", icon: "FileText" },
@@ -71,6 +72,7 @@ const parentNav: NavItem[] = [
 
 const studentNav: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: "LayoutDashboard" },
+  { label: "Analytics", href: "/student/analytics", icon: "BarChart3" },
   { label: "Results", href: "/student/results", icon: "BarChart3" },
   { label: "Fees", href: "/student/fees", icon: "CreditCard" },
   { label: "Attendance", href: "/student/attendance", icon: "Calendar" },
@@ -99,16 +101,16 @@ const teacherBottomNav: NavItem[] = [
 
 const studentBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: "LayoutDashboard" },
+  { label: "Analytics", href: "/student/analytics", icon: "BarChart3" },
   { label: "Results", href: "/student/results", icon: "BarChart3" },
   { label: "Fees", href: "/student/fees", icon: "CreditCard" },
-  { label: "Lesson Notes", href: "/student/lesson-notes", icon: "FileText" },
   { label: "My Exams", href: "/student/cbt", icon: "ClipboardCheck" },
 ]
 
 const parentBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
+  { label: "Analytics", href: "/parent/analytics", icon: "BarChart3" },
   { label: "Children", href: "/parent/children", icon: "Users" },
-  { label: "Weekly Reports", href: "/parent/weekly-reports", icon: "ClipboardList" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
   { label: "Fees", href: "/parent/fees", icon: "CreditCard" },
 ]
