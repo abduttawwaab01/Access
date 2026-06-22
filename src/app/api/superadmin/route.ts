@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(store.feedbackTickets.getAll())
   }
   if (action === "updateFeedback") {
+    const body = await request.json()
     const { id, subject, message, priority } = body
     const ticket = store.feedbackTickets.getById(id)
     if (!ticket) {
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: { ticket: updated } })
   }
   if (action === "deleteFeedback") {
+    const body = await request.json()
     const { id, from } = body
     const success = store.feedbackTickets.delete(id, from)
     if (!success) {
