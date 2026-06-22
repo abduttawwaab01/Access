@@ -218,7 +218,7 @@ export default function ParentAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Performance Trend</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Score progression across terms</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <AreaChart data={termScores} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
                         <defs>
                           <linearGradient id="gradScoreParent" x1="0" y1="0" x2="0" y2="1">
@@ -244,7 +244,7 @@ export default function ParentAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Grade Distribution</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">How grades are distributed</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <BarChart data={gradeDistribution} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                         <XAxis dataKey="range" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} width={25} />
@@ -271,7 +271,7 @@ export default function ParentAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Subject Comparison</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Average scores by subject</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <BarChart data={subjectAvgScores} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={0} angle={-15} textAnchor="end" height={40} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={25} />
@@ -292,7 +292,7 @@ export default function ParentAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Subject Radar</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Multi-dimensional analysis</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <RadarChart data={radarData}>
                         <PolarGrid stroke="hsl(var(--border))" />
                         <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
@@ -372,7 +372,7 @@ export default function ParentAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Monthly Pattern</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Attendance trends by month</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <LineChart data={attendanceByMonth} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="month" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />

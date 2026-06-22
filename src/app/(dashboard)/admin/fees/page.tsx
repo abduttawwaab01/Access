@@ -141,11 +141,11 @@ export default function AdminFeesPage() {
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white shrink-0"><div><p className="text-xl font-bold">{collectionRate}%</p></div></div>
                 <div className="space-y-2 w-full sm:flex-1"><Progress value={collectionRate} className="h-3" /><div className="flex justify-between text-xs text-muted-foreground"><span>₦{(totalCollected / 1e6).toFixed(1)}M collected</span><span>₦{(outstanding / 1e6).toFixed(1)}M outstanding</span></div></div>
               </div>
-              <div className="h-48 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={4} dataKey="value">{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+              <div className="h-48 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%" minHeight={200}><PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={4} dataKey="value">{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
             </CardContent></Card>
             <Card className="border-0 glass-card"><CardContent className="p-4">
               <h3 className="font-semibold mb-3">Per Class Breakdown</h3>
-              <div className="h-48 md:h-56 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%"><BarChart data={barData}><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="expected" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Expected" /><Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="Paid" /></BarChart></ResponsiveContainer></div>
+              <div className="h-48 md:h-56 min-h-[180px] min-w-0"><ResponsiveContainer width="100%" height="100%" minHeight={200}><BarChart data={barData}><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="expected" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Expected" /><Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="Paid" /></BarChart></ResponsiveContainer></div>
             </CardContent></Card>
           </div>
         </TabsContent>

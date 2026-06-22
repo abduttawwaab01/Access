@@ -215,7 +215,7 @@ export default function AdminAnalyticsPage() {
                   </div>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Average scores and pass rates over time</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <AreaChart data={termScoreData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
                         <defs>
                           <linearGradient id="gradScore" x1="0" y1="0" x2="0" y2="1">
@@ -250,7 +250,7 @@ export default function AdminAnalyticsPage() {
                   </div>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Present, absent, and late patterns</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <BarChart data={attendanceByClass} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={40} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={25} />
@@ -279,7 +279,7 @@ export default function AdminAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Subject Comparison</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Average scores by subject</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <BarChart data={subjectAvgScores} margin={{ top: 5, right: 5, bottom: 16, left: 0 }}>
                         <XAxis dataKey="name" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} interval={0} angle={-15} textAnchor="end" height={35} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 100]} width={25} />
@@ -300,7 +300,7 @@ export default function AdminAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Performance Radar</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Multi-dimensional subject analysis</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <RadarChart data={radarData}>
                         <PolarGrid stroke="hsl(var(--border))" />
                         <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
@@ -351,7 +351,7 @@ export default function AdminAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Score Distribution</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">How students are distributed across score ranges</p>
                   <div className="h-56 md:h-72 min-h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <BarChart data={performanceDistribution} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                         <XAxis dataKey="range" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} width={25} />
@@ -372,7 +372,7 @@ export default function AdminAnalyticsPage() {
                   <h3 className="text-sm md:text-base font-semibold mb-1">Gender Distribution</h3>
                   <p className="text-[11px] md:text-xs text-muted-foreground mb-3">Male vs Female student ratio</p>
                   <div className="h-56 md:h-72 min-h-[180px] relative flex items-center justify-center">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                       <PieChart>
                         <Pie
                           data={[

@@ -79,7 +79,7 @@ export default function AdminReportsPage() {
             <CardContent className="p-4">
               <h3 className="text-sm md:text-base font-semibold mb-3">Term Performance Trend</h3>
               <div className="h-48 md:h-56 min-h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   <LineChart data={termData} margin={{ left: 0, right: 5 }}>
                     <XAxis dataKey="term" tick={{ fontSize: 10 }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
@@ -113,7 +113,7 @@ export default function AdminReportsPage() {
             <CardContent className="p-4">
               <h3 className="text-sm md:text-base font-semibold mb-3">Subject Performance</h3>
               <div className="h-48 md:h-64 min-h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   <RadarChart data={subjectChart}>
                     <PolarGrid stroke="hsl(var(--border))" />
                     <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
@@ -134,7 +134,7 @@ export default function AdminReportsPage() {
               <h3 className="text-sm md:text-base font-semibold mb-3">Subject Average Comparison</h3>
               <div className="overflow-x-auto">
                 <div className="h-48 md:h-64 min-h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                   <BarChart data={subjectChart} layout={subjectChart.length > 6 ? "vertical" : "horizontal"} margin={{ left: 0, right: 5 }}>
                     {subjectChart.length > 6 ? (
                       <>
