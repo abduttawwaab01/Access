@@ -354,80 +354,7 @@ export function generateTimetable(classes: { id: string; name: string }[], subje
 // ANNOUNCEMENTS
 // ============================================================
 export function generateAnnouncements() {
-  return [
-    {
-      id: nextId("ann"),
-      title: "Welcome to the New Academic Session",
-      content: "We are pleased to welcome all students, parents, and staff to the 2024/2025 academic session. May this session be filled with great achievements and memorable experiences.",
-      audience: "all",
-      priority: "high",
-      author: "Admin User",
-      createdAt: "2024-09-09T08:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "First Term Examination Schedule",
-      content: "The first term examinations will commence on Monday, 2nd December 2024. All students are advised to prepare adequately. The examination timetable has been published on the notice board.",
-      audience: "all",
-      priority: "high",
-      author: "Academic Office",
-      createdAt: "2024-11-15T10:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "PTA Meeting Notice",
-      content: "There will be a Parents-Teachers Association meeting on Saturday, 26th October 2024 at 10:00 AM in the school hall. Attendance is mandatory for all parents.",
-      audience: "parents",
-      priority: "normal",
-      author: "Admin User",
-      createdAt: "2024-10-10T09:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "Staff Professional Development Workshop",
-      content: "All teachers are required to attend the professional development workshop on 'Modern Teaching Methodologies' on Friday, 18th October 2024.",
-      audience: "teachers",
-      priority: "normal",
-      author: "Academic Office",
-      createdAt: "2024-10-05T14:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "Inter-House Sports Competition",
-      content: "The annual inter-house sports competition will hold on Friday, 15th November 2024. Students are to come in their house colors. Parents are cordially invited.",
-      audience: "all",
-      priority: "low",
-      author: "Sports Department",
-      createdAt: "2024-10-20T11:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "Christmas Break Announcement",
-      content: "The school will close for Christmas break on Friday, 13th December 2024 and resume on Monday, 6th January 2025. We wish everyone a merry Christmas and a prosperous new year.",
-      audience: "all",
-      priority: "normal",
-      author: "Admin User",
-      createdAt: "2024-12-01T08:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "Subject Teachers Assignment Update",
-      content: "New subject teacher assignments have been updated for the second term. Kindly check your portals for the updated teaching schedules.",
-      audience: "teachers",
-      priority: "normal",
-      author: "Academic Office",
-      createdAt: "2024-12-20T12:00:00.000Z",
-    },
-    {
-      id: nextId("ann"),
-      title: "School Fees Payment Deadline",
-      content: "This is to remind all parents that the deadline for first term school fees payment is Friday, 27th September 2024. Late payment will attract a penalty.",
-      audience: "parents",
-      priority: "high",
-      author: "Finance Office",
-      createdAt: "2024-09-12T08:00:00.000Z",
-    },
-  ]
+  return []
 }
 
 // ============================================================
@@ -971,38 +898,5 @@ export function generateFeedbackTickets() {
 // SUPER ANNOUNCEMENTS
 // ============================================================
 export function generateSuperAnnouncements() {
-  return [
-    {
-      id: nextId("sa"),
-      title: "System Maintenance Notification",
-      content: "The school management system will undergo scheduled maintenance on Saturday, 15th February 2025 from 2:00 AM to 6:00 AM. Service may be intermittent during this period.",
-      createdAt: "2025-02-01T10:00:00.000Z",
-      active: true,
-      displayType: "banner",
-      targetAudience: "all",
-      priority: "high",
-    },
-    {
-      id: nextId("sa"),
-      title: "New Academic Session Ready",
-      content: "The 2025/2026 academic session is now configured in the system. Schools can begin setting up their classes and subjects for the new session.",
-      createdAt: "2025-06-01T08:00:00.000Z",
-      active: true,
-      displayType: "banner",
-      targetAudience: "all",
-      priority: "normal",
-    },
-    {
-      id: nextId("sa"),
-      title: "Fee Payment Deadline Approaching",
-      content: "All school fee payments for the first term must be completed by January 31st, 2025. Late payments will attract a penalty. Please ensure timely payment to avoid disruption.",
-      createdAt: "2025-01-10T08:00:00.000Z",
-      active: true,
-      displayType: "banner",
-      targetAudience: "parents",
-      priority: "high",
-      startDate: "2025-01-10",
-      endDate: "2025-01-31",
-    },
-  ]
+  return []
 }

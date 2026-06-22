@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { Sidebar } from "./Sidebar"
 import { BottomNav } from "./BottomNav"
 import { TopHeader } from "./TopHeader"
+import { AnnouncementsTicker } from "./AnnouncementsTicker"
 import { useMobile } from "@/hooks/useMobile"
 import type { NavItem, User } from "@/types"
 
@@ -45,6 +46,8 @@ export function AppShell({ children, title, navItems, bottomNavItems, user, scho
           user={user}
           schoolName={schoolName}
         />
+
+        <AnnouncementsTicker role={role} />
 
         <main className={cn("flex-1", isMobile ? "pb-20" : "pb-6")}>
           <div className="animate-in">{children}</div>

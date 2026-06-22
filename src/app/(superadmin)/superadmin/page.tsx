@@ -1669,7 +1669,7 @@ function AnnouncementsSection() {
   const [filterAudience, setFilterAudience] = useState<string>("all")
   const [form, setForm] = useState({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "" })
 
-  const audienceLabels: Record<string, string> = { all: "Everyone", teachers: "Teachers", parents: "Parents", students: "Students" }
+  const audienceLabels: Record<string, string> = { all: "Everyone", admin: "Admin", teachers: "Teachers", parents: "Parents", students: "Students" }
   const displayLabels: Record<string, string> = { banner: "Banner", ticker: "Ticker", overlay: "Overlay" }
   const priorityColors: Record<string, string> = { high: "text-red-400 bg-red-600/10", normal: "text-blue-400 bg-blue-600/10", low: "text-zinc-400 bg-zinc-600/10" }
 
@@ -1739,7 +1739,7 @@ function AnnouncementsSection() {
             <div>
               <label className="mb-1 block text-xs font-medium text-zinc-400">Target Audience</label>
               <select value={form.targetAudience} onChange={(e) => setForm((p) => ({ ...p, targetAudience: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500">
-                <option value="all">Everyone</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
+                <option value="all">Everyone</option><option value="admin">Admin</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
               </select>
             </div>
           </div>
@@ -1768,7 +1768,7 @@ function AnnouncementsSection() {
           <option value="all">All Types</option><option value="banner">Banner</option><option value="ticker">Ticker</option><option value="overlay">Overlay</option>
         </select>
         <select value={filterAudience} onChange={(e) => setFilterAudience(e.target.value)} className="rounded-lg border border-zinc-800 bg-[#12121a] px-3 py-1.5 text-xs text-zinc-300 outline-none focus:border-red-500">
-          <option value="all">All Audiences</option><option value="all">Everyone</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
+          <option value="all">All Audiences</option><option value="all">Everyone</option><option value="admin">Admin</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
         </select>
         <span className="ml-auto text-xs text-zinc-500">{filtered.length} of {items.length}</span>
       </div>

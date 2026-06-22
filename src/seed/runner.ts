@@ -13,7 +13,6 @@ import {
   generateParentLinks,
   generateTeacherAssignments,
   generateTimetable,
-  generateAnnouncements,
   generateTopics,
   generateSchemeOfWork,
   generateLessonNotes,
@@ -26,7 +25,6 @@ import {
   generateSchoolSettings,
   generateAdmissionApplications,
   generateFeedbackTickets,
-  generateSuperAnnouncements,
 } from "./generators"
 import { generateAllQuestions, generateExams, generateExamSessionsAndSubmissions } from "./questions"
 import { SEED_SCHOOL } from "./data"
@@ -99,11 +97,7 @@ export function runSeed(store: any) {
   const timetable = generateTimetable(createdClasses, createdSubjects)
   timetable.forEach((t) => (store as any).timetable.create(t))
 
-  // 11. Announcements
-  const announcements = generateAnnouncements()
-  announcements.forEach((a) => (store as any).announcements.create(a))
-
-  // 12. Topics
+  // 11. Topics
   const topics = generateTopics(createdSubjects, createdClasses)
   topics.forEach((t) => (store as any).topics.create(t))
 
@@ -182,10 +176,6 @@ export function runSeed(store: any) {
   // 24. Feedback Tickets
   const feedbackTickets = generateFeedbackTickets()
   feedbackTickets.forEach((t) => (store as any).feedbackTickets.create(t))
-
-  // 25. Super Announcements
-  const superAnnouncements = generateSuperAnnouncements()
-  superAnnouncements.forEach((a) => (store as any).superAnnouncements.create(a))
 
   seeded = true
   console.log("[Seed] Seeding complete!")

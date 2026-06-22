@@ -30,7 +30,7 @@ export default function AdminLessonNotes() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [ocrOpen, setOcrOpen] = useState(false)
   const [quizOpen, setQuizOpen] = useState(true)
-  const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft" })
+  const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft", createdBy: "" })
   const [quiz, setQuiz] = useState<any[]>([])
 
   useEffect(() => {
@@ -64,17 +64,24 @@ export default function AdminLessonNotes() {
   const approve = async (id: string) => {
     const res = await fetch("/api/lesson-notes", {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: "approved", approvedBy: "4" }),
+      body: JSON.stringify({ action: "approve", id, approvedBy: "4" }),
     })
-    if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "approved" } : n))); toast.success("Approved") }
+    if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "published" } : n))); toast.success("Approved") }
   }
 
   const reject = async (id: string) => {
     const res = await fetch("/api/lesson-notes", {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: "rejected" }),
+      body: JSON.stringify({ action: "reject", id }),
     })
     if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "rejected" } : n))); toast.success("Rejected") }
+  }
+
+  const openCreate = () => {
+    setEditing(null)
+    setForm({ title: "", subject: "", classId: "", week: "", term: "First Term", session: "2024/2025", content: "", resources: "", status: "draft", createdBy: "" })
+    setQuiz([])
+    setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
@@ -89,6 +96,7 @@ export default function AdminLessonNotes() {
       content: item.content,
       resources: item.resources || "",
       status: item.status,
+      createdBy: item.createdBy || "",
     })
     setQuiz(item.quiz || [])
     setSheetOpen(true)
@@ -97,16 +105,29 @@ export default function AdminLessonNotes() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const payload = { ...form, week: Number(form.week), quiz }
-    const res = await fetch("/api/lesson-notes", {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: editing.id, data: payload }),
-    })
-    if (res.ok) {
-      toast.success("Lesson note updated")
-      setSheetOpen(false)
-      const r = await fetch("/api/lesson-notes")
-      setNotes(await r.json())
-    } else toast.error("Failed to update")
+    if (editing) {
+      const res = await fetch("/api/lesson-notes", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update", id: editing.id, data: payload }),
+      })
+      if (res.ok) {
+        toast.success("Lesson note updated")
+        setSheetOpen(false)
+        const r = await fetch("/api/lesson-notes")
+        setNotes(await r.json())
+      } else toast.error("Failed to update")
+    } else {
+      const res = await fetch("/api/lesson-notes", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        toast.success("Lesson note created")
+        setSheetOpen(false)
+        const r = await fetch("/api/lesson-notes")
+        setNotes(await r.json())
+      } else toast.error("Failed to create")
+    }
   }
 
   const handleAIGenerate = () => {
@@ -124,7 +145,10 @@ export default function AdminLessonNotes() {
   const getClassName = (id: string) => classes.find((c) => c.id === id)
 
   const filtered = notes.filter((n) => {
-    if (tab !== "all" && n.status !== tab) return false
+    if (tab !== "all") {
+      const statusMap: Record<string, string> = { pending: "draft", approved: "published", rejected: "rejected" }
+      if (n.status !== (statusMap[tab] || tab)) return false
+    }
     if (search && !n.title?.toLowerCase().includes(search.toLowerCase()) && !n.subject?.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
@@ -140,6 +164,9 @@ export default function AdminLessonNotes() {
           <Input placeholder="Search notes..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 pl-9" />
           {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2"><X className="h-4 w-4 text-muted-foreground" /></button>}
         </div>
+        <Button onClick={openCreate} className="h-10 shrink-0 animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+          <Plus className="h-4 w-4 mr-1" /> New Note
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="mb-4">
@@ -170,8 +197,8 @@ export default function AdminLessonNotes() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold">{item.title}</p>
-                            <Badge className={item.status === "approved" ? "bg-green-500/15 text-green-600" : item.status === "rejected" ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}>
-                              {item.status === "approved" ? <><Eye className="h-3 w-3 mr-1" /> Approved</> : item.status === "rejected" ? <><XCircle className="h-3 w-3 mr-1" /> Rejected</> : <><Clock className="h-3 w-3 mr-1" /> Pending</>}
+                            <Badge className={item.status === "published" ? "bg-green-500/15 text-green-600" : item.status === "rejected" ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}>
+                              {item.status === "published" ? <><Eye className="h-3 w-3 mr-1" /> Approved</> : item.status === "rejected" ? <><XCircle className="h-3 w-3 mr-1" /> Rejected</> : <><Clock className="h-3 w-3 mr-1" /> Pending</>}
                             </Badge>
                             {item.quiz && item.quiz.length > 0 && <Badge variant="outline" className="text-[10px]"><HelpCircle className="h-3 w-3 mr-1" /> Quiz: {item.quiz.length}Q</Badge>}
                           </div>
@@ -196,7 +223,7 @@ export default function AdminLessonNotes() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)} title="Edit note">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        {item.status !== "approved" && (
+                        {item.status !== "published" && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => approve(item.id)} title="Approve">
                             <CheckCircle className="h-3.5 w-3.5" />
                           </Button>
@@ -240,12 +267,23 @@ export default function AdminLessonNotes() {
         </div>
       )}
 
-      <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Lesson Note" : "Lesson Note"}>
+      <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? "Edit Lesson Note" : "New Lesson Note"}>
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70dvh] pb-8">
           <div className="space-y-2">
             <Label>Title</Label>
             <Input value={form.title} onChange={(e) => update("title", e.target.value)} className="h-12" required />
           </div>
+          {!editing && (
+            <div className="space-y-2">
+              <Label>Teacher</Label>
+              <Select value={form.createdBy} onValueChange={(v) => v && update("createdBy", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                <SelectContent>
+                  {staff.filter((s: any) => s.role === "teacher").map((t: any) => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
@@ -403,7 +441,7 @@ export default function AdminLessonNotes() {
             </label>
           </div>
           <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">
-            Update Lesson Note
+            {editing ? "Update Lesson Note" : "Create Lesson Note"}
           </Button>
         </form>
       </FormSheet>

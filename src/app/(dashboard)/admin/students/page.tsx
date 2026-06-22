@@ -26,7 +26,7 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("")
   const [filterClass, setFilterClass] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "" })
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "", password: "" })
   const [photoUploading, setPhotoUploading] = useState(false)
 
   const fetchData = async () => {
@@ -42,13 +42,13 @@ export default function StudentsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "" })
+    setForm({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "", password: "" })
     setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
     setEditing(item)
-    setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", gender: item.gender || "", classId: item.classId || "", passportPhoto: item.passportPhoto || "" })
+    setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", gender: item.gender || "", classId: item.classId || "", passportPhoto: item.passportPhoto || "", password: "" })
     setSheetOpen(true)
   }
 
@@ -225,6 +225,10 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Password {editing ? "(leave blank to keep current)" : ""}</Label>
+            <Input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} className="h-12" placeholder={editing ? "••••••••" : "Set password"} />
           </div>
           <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">
             {editing ? "Update Student" : "Create Student"}

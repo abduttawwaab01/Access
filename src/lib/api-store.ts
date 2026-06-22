@@ -115,6 +115,7 @@ export const store = {
     update: (id: string, data: any) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], ...data }; return lessonNotes[idx] },
     delete: (id: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return false; lessonNotes.splice(idx, 1); return true },
     approve: (id: string, approvedBy: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], status: "published", approvedBy, approvedAt: new Date().toISOString() }; return lessonNotes[idx] },
+    reject: (id: string) => { const idx = lessonNotes.findIndex((n) => n.id === id); if (idx === -1) return null; lessonNotes[idx] = { ...lessonNotes[idx], status: "rejected", rejectedAt: new Date().toISOString() }; return lessonNotes[idx] },
     getPending: () => lessonNotes.filter((n) => n.status === "draft" || n.status === "pending"),
   },
   schemeOfWorks: {

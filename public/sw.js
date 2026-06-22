@@ -45,8 +45,10 @@ async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request)
     if (response.ok) {
-      const cache = await caches.open(cacheName)
-      cache.put(request, response.clone())
+      try {
+        const cache = await caches.open(cacheName)
+        cache.put(request, response.clone())
+      } catch {}
     }
     return response
   } catch {
@@ -64,7 +66,9 @@ async function cacheFirst(request) {
   if (cached) {
     fetch(request).then((response) => {
       if (response.ok) {
-        caches.open(STATIC_CACHE).then((cache) => cache.put(request, response.clone()))
+        caches.open(STATIC_CACHE).then((cache) => {
+          try { cache.put(request, response.clone()) } catch {}
+        })
       }
     }).catch(() => {})
     return cached
@@ -72,8 +76,10 @@ async function cacheFirst(request) {
   try {
     const response = await fetch(request)
     if (response.ok) {
-      const cache = await caches.open(STATIC_CACHE)
-      cache.put(request, response.clone())
+      try {
+        const cache = await caches.open(STATIC_CACHE)
+        cache.put(request, response.clone())
+      } catch {}
     }
     return response
   } catch {

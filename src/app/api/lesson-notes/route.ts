@@ -28,9 +28,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const { action, id, data, approvedBy } = await request.json()
-  if (action === "approve") {
-    return NextResponse.json(store.lessonNotes.approve(id, approvedBy))
+  const body = await request.json()
+  const { action, id, data, approvedBy, status } = body
+  if (action === "approve" || status === "approved") {
+    return NextResponse.json(store.lessonNotes.approve(id, approvedBy || action === "approve" ? approvedBy : "4"))
+  }
+  if (action === "reject" || status === "rejected") {
+    return NextResponse.json(store.lessonNotes.reject(id))
   }
   if (action === "update" && data) {
     return NextResponse.json(store.lessonNotes.update(id, data))
