@@ -217,7 +217,7 @@ export default function AdminIDCardsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search students by name or ID..." className="pl-9 h-12" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="default" onClick={handleBulkExport} disabled={bulkExporting || filteredStudents.length === 0} className="shrink-0 min-w-[140px]">
+              <Button variant="outline" size="md" onClick={handleBulkExport} disabled={bulkExporting || filteredStudents.length === 0} className="shrink-0 min-w-[140px]">
                 <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
               </Button>
             </div>
@@ -253,7 +253,7 @@ export default function AdminIDCardsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search staff by name or ID..." className="pl-9 h-12" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="default" onClick={handleBulkExport} disabled={bulkExporting || filteredStaff.length === 0} className="shrink-0 min-w-[140px]">
+              <Button variant="outline" size="md" onClick={handleBulkExport} disabled={bulkExporting || filteredStaff.length === 0} className="shrink-0 min-w-[140px]">
                 <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
               </Button>
             </div>
