@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ProfilePage } from "@/components/profile/ProfilePage"
+import ProfilePage from "@/components/profile/ProfilePage"
 
 export default function TeacherProfilePage() {
   const [userData, setUserData] = useState<any>(null)
