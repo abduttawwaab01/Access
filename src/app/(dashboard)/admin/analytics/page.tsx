@@ -196,10 +196,10 @@ export default function AdminAnalyticsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex flex-wrap w-full gap-1.5">
-          <TabsTrigger value="trends" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Trends</TabsTrigger>
-          <TabsTrigger value="comparison" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Comparison</TabsTrigger>
-          <TabsTrigger value="distribution" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Distribution</TabsTrigger>
-          <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-4 py-2 text-xs md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">AI Insights</TabsTrigger>
+          <TabsTrigger value="trends" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Trends</TabsTrigger>
+          <TabsTrigger value="comparison" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Comparison</TabsTrigger>
+          <TabsTrigger value="distribution" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">Distribution</TabsTrigger>
+          <TabsTrigger value="insights" className="rounded-lg whitespace-nowrap px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm data-[state=active]:animated-gradient data-[state=active]:text-white">AI Insights</TabsTrigger>
         </TabsList>
 
         {activeTab === "trends" && (
