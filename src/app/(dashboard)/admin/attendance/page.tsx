@@ -208,7 +208,7 @@ export default function AdminAttendancePage() {
         ].map((stat) => (
           <Card key={stat.label} className="border-0 glass-card">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}>
+              <div className={`flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl ${stat.color}`}>
                 <stat.icon className="h-5 w-5" />
               </div>
               <div>
@@ -221,12 +221,14 @@ export default function AdminAttendancePage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="scanner"><QrCode className="h-4 w-4 mr-1" /> QR Scanner</TabsTrigger>
-          <TabsTrigger value="manual"><User className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
-          <TabsTrigger value="logs"><History className="h-4 w-4 mr-1" /> Today's Logs</TabsTrigger>
-          <TabsTrigger value="codes"><Shield className="h-4 w-4 mr-1" /> QR Codes</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="scanner" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><QrCode className="h-4 w-4 mr-1" /> QR Scanner</TabsTrigger>
+            <TabsTrigger value="manual" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><User className="h-4 w-4 mr-1" /> Manual</TabsTrigger>
+            <TabsTrigger value="logs" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><History className="h-4 w-4 mr-1" /> Today's Logs</TabsTrigger>
+            <TabsTrigger value="codes" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Shield className="h-4 w-4 mr-1" /> QR Codes</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="scanner" className="mt-4">
           <Card className="border-0 glass-card">
@@ -271,7 +273,7 @@ export default function AdminAttendancePage() {
           <Card className="border-0 glass-card mt-4">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/15 text-purple-600">
+                <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-purple-500/15 text-purple-600">
                   <Camera className="h-5 w-5" />
                 </div>
                 <div>
@@ -341,7 +343,7 @@ export default function AdminAttendancePage() {
                   <Card key={qr.id} className="border border-border/50">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                        <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10">
                           <QrCode className="h-5 w-5 text-primary" />
                         </div>
                         <div>

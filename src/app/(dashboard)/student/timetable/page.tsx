@@ -25,7 +25,7 @@ export default function StudentTimetablePage() {
 
   const daySlots = timetable.filter((t) => t.day === selectedDay)
 
-  if (loading) return <div className="p-4 md:p-6"><div className="h-64 rounded-xl bg-muted animate-pulse" /></div>
+  if (loading) return <div className="p-4 md:p-6"><div className="h-48 md:h-64 min-h-[180px] rounded-xl bg-muted animate-pulse" /></div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">

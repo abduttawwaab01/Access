@@ -64,7 +64,7 @@ export default function StudentCbtPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.status === "completed" ? "bg-green-500/10" : s.status === "active" ? "bg-blue-500/10" : "bg-amber-500/10"}`}>
+                      <div className={`flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl ${s.status === "completed" ? "bg-green-500/10" : s.status === "active" ? "bg-blue-500/10" : "bg-amber-500/10"}`}>
                         {s.status === "completed" ? <CheckCircle className="h-5 w-5 text-green-500" /> : <Clock className="h-5 w-5 text-blue-500" />}
                       </div>
                       <div>

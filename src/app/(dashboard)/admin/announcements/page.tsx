@@ -93,7 +93,7 @@ export default function AdminAnnouncementsPage() {
         {showForm && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
             <Card className="border-0 glass-card border-t-2 border-t-primary/30">
-              <CardContent className="p-5 space-y-4">
+              <CardContent className="p-4 md:p-5 space-y-4">
                 <h3 className="font-semibold flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /> Create Announcement</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
@@ -178,7 +178,7 @@ export default function AdminAnnouncementsPage() {
                 <Card className="glass-card border-0 group">
                   <CardContent className="p-4">
                     <div className="flex gap-3">
-                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border", cfg.color)}>
+                      <div className={cn("flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl border", cfg.color)}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">

@@ -66,24 +66,27 @@ export default function AdminReportsPage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="academic"><Award className="h-4 w-4 mr-1" /> Academic</TabsTrigger>
-          <TabsTrigger value="subject"><BarChart3 className="h-4 w-4 mr-1" /> Subject</TabsTrigger>
-          <TabsTrigger value="comparison"><TrendingUp className="h-4 w-4 mr-1" /> Comparison</TabsTrigger>
-          <TabsTrigger value="enrollment"><Users className="h-4 w-4 mr-1" /> Enrollment</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="academic" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Award className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Academic</TabsTrigger>
+            <TabsTrigger value="subject" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Subject</TabsTrigger>
+            <TabsTrigger value="comparison" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Comparison</TabsTrigger>
+            <TabsTrigger value="enrollment" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" /> Enrollment</TabsTrigger>
+          </TabsList>
+        </div>
 
+        {activeTab === "academic" && (
         <TabsContent value="academic" className="mt-4 space-y-4">
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Term Performance Trend</h3>
-              <div className="h-56">
+              <h3 className="text-sm md:text-base font-semibold mb-3">Term Performance Trend</h3>
+              <div className="h-48 md:h-56 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={termData}>
+                  <LineChart data={termData} margin={{ left: -15, right: 5 }}>
                     <XAxis dataKey="term" tick={{ fontSize: 10 }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="average" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))" }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                    <Line type="monotone" dataKey="average" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -93,9 +96,9 @@ export default function AdminReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {termData.map((t) => (
               <Card key={t.term} className="border-0 glass-card">
-                <CardContent className="p-4 text-center">
-                  <p className="text-sm text-muted-foreground">{t.term}</p>
-                  <p className="text-2xl font-bold mt-1">{t.average}%</p>
+                <CardContent className="p-3 md:p-4 text-center">
+                  <p className="text-[11px] md:text-sm text-muted-foreground">{t.term}</p>
+                  <p className="text-xl md:text-2xl font-bold mt-1">{t.average}%</p>
                   <Badge className={t.average >= 65 ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>
                     {t.average >= 65 ? "Good" : "Needs Improvement"}
                   </Badge>
@@ -104,17 +107,19 @@ export default function AdminReportsPage() {
             ))}
           </div>
         </TabsContent>
+        )}
 
+        {activeTab === "subject" && (
         <TabsContent value="subject" className="mt-4">
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Subject Performance</h3>
-              <div className="h-64">
+              <h3 className="text-sm md:text-base font-semibold mb-3">Subject Performance</h3>
+              <div className="h-48 md:h-64 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={subjectChart}>
-                    <PolarGrid stroke="#e5e7eb" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 8 }} />
                     <Radar dataKey="average" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -122,45 +127,58 @@ export default function AdminReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
+        {activeTab === "comparison" && (
         <TabsContent value="comparison" className="mt-4">
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Subject Average Comparison</h3>
-              <div className="h-64">
+              <h3 className="text-sm md:text-base font-semibold mb-3">Subject Average Comparison</h3>
+              <div className="h-48 md:h-64 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={subjectChart} layout="vertical">
-                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} />
-                    <YAxis dataKey="subject" type="category" tick={{ fontSize: 10 }} width={100} />
-                    <Tooltip />
-                    <Bar dataKey="average" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                  <BarChart data={subjectChart} layout={subjectChart.length > 6 ? "vertical" : "horizontal"} margin={{ left: -15, right: 5 }}>
+                    {subjectChart.length > 6 ? (
+                      <>
+                        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
+                        <YAxis dataKey="subject" type="category" tick={{ fontSize: 9 }} width={70} />
+                      </>
+                    ) : (
+                      <>
+                        <XAxis dataKey="subject" tick={{ fontSize: 9 }} axisLine={false} tickLine={false} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
+                      </>
+                    )}
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                    <Bar dataKey="average" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={28} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
+        {activeTab === "enrollment" && (
         <TabsContent value="enrollment" className="mt-4">
           <Card className="border-0 glass-card">
             <CardContent className="p-4">
-              <h3 className="font-semibold mb-3">Student Enrollment</h3>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-white">
-                  <div><p className="text-xl font-bold">{students.length}</p></div>
+              <h3 className="text-sm md:text-base font-semibold mb-3">Student Enrollment</h3>
+              <div className="flex items-center gap-3 md:gap-4 mb-4">
+                <div className="flex h-14 w-14 md:h-16 md:w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-white">
+                  <p className="text-lg md:text-xl font-bold">{students.length}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium">Total Students</p>
-                  <p className="text-xs text-muted-foreground">Across all classes</p>
+                  <p className="text-[11px] md:text-xs text-muted-foreground">Across all classes</p>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5 md:space-y-2">
                 {[...new Set(students.filter((s) => s.classId).map((s) => s.classId))].map((classId) => {
                   const count = students.filter((s) => s.classId === classId).length
                   return (
                     <div key={classId} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                      <span className="text-sm">Class {classId}</span>
-                      <Badge>{count} students</Badge>
+                      <span className="text-xs md:text-sm">Class {classId}</span>
+                      <Badge className="text-[10px] md:text-xs">{count} students</Badge>
                     </div>
                   )
                 })}
@@ -168,6 +186,7 @@ export default function AdminReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
       </Tabs>
     </div>
   )

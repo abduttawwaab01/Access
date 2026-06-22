@@ -73,9 +73,11 @@ export default function ParentResultsPage() {
 
       {!loading && terms.length > 0 && (
         <Tabs value={activeTerm} onValueChange={setActiveTerm}>
-          <TabsList className="w-full">
-            {terms.map((t) => <TabsTrigger key={t} value={t} className="flex-1 text-xs">{t}</TabsTrigger>)}
-          </TabsList>
+          <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="inline-flex w-max gap-1.5">
+              {terms.map((t) => <TabsTrigger key={t} value={t} className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">{t}</TabsTrigger>)}
+            </TabsList>
+          </div>
         </Tabs>
       )}
 
@@ -88,7 +90,7 @@ export default function ParentResultsPage() {
           {/* Average Score Card */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             <Card className="glass-card border-0">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 md:p-6 text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Average Score</p>
                 <p className={cn("text-5xl font-bold mt-1", avgScore >= 80 ? "text-success" : avgScore >= 60 ? "text-warning" : "text-danger")}>
                   {avgScore}%
@@ -110,7 +112,7 @@ export default function ParentResultsPage() {
           <Card className="glass-card border-0">
             <CardContent className="p-4">
               <p className="text-sm font-semibold mb-3">Subject Scores</p>
-              <div className="h-56">
+              <div className="h-48 md:h-56 min-h-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={comparisonData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                     <XAxis dataKey="subject" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -128,7 +130,7 @@ export default function ParentResultsPage() {
           <Card className="glass-card border-0">
             <CardContent className="p-4">
               <p className="text-sm font-semibold mb-3">Performance Profile</p>
-              <div className="h-64">
+              <div className="h-48 md:h-64 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="rgba(255,255,255,0.1)" />

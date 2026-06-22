@@ -11,7 +11,14 @@ const staticAssets = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(staticAssets))
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      for (const url of staticAssets) {
+        try {
+          const res = await fetch(url)
+          if (res.ok) cache.put(url, res)
+        } catch {}
+      }
+    })
   )
   self.skipWaiting()
 })
@@ -42,9 +49,12 @@ self.addEventListener("fetch", (event) => {
 })
 
 async function networkFirst(request, cacheName) {
+  if (request.method !== "GET") {
+    try { return await fetch(request) } catch { return new Response(null, { status: 503 }) }
+  }
   try {
     const response = await fetch(request)
-    if (response.ok) {
+    if (response.ok && !response.bodyUsed) {
       try {
         const cache = await caches.open(cacheName)
         cache.put(request, response.clone())
@@ -62,20 +72,24 @@ async function networkFirst(request, cacheName) {
 }
 
 async function cacheFirst(request) {
+  if (request.method !== "GET") {
+    try { return await fetch(request) } catch { return new Response(null, { status: 503 }) }
+  }
   const cached = await caches.match(request)
   if (cached) {
-    fetch(request).then((response) => {
-      if (response.ok) {
-        caches.open(STATIC_CACHE).then((cache) => {
-          try { cache.put(request, response.clone()) } catch {}
-        })
+    fetch(request).then(async (response) => {
+      if (response.ok && !response.bodyUsed) {
+        try {
+          const cache = await caches.open(STATIC_CACHE)
+          cache.put(request, response.clone())
+        } catch {}
       }
     }).catch(() => {})
     return cached
   }
   try {
     const response = await fetch(request)
-    if (response.ok) {
+    if (response.ok && !response.bodyUsed) {
       try {
         const cache = await caches.open(STATIC_CACHE)
         cache.put(request, response.clone())

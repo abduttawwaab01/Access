@@ -71,10 +71,12 @@ export default function ParentFeesPage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview"><Wallet className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
-          <TabsTrigger value="history"><Clock className="h-4 w-4 mr-1" /> History</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Wallet className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
+            <TabsTrigger value="history" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Clock className="h-4 w-4 mr-1" /> History</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="mt-4">
           <Card className="border-0 glass-card"><CardContent className="p-4 space-y-4">

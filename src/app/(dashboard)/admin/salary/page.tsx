@@ -87,8 +87,8 @@ export default function AdminSalaryPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Total Staff", value: staff.length, icon: Users, color: "bg-blue-500/15 text-blue-600" },
-          { label: "Total Paid", value: `₦${getTotalPaid().toLocaleString()}`, icon: DollarSign, color: "bg-green-500/15 text-green-600" },
-          { label: "Pending", value: `₦${getPendingSalary().toLocaleString()}`, icon: Clock, color: "bg-amber-500/15 text-amber-600" },
+          { label: "Total Paid", value: `₦${(getTotalPaid() ?? 0).toLocaleString()}`, icon: DollarSign, color: "bg-green-500/15 text-green-600" },
+          { label: "Pending", value: `₦${(getPendingSalary() ?? 0).toLocaleString()}`, icon: Clock, color: "bg-amber-500/15 text-amber-600" },
           { label: "Month", value: currentMonth, icon: CalendarDays, color: "bg-purple-500/15 text-purple-600" },
         ].map((stat) => (
           <Card key={stat.label} className="border-0 glass-card"><CardContent className="p-4"><div className="flex items-center gap-3 mb-1"><div className={`flex h-8 w-8 items-center justify-center rounded-lg ${stat.color}`}><stat.icon className="h-4 w-4" /></div><span className="text-xs text-muted-foreground">{stat.label}</span></div><p className="text-lg font-bold">{stat.value}</p></CardContent></Card>
@@ -96,10 +96,12 @@ export default function AdminSalaryPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="structures"><Users className="h-4 w-4 mr-1" /> Salary Structures</TabsTrigger>
-          <TabsTrigger value="payroll"><Wallet className="h-4 w-4 mr-1" /> Payroll</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="structures" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-4 w-4 mr-1" /> Salary Structures</TabsTrigger>
+            <TabsTrigger value="payroll" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Wallet className="h-4 w-4 mr-1" /> Payroll</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="structures" className="mt-4">
           <Card className="border-0 glass-card">
@@ -168,7 +170,7 @@ export default function AdminSalaryPage() {
                           <div><p className="text-sm font-medium">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <p className="font-mono font-bold">₦{rec.amount.toLocaleString()}</p>
+                          <p className="font-mono font-bold">₦{(rec.amount ?? 0).toLocaleString()}</p>
                           {rec.status === "paid" ? (
                             <Badge className="bg-green-500/15 text-green-600"><CheckCircle2 className="h-3 w-3 mr-1" /> Paid</Badge>
                           ) : (

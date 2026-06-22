@@ -4,11 +4,11 @@ import { QRCodeSVG } from "qrcode.react"
 
 interface StudentData { id?: string; firstName: string; lastName: string; studentId: string; address?: string; phone?: string; email?: string; bloodGroup?: string; medicalNotes?: string; dateOfBirth?: string; gender?: string; parentName?: string; parentPhone?: string }
 interface SchoolData { name: string; phone?: string; email?: string; address?: string }
-interface IdCardConfig { backTitle?: string; showAddress?: boolean; showBloodGroup?: boolean; showEmergencyContact?: boolean; showMedicalNotes?: boolean; customAddress?: string; customBloodGroup?: string; customEmergencyContact?: string; customMedicalNotes?: string; customFields?: { label: string; value: string }[] }
+interface IdCardConfig { backTitle?: string; showAddress?: boolean; showBloodGroup?: boolean; showEmergencyContact?: boolean; showMedicalNotes?: boolean; showRules?: boolean; rulesText?: string; customAddress?: string; customBloodGroup?: string; customEmergencyContact?: string; customMedicalNotes?: string; customFields?: { label: string; value: string }[] }
 interface Props { student: StudentData; school: SchoolData; config?: IdCardConfig }
 
 export function StudentIDCardBack({ student, school, config }: Props) {
-  const cfg = config || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] }
+  const cfg = config || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official school use only.\n4. Students must present this card for identification and attendance purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] }
   const qrData = JSON.stringify({ type: "student", id: student.id, code: student.studentId })
 
   return (
@@ -37,6 +37,12 @@ export function StudentIDCardBack({ student, school, config }: Props) {
           </div>
         )}
       </div>
+      {cfg.showRules && cfg.rulesText && (
+        <div className="px-5 py-2 border-t border-gray-100 bg-amber-50/50">
+          <p className="text-[8px] font-semibold text-amber-800 uppercase tracking-wider mb-1">Rules & Regulations</p>
+          <pre className="text-[7px] text-amber-700 leading-tight whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
+        </div>
+      )}
       <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-center gap-4">
         <div className="text-center">
           <div className="bg-white rounded-lg p-1 border border-gray-200 inline-block">

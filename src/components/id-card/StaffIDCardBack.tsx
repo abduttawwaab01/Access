@@ -4,11 +4,11 @@ import { QRCodeSVG } from "qrcode.react"
 
 interface StaffData { id?: string; firstName: string; lastName: string; staffId: string; role?: string; department?: string; phone?: string; email?: string; address?: string; qualification?: string; employmentDate?: string; gender?: string; emergencyContact?: string }
 interface SchoolData { name: string; phone?: string; email?: string; address?: string }
-interface IdCardConfig { backTitle?: string; showDepartment?: boolean; showEmergencyContact?: boolean; customDepartment?: string; customEmergencyContact?: string; customFields?: { label: string; value: string }[] }
+interface IdCardConfig { backTitle?: string; showDepartment?: boolean; showEmergencyContact?: boolean; showRules?: boolean; rulesText?: string; customDepartment?: string; customEmergencyContact?: string; customFields?: { label: string; value: string }[] }
 interface Props { staff: StaffData; school: SchoolData; config?: IdCardConfig }
 
 export function StaffIDCardBack({ staff, school, config }: Props) {
-  const cfg = config || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] }
+  const cfg = config || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official staff use only.\n4. Staff must present this card for identification and access purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] }
   const qrData = JSON.stringify({ type: "staff", id: staff.id || staff.staffId, code: staff.staffId })
 
   return (
@@ -32,6 +32,12 @@ export function StaffIDCardBack({ staff, school, config }: Props) {
           {(cfg.customFields || []).filter((f) => f.value).map((f, i) => <InfoRow key={i} label={f.label} value={f.value} />)}
         </div>
       </div>
+      {cfg.showRules && cfg.rulesText && (
+        <div className="px-5 py-2 border-t border-gray-100 bg-amber-50/50">
+          <p className="text-[8px] font-semibold text-amber-800 uppercase tracking-wider mb-1">Rules & Regulations</p>
+          <pre className="text-[7px] text-amber-700 leading-tight whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
+        </div>
+      )}
       <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-center gap-4">
         <div className="text-center">
           <div className="bg-white rounded-lg p-1 border border-gray-200 inline-block">

@@ -61,9 +61,15 @@ export default function ParentReportCardPage() {
     schoolLogo: school?.logo || "",
     schoolMotto: school?.motto || "",
     schoolAddress: school?.address || "",
+    schoolPhone: school?.phone || "",
+    schoolEmail: school?.email || "",
     studentName: `${activeChild.firstName} ${activeChild.lastName}`,
     studentId: activeChild.studentId || "N/A",
+    studentPhoto: activeChild.passportPhoto || "",
+    studentGender: activeChild.gender || "",
+    studentDOB: activeChild.dateOfBirth || "",
     className: studentClass?.name || "N/A",
+    classSection: studentClass?.section || "",
     term: currentTerm,
     session: "2024/2025",
     subjects: termResults.map((r: any) => ({
@@ -73,14 +79,24 @@ export default function ParentReportCardPage() {
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",
     })),
-    domains: [
-      { name: "Critical Thinking", score: 82, max: 100 },
-      { name: "Communication", score: 75, max: 100 },
-      { name: "Collaboration", score: 88, max: 100 },
-      { name: "Creativity", score: 70, max: 100 },
-      { name: "Problem Solving", score: 78, max: 100 },
-      { name: "Leadership", score: 72, max: 100 },
-    ],
+    domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
+      ? [
+          { name: "Punctuality", score: 8, max: 10 },
+          { name: "Neatness", score: 7, max: 10 },
+          { name: "Attentiveness", score: 9, max: 10 },
+          { name: "Honesty", score: 8, max: 10 },
+          { name: "Leadership", score: 7, max: 10 },
+          { name: "Participation", score: 8, max: 10 },
+        ]
+      : [
+          { name: "Critical Thinking", score: 82, max: 100 },
+          { name: "Communication", score: 75, max: 100 },
+          { name: "Collaboration", score: 88, max: 100 },
+          { name: "Creativity", score: 70, max: 100 },
+          { name: "Problem Solving", score: 78, max: 100 },
+          { name: "Leadership", score: 72, max: 100 },
+        ]
+    ),
     attendance: {
       present: childAttendance.filter((l: any) => l.status === "present").length || 38,
       absent: childAttendance.filter((l: any) => l.status === "absent").length || 2,
@@ -157,7 +173,7 @@ export default function ParentReportCardPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 
-  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-48", "h-64"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
+  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-48", "h-48 md:h-64 min-h-[180px]"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">

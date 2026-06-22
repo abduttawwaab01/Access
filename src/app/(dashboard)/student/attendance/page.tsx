@@ -32,7 +32,7 @@ export default function StudentAttendancePage() {
     { name: "Late", value: late },
   ]
 
-  if (loading) return <div className="p-4 md:p-6"><div className="h-64 rounded-xl bg-muted animate-pulse" /></div>
+  if (loading) return <div className="p-4 md:p-6"><div className="h-48 md:h-64 min-h-[180px] rounded-xl bg-muted animate-pulse" /></div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -49,7 +49,7 @@ export default function StudentAttendancePage() {
         ].map((s) => (
           <Card key={s.label} className="glass-card border-0">
             <CardContent className="p-4 text-center">
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`text-xl md:text-2xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-muted-foreground">{s.label}</p>
             </CardContent>
           </Card>
@@ -58,7 +58,7 @@ export default function StudentAttendancePage() {
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card className="glass-card border-0">
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <h3 className="font-semibold mb-1">Attendance Rate</h3>
             <p className="text-xs text-muted-foreground mb-4">{rate}% overall attendance</p>
             <div className="h-48 flex items-center justify-center">
@@ -80,7 +80,7 @@ export default function StudentAttendancePage() {
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <Card className="glass-card border-0">
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <h3 className="font-semibold mb-3">Recent Records</h3>
             <div className="space-y-2">
               {records.slice(-10).reverse().map((r) => (

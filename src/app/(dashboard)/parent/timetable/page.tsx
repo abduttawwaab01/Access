@@ -43,7 +43,7 @@ export default function ParentTimetablePage() {
             <div key={i} className="h-10 w-24 rounded-full bg-muted animate-pulse" />
           ))}
         </div>
-        <div className="h-64 rounded-xl bg-muted animate-pulse" />
+        <div className="h-48 md:h-64 min-h-[180px] rounded-xl bg-muted animate-pulse" />
       </div>
     )
   }

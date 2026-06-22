@@ -69,9 +69,15 @@ export default function StudentReportCardPage() {
     schoolLogo: school?.logo || "",
     schoolMotto: school?.motto || "",
     schoolAddress: school?.address || "",
+    schoolPhone: school?.phone || "",
+    schoolEmail: school?.email || "",
     studentName: student ? `${student.firstName} ${student.lastName}` : "Student",
     studentId: student?.studentId || "N/A",
+    studentPhoto: student?.passportPhoto || "",
+    studentGender: student?.gender || "",
+    studentDOB: student?.dateOfBirth || "",
     className: studentClass?.name || "N/A",
+    classSection: studentClass?.section || "",
     term: currentTerm,
     session: "2024/2025",
     subjects: termResults.map((r: any) => ({
@@ -173,7 +179,7 @@ export default function StudentReportCardPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 
-  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-48", "h-32", "h-64", "h-48"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
+  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-48", "h-32", "h-48 md:h-64 min-h-[180px]", "h-48"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
 
   if (termResults.length === 0 && !loading) return (
     <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">

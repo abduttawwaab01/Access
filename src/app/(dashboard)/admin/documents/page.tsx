@@ -263,12 +263,14 @@ export default function AdminDocumentsPage() {
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all"><FileText className="h-4 w-4 mr-1" /> All Documents</TabsTrigger>
-          <TabsTrigger value="receipts"><Receipt className="h-4 w-4 mr-1" /> Fee Receipts</TabsTrigger>
-          <TabsTrigger value="letters"><ScrollText className="h-4 w-4 mr-1" /> Letters</TabsTrigger>
-          <TabsTrigger value="generate"><Plus className="h-4 w-4 mr-1" /> Generate</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><FileText className="h-4 w-4 mr-1" /> All Documents</TabsTrigger>
+            <TabsTrigger value="receipts" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Receipt className="h-4 w-4 mr-1" /> Fee Receipts</TabsTrigger>
+            <TabsTrigger value="letters" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><ScrollText className="h-4 w-4 mr-1" /> Letters</TabsTrigger>
+            <TabsTrigger value="generate" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Plus className="h-4 w-4 mr-1" /> Generate</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="all" className="mt-4">
           <Card className="border-0 glass-card"><CardContent className="p-4 space-y-3">

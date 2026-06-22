@@ -56,7 +56,7 @@ export default function ExamAnalysisPage() {
     load()
   }, [sessionId])
 
-  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-32", "h-48", "h-56"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
+  if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-32", "h-48", "h-48 md:h-56 min-h-[160px]"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
 
   if (!session || !exam) return (
     <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center gap-3">
@@ -227,7 +227,7 @@ export default function ExamAnalysisPage() {
             {/* Radar */}
             <div>
               <h3 className="font-semibold mb-3 flex items-center gap-2"><Brain className="h-4 w-4" /> Performance Radar</h3>
-              <div className="h-56">
+              <div className="h-48 md:h-56 min-h-[160px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="#e5e7eb" />
@@ -241,7 +241,7 @@ export default function ExamAnalysisPage() {
             {/* Pie */}
             <div>
               <h3 className="font-semibold mb-3">Correct / Partial / Wrong</h3>
-              <div className="h-56 flex items-center justify-center">
+              <div className="h-48 md:h-56 min-h-[160px] flex items-center justify-center">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">

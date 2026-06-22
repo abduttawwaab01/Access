@@ -45,7 +45,7 @@ export default function ParentDocumentsPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                    <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10">
                       <FileText className="h-5 w-5 text-primary" />
                     </div>
                     <div>

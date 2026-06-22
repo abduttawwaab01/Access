@@ -75,7 +75,7 @@ export default function ParentAttendancePage() {
         <>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
             <Card className="glass-card border-0">
-              <CardContent className="p-6 text-center">
+              <CardContent className="p-4 md:p-6 text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Attendance Rate</p>
                 <p className={cn("text-5xl font-bold mt-1", rate >= 90 ? "text-success" : rate >= 75 ? "text-warning" : "text-danger")}>
                   {rate}%
@@ -94,7 +94,7 @@ export default function ParentAttendancePage() {
             ].map((stat) => (
               <Card key={stat.label} className="glass-card border-0">
                 <CardContent className="p-4 text-center">
-                  <p className={cn("text-2xl font-bold", stat.color)}>{stat.value}</p>
+                  <p className={cn("text-xl md:text-2xl font-bold", stat.color)}>{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </CardContent>
               </Card>

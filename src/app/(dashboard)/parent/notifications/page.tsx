@@ -45,7 +45,7 @@ export default function ParentNotificationsPage() {
                 <Card className="glass-card border-0">
                   <CardContent className="p-4">
                     <div className="flex gap-3">
-                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", priorityColor[item.priority])}>
+                      <div className={cn("flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl", priorityColor[item.priority])}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">

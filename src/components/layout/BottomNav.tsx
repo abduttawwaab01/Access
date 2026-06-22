@@ -11,12 +11,15 @@ import {
   UserCircle,
   BookOpen,
   ClipboardCheck,
+  ClipboardList,
   BarChart3,
   FileText,
   Settings,
   CreditCard,
   Calendar,
   HelpCircle,
+  Award,
+  BotMessageSquare,
   type LucideIcon,
 } from "lucide-react"
 
@@ -28,12 +31,15 @@ const iconMap: Record<string, LucideIcon> = {
   UserCircle,
   BookOpen,
   ClipboardCheck,
+  ClipboardList,
   BarChart3,
   FileText,
   Settings,
   CreditCard,
   Calendar,
   HelpCircle,
+  Award,
+  BotMessageSquare,
 }
 
 interface NavItem {

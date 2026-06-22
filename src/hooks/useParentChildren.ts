@@ -14,6 +14,9 @@ export interface ChildInfo {
   classId: string
   image?: string
   relationship?: string
+  passportPhoto?: string
+  gender?: string
+  dateOfBirth?: string
 }
 
 export function useParentChildren() {
@@ -47,6 +50,9 @@ export function useParentChildren() {
           classId: student.classId,
           image: student.image,
           relationship: link.relationship,
+          passportPhoto: student.passportPhoto || "",
+          gender: student.gender || "",
+          dateOfBirth: student.dateOfBirth || "",
         }
       }).filter(Boolean) as ChildInfo[]
 

@@ -121,7 +121,7 @@ export default function ParentChildrenPage() {
                     </div>
                   </div>
 
-                  <CardContent className="p-5 space-y-4">
+                  <CardContent className="p-4 md:p-5 space-y-4">
                     {loadingResults ? (
                       <div className="h-12 rounded-lg bg-muted animate-pulse" />
                     ) : (

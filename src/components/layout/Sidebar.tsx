@@ -12,6 +12,7 @@ import {
   UserCircle,
   BookOpen,
   ClipboardCheck,
+  ClipboardList,
   BarChart3,
   FileText,
   Settings,
@@ -20,6 +21,8 @@ import {
   ChevronLeft,
   LogOut,
   HelpCircle,
+  Award,
+  BotMessageSquare,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -34,12 +37,15 @@ const iconMap: Record<string, LucideIcon> = {
   UserCircle,
   BookOpen,
   ClipboardCheck,
+  ClipboardList,
   BarChart3,
   FileText,
   Settings,
   CreditCard,
   Calendar,
   HelpCircle,
+  Award,
+  BotMessageSquare,
 }
 
 interface NavItem {
@@ -55,16 +61,21 @@ interface SidebarProps {
   onToggle: () => void
   user?: { name: string; email: string; image?: string; role: string }
   schoolName?: string
+  className?: string
+  embedded?: boolean
 }
 
-export function Sidebar({ items, collapsed, onToggle, user, schoolName }: SidebarProps) {
+export function Sidebar({ items, collapsed, onToggle, user, schoolName, className, embedded }: SidebarProps) {
   const pathname = usePathname()
 
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 hidden h-full flex-col border-r border-border/50 bg-card transition-all duration-300 md:flex",
-        collapsed ? "w-[72px]" : "w-64"
+        embedded
+          ? "flex h-full flex-col bg-card"
+          : "fixed left-0 top-0 z-40 hidden h-full flex-col border-r border-border/50 bg-card transition-all duration-300 md:flex",
+        collapsed ? "w-[72px]" : "w-64",
+        className
       )}
     >
       <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">

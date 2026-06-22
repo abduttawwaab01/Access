@@ -47,7 +47,7 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
-              <Sidebar items={navItems} collapsed={false} onToggle={() => {}} user={user} schoolName={schoolName} />
+              <Sidebar items={navItems} collapsed={false} onToggle={() => {}} user={user} schoolName={schoolName} embedded />
             </SheetContent>
           </Sheet>
         )}

@@ -76,14 +76,16 @@ export default function ParentCommunicationPage() {
       </motion.div>
 
       <Tabs defaultValue="announcements">
-        <TabsList className="w-full">
-          <TabsTrigger value="announcements" className="flex-1">
-            <Megaphone className="h-4 w-4 mr-1.5" /> Announcements
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="flex-1">
-            <MessageSquare className="h-4 w-4 mr-1.5" /> Message Teachers
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="announcements" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
+              <Megaphone className="h-4 w-4 mr-1.5" /> Announcements
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
+              <MessageSquare className="h-4 w-4 mr-1.5" /> Message Teachers
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="announcements" className="mt-4 space-y-3">
           {loading ? (
@@ -104,7 +106,7 @@ export default function ParentCommunicationPage() {
                   <Card className="glass-card border-0">
                     <CardContent className="p-4">
                       <div className="flex gap-3">
-                        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", priorityColor[item.priority])}>
+                        <div className={cn("flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl", priorityColor[item.priority])}>
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -131,7 +133,7 @@ export default function ParentCommunicationPage() {
         <TabsContent value="messages" className="mt-4">
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="glass-card border-0">
-              <CardContent className="p-5 space-y-4">
+              <CardContent className="p-4 md:p-5 space-y-4">
                 <div>
                   <h3 className="font-semibold">Send a Message to a Teacher</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">Use this form to contact your child&apos;s teacher directly</p>

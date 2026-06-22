@@ -19,6 +19,7 @@ import {
   generateAttendanceRecords,
   generateResults,
   generateReportCards,
+  generateWeeklyReports,
   generateFeeStructures,
   generatePayments,
   generateBankDetails,
@@ -161,7 +162,18 @@ export function runSeed(store: any) {
   )
   reportCards.forEach((rc) => (store as any).reportCards.create(rc))
 
-  // 21. Fee Structures
+  // 21. Weekly Reports
+  const weeklyReports = generateWeeklyReports(
+    createdStudents,
+    createdClasses,
+    createdSubjects,
+    allResults,
+    attendanceRecords,
+    createdStaff
+  )
+  weeklyReports.forEach((r) => (store as any).weeklyReports.create(r))
+
+  // 22. Fee Structures
   const feeStructures = generateFeeStructures(createdClasses)
   feeStructures.forEach((fs) => (store as any).feeStructures.create(fs))
 
@@ -191,6 +203,7 @@ export function runSeed(store: any) {
   console.log(`  - ${lessonNotes.length} lesson notes`)
   console.log(`  - ${attendanceRecords.length} attendance records`)
   console.log(`  - ${reportCards.length} report cards`)
+  console.log(`  - ${weeklyReports.length} weekly reports`)
   console.log(`  - ${timetable.length} timetable entries`)
   console.log(`  - ${feeStructures.length} fee structures`)
   console.log(`  - ${payments.length} payments`)

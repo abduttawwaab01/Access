@@ -150,7 +150,7 @@ export default function StudentDashboard() {
           transition={{ delay: 0.25, duration: 0.5 }}
         >
           <Card className="glass-card border-0 overflow-hidden">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">My Performance</h3>
               <p className="text-xs text-muted-foreground mb-4">Average score by term</p>
               <motion.div
@@ -201,7 +201,7 @@ export default function StudentDashboard() {
           transition={{ delay: 0.3, duration: 0.5 }}
         >
           <Card className="glass-card border-0 overflow-hidden">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-3">Quick Links</h3>
               <div className="space-y-2">
                 {[
@@ -243,7 +243,7 @@ export default function StudentDashboard() {
           transition={{ delay: 0.35, duration: 0.5 }}
         >
           <Card className="glass-card border-0 overflow-hidden">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-3">Subject Breakdown</h3>
               <div className="space-y-3">
                 {[...new Set(results.filter((r) => r.term === "First Term").map((r) => r.subject))].map((subject, i) => {

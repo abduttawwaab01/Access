@@ -70,7 +70,7 @@ export default function ParentSettingsPage() {
         <Card className="glass-card border-0">
           <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-primary/10">
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -79,7 +79,7 @@ export default function ParentSettingsPage() {
               </div>
             </div>
           </div>
-          <CardContent className="p-5 space-y-4">
+          <CardContent className="p-4 md:p-5 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-xs font-medium text-muted-foreground">Full Name</Label>
@@ -117,7 +117,7 @@ export default function ParentSettingsPage() {
         <Card className="glass-card border-0">
           <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
+              <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-amber-500/10">
                 <Bell className="h-5 w-5 text-amber-500" />
               </div>
               <div>
@@ -126,7 +126,7 @@ export default function ParentSettingsPage() {
               </div>
             </div>
           </div>
-          <CardContent className="p-5 space-y-4">
+          <CardContent className="p-4 md:p-5 space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-border/50 p-4">
               <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-muted-foreground" />
@@ -155,7 +155,7 @@ export default function ParentSettingsPage() {
         <Card className="glass-card border-0">
           <div className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent p-5 pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
+              <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-red-500/10">
                 <Lock className="h-5 w-5 text-red-500" />
               </div>
               <div>
@@ -164,7 +164,7 @@ export default function ParentSettingsPage() {
               </div>
             </div>
           </div>
-          <CardContent className="p-5 space-y-4">
+          <CardContent className="p-4 md:p-5 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="current-password" className="text-xs font-medium text-muted-foreground">Current Password</Label>
               <Input id="current-password" type="password" placeholder="Enter current password" />

@@ -44,8 +44,8 @@ export default function AdminIDCardsPage() {
       setStaff(st)
       setClasses(c)
       setSchool(sch)
-      setIdCardConfig(sch.studentIdCardConfig || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] })
-      setStaffIdCardConfig(sch.staffIdCardConfig || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] })
+      setIdCardConfig(sch.studentIdCardConfig || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official school use only.\n4. Students must present this card for identification and attendance purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] })
+      setStaffIdCardConfig(sch.staffIdCardConfig || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official staff use only.\n4. Staff must present this card for identification and access purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] })
       setLoading(false)
     })
   }, [])
@@ -171,10 +171,12 @@ export default function AdminIDCardsPage() {
 
       {!selectedStudent && !selectedStaff ? (
         <Tabs value={tab} onValueChange={(v) => { setTab(v); setSearch("") }}>
-          <TabsList>
-            <TabsTrigger value="students"><Users className="h-4 w-4 mr-1" /> Student ID Cards</TabsTrigger>
-            <TabsTrigger value="staff"><GraduationCap className="h-4 w-4 mr-1" /> Staff ID Cards</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="inline-flex w-max gap-1.5">
+              <TabsTrigger value="students" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Users className="h-4 w-4 mr-1" /> Student ID Cards</TabsTrigger>
+              <TabsTrigger value="staff" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><GraduationCap className="h-4 w-4 mr-1" /> Staff ID Cards</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="students" className="mt-4 space-y-4">
             <div className="flex gap-2">
@@ -283,13 +285,13 @@ export default function AdminIDCardsPage() {
                 showBack ? (
                   <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} />
                 ) : (
-                  <StudentIDCardFront student={selectedStudent} school={school} classes={classes} />
+                  <StudentIDCardFront student={selectedStudent} school={school} classes={classes} orientation={orientation} />
                 )
               ) : selectedStaff && school ? (
                 showBack ? (
                   <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} />
                 ) : (
-                  <StaffIDCardFront staff={selectedStaff} school={school} />
+                  <StaffIDCardFront staff={selectedStaff} school={school} orientation={orientation} />
                 )
               ) : null}
             </div>
@@ -352,6 +354,27 @@ export default function AdminIDCardsPage() {
                         </div>
                       ))
                   }
+                </div>
+                <div className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox"
+                      checked={selectedStaff ? (staffIdCardConfig as any)?.showRules ?? true : (idCardConfig as any)?.showRules ?? true}
+                      onChange={(e) => {
+                        if (selectedStaff) setStaffIdCardConfig({ ...staffIdCardConfig, showRules: e.target.checked })
+                        else setIdCardConfig({ ...idCardConfig, showRules: e.target.checked })
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                    <span className="text-sm font-medium">Show Rules &amp; Regulations</span>
+                  </label>
+                  <textarea
+                    placeholder="Enter ID card rules (one per line)..."
+                    value={selectedStaff ? (staffIdCardConfig as any)?.rulesText || "" : (idCardConfig as any)?.rulesText || ""}
+                    onChange={(e) => {
+                      if (selectedStaff) setStaffIdCardConfig({ ...staffIdCardConfig, rulesText: e.target.value })
+                      else setIdCardConfig({ ...idCardConfig, rulesText: e.target.value })
+                    }}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs min-h-[80px] resize-y"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Custom Fields (label:value)</Label>

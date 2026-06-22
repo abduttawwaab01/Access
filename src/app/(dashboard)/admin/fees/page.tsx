@@ -114,8 +114,8 @@ export default function AdminFeesPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Collected", value: `₦${totalCollected.toLocaleString()}`, icon: Wallet, color: "bg-green-500/15 text-green-600" },
-          { label: "Expected", value: `₦${totalExpected.toLocaleString()}`, icon: TrendingUp, color: "bg-blue-500/15 text-blue-600" },
+          { label: "Collected", value: `₦${(totalCollected ?? 0).toLocaleString()}`, icon: Wallet, color: "bg-green-500/15 text-green-600" },
+          { label: "Expected", value: `₦${(totalExpected ?? 0).toLocaleString()}`, icon: TrendingUp, color: "bg-blue-500/15 text-blue-600" },
           { label: "Pending", value: pendingCount, icon: Clock, color: "bg-amber-500/15 text-amber-600" },
           { label: "Rate", value: `${collectionRate}%`, icon: Percent, color: "bg-purple-500/15 text-purple-600" },
         ].map((stat) => (
@@ -124,13 +124,16 @@ export default function AdminFeesPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="overview"><TrendingUp className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
-          <TabsTrigger value="bank"><Building className="h-4 w-4 mr-1" /> Bank Details</TabsTrigger>
-          <TabsTrigger value="structures"><Landmark className="h-4 w-4 mr-1" /> Fee Structures</TabsTrigger>
-          <TabsTrigger value="confirmations"><CheckCircle2 className="h-4 w-4 mr-1" /> Confirm Payments {pendingCount > 0 && <Badge className="ml-1 bg-red-500 text-white text-[10px] px-1 py-0">{pendingCount}</Badge>}</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-max gap-1.5">
+            <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><TrendingUp className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
+            <TabsTrigger value="bank" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Building className="h-4 w-4 mr-1" /> Bank Details</TabsTrigger>
+            <TabsTrigger value="structures" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Landmark className="h-4 w-4 mr-1" /> Fee Structures</TabsTrigger>
+            <TabsTrigger value="confirmations" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><CheckCircle2 className="h-4 w-4 mr-1" /> Confirm Payments {pendingCount > 0 && <Badge className="ml-1 bg-red-500 text-white text-[10px] px-1 py-0">{pendingCount}</Badge>}</TabsTrigger>
+          </TabsList>
+        </div>
 
+        {activeTab === "overview" && (
         <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="border-0 glass-card"><CardContent className="p-4">
@@ -143,10 +146,11 @@ export default function AdminFeesPage() {
             </CardContent></Card>
             <Card className="border-0 glass-card"><CardContent className="p-4">
               <h3 className="font-semibold mb-3">Per Class Breakdown</h3>
-              <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={barData}><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="expected" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Expected" /><Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="Paid" /></BarChart></ResponsiveContainer></div>
+              <div className="h-48 md:h-56 min-h-[160px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={barData}><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="expected" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Expected" /><Bar dataKey="paid" fill="#22c55e" radius={[4, 4, 0, 0]} name="Paid" /></BarChart></ResponsiveContainer></div>
             </CardContent></Card>
           </div>
         </TabsContent>
+        )}
 
         <TabsContent value="bank" className="mt-4">
           <Card className="border-0 glass-card">
@@ -205,7 +209,7 @@ export default function AdminFeesPage() {
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10"><Wallet className="h-4 w-4 text-primary" /></div>
                         <div><p className="text-sm font-medium">{fs.type} - {getClassName(fs.classId)}</p><p className="text-xs text-muted-foreground">{fs.term} • Due: {fs.dueDate}</p></div>
                       </div>
-                      <p className="text-sm font-mono font-bold">₦{fs.amount.toLocaleString()}</p>
+                      <p className="text-sm font-mono font-bold">₦{(fs.amount ?? 0).toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
@@ -229,7 +233,7 @@ export default function AdminFeesPage() {
                           <div>
                             <div className="flex items-center gap-2"><p className="text-sm font-medium">{getStudentName(p.studentId)}</p><Badge className="bg-amber-500/15 text-amber-600">Pending</Badge></div>
                             <p className="text-xs text-muted-foreground mt-1">Ref: {p.reference} • {p.method} • {new Date(p.paidAt).toLocaleString()}</p>
-                            <p className="text-lg font-bold mt-1 font-mono">₦{p.amount.toLocaleString()}</p>
+                            <p className="text-lg font-bold mt-1 font-mono">₦{(p.amount ?? 0).toLocaleString()}</p>
                           </div>
                           <div className="flex gap-1">
                             <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => confirmPayment(p.id)}><CheckCircle2 className="h-4 w-4 mr-1" /> Confirm</Button>
@@ -250,7 +254,7 @@ export default function AdminFeesPage() {
                     return (
                       <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
                         <div><p className="text-sm font-medium">{student ? `${student.firstName} ${student.lastName}` : p.studentId}</p><p className="text-xs text-muted-foreground">{p.reference} • {p.method}</p></div>
-                        <div className="text-right"><p className="text-sm font-mono font-bold">₦{p.amount.toLocaleString()}</p><Badge className={p.status === "confirmed" ? "bg-green-500/15 text-green-600" : p.status === "pending" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}>{p.status}</Badge></div>
+                        <div className="text-right"><p className="text-sm font-mono font-bold">₦{(p.amount ?? 0).toLocaleString()}</p><Badge className={p.status === "confirmed" ? "bg-green-500/15 text-green-600" : p.status === "pending" ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}>{p.status}</Badge></div>
                       </div>
                     )
                   })}

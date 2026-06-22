@@ -45,6 +45,7 @@ let schoolSettingsData: any = { loginEnabled: true, expirationDate: null, superA
 let admissionApplications: any[] = []
 let superAnnouncements: any[] = []
 let feedbackTickets: any[] = []
+let weeklyReports: any[] = []
 
 export const store = {
   sessions: {
@@ -216,6 +217,29 @@ export const store = {
   admissionApplications: { getAll: () => admissionApplications, getById: (id: string) => admissionApplications.find((a) => a.id === id), getByStatus: (status: string) => admissionApplications.filter((a) => a.status === status), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", appliedAt: new Date().toISOString() }; admissionApplications.push(item); return item }, update: (id: string, data: any) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return null; admissionApplications[idx] = { ...admissionApplications[idx], ...data }; return admissionApplications[idx] }, delete: (id: string) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return false; admissionApplications.splice(idx, 1); return true } },
   superAnnouncements: { getAll: () => superAnnouncements, getActive: () => superAnnouncements.filter((a) => a.active), getById: (id: string) => superAnnouncements.find((a) => a.id === id), create: (data: any) => { const item = { id: uid(), ...data, createdAt: new Date().toISOString(), active: true }; superAnnouncements.push(item); return item }, update: (id: string, data: any) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return null; superAnnouncements[idx] = { ...superAnnouncements[idx], ...data }; return superAnnouncements[idx] }, delete: (id: string) => { const idx = superAnnouncements.findIndex((a) => a.id === id); if (idx === -1) return false; superAnnouncements.splice(idx, 1); return true } },
   feedbackTickets: { getAll: () => feedbackTickets, getByStatus: (status: string) => feedbackTickets.filter((t) => t.status === status), getById: (id: string) => feedbackTickets.find((t) => t.id === id), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", createdAt: new Date().toISOString(), resolvedAt: null, resolution: null }; feedbackTickets.push(item); return item }, update: (id: string, data: any) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], ...data }; return feedbackTickets[idx] }, resolve: (id: string, resolution: string) => { const idx = feedbackTickets.findIndex((t) => t.id === id); if (idx === -1) return null; feedbackTickets[idx] = { ...feedbackTickets[idx], status: "resolved", resolvedAt: new Date().toISOString(), resolution }; return feedbackTickets[idx] } },
+  weeklyReports: {
+    getAll: (filters?: { studentId?: string; classId?: string; week?: number; term?: string; session?: string; createdBy?: string; status?: string }) => {
+      let result = [...weeklyReports]
+      if (filters?.studentId) result = result.filter((r) => r.studentId === filters.studentId)
+      if (filters?.classId) result = result.filter((r) => r.classId === filters.classId)
+      if (filters?.week !== undefined) result = result.filter((r) => r.week === filters.week)
+      if (filters?.term) result = result.filter((r) => r.term === filters.term)
+      if (filters?.session) result = result.filter((r) => r.session === filters.session)
+      if (filters?.createdBy) result = result.filter((r) => r.createdBy === filters.createdBy)
+      if (filters?.status) result = result.filter((r) => r.status === filters.status)
+      return result
+    },
+    getById: (id: string) => weeklyReports.find((r) => r.id === id),
+    getByStudent: (studentId: string, term?: string, session?: string) => {
+      let result = weeklyReports.filter((r) => r.studentId === studentId)
+      if (term) result = result.filter((r) => r.term === term)
+      if (session) result = result.filter((r) => r.session === session)
+      return result
+    },
+    create: (data: any) => { const now = new Date().toISOString(); const item = { id: uid(), ...data, status: data.status || "draft", createdAt: now, updatedAt: now, publishedAt: data.status === "published" ? now : null }; weeklyReports.push(item); return item },
+    update: (id: string, data: any) => { const idx = weeklyReports.findIndex((r) => r.id === id); if (idx === -1) return null; const now = new Date().toISOString(); weeklyReports[idx] = { ...weeklyReports[idx], ...data, updatedAt: now, publishedAt: data.status === "published" && !weeklyReports[idx].publishedAt ? now : weeklyReports[idx].publishedAt }; return weeklyReports[idx] },
+    delete: (id: string) => { const idx = weeklyReports.findIndex((r) => r.id === id); if (idx === -1) return false; weeklyReports.splice(idx, 1); return true },
+  },
   lessonQuizResults: {
     getAll: () => lessonQuizResults,
     getByStudent: (studentId: string) => lessonQuizResults.filter((r) => r.studentId === studentId),

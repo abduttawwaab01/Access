@@ -13,6 +13,7 @@ const adminNav: NavItem[] = [
   { label: "Subjects", href: "/admin/subjects", icon: "BookOpen" },
   { label: "Students", href: "/admin/students", icon: "Users" },
   { label: "Teachers", href: "/admin/teachers", icon: "GraduationCap" },
+  { label: "AI Assistant", href: "/admin/ai-assistant", icon: "BotMessageSquare" },
   { label: "CBT Engine", href: "/admin/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/admin/question-bank", icon: "HelpCircle" },
   { label: "Scheme of Work", href: "/admin/scheme-of-work", icon: "BookOpen" },
@@ -28,11 +29,14 @@ const adminNav: NavItem[] = [
   { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
   { label: "Announcements", href: "/admin/announcements", icon: "Megaphone" },
   { label: "Reports", href: "/admin/reports", icon: "FileText" },
+  { label: "Report Cards", href: "/admin/report-cards", icon: "Award" },
+  { label: "Weekly Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
   { label: "Settings", href: "/admin/settings", icon: "Settings" },
 ]
 
 const teacherNav: NavItem[] = [
   { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
+  { label: "AI Assistant", href: "/teacher/ai-assistant", icon: "BotMessageSquare" },
   { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: "FileText" },
   { label: "Scheme of Work", href: "/teacher/scheme-of-work", icon: "BookOpen" },
   { label: "Assignments", href: "/teacher/assignments", icon: "ClipboardCheck" },
@@ -42,6 +46,7 @@ const teacherNav: NavItem[] = [
   { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
   { label: "Staff Check-In", href: "/teacher/staff-attendance", icon: "QrCode" },
   { label: "Analytics", href: "/teacher/analytics", icon: "BarChart3" },
+  { label: "Weekly Reports", href: "/teacher/weekly-reports", icon: "ClipboardList" },
   { label: "CBT Engine", href: "/teacher/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/teacher/question-bank", icon: "HelpCircle" },
   { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
@@ -50,6 +55,7 @@ const teacherNav: NavItem[] = [
 const parentNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
   { label: "My Children", href: "/parent/children", icon: "Users" },
+  { label: "Weekly Reports", href: "/parent/weekly-reports", icon: "ClipboardList" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
   { label: "Report Card", href: "/parent/report-card", icon: "FileText" },
   { label: "Lesson Notes", href: "/parent/lesson-notes", icon: "BookOpen" },
@@ -75,18 +81,18 @@ const studentNav: NavItem[] = [
 const adminBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: "LayoutDashboard" },
   { label: "Students", href: "/admin/students", icon: "Users" },
-  { label: "Teachers", href: "/admin/teachers", icon: "GraduationCap" },
-  { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
+  { label: "AI Assistant", href: "/admin/ai-assistant", icon: "BotMessageSquare" },
+  { label: "Weekly Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
   { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
-  { label: "Settings", href: "/admin/settings", icon: "Settings" },
+  { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
 ]
 
 const teacherBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
+  { label: "AI Assistant", href: "/teacher/ai-assistant", icon: "BotMessageSquare" },
   { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: "FileText" },
   { label: "Classes", href: "/teacher/classes", icon: "BookOpen" },
   { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
-  { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
 ]
 
 const studentBottomNav: NavItem[] = [
@@ -100,9 +106,9 @@ const studentBottomNav: NavItem[] = [
 const parentBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
   { label: "Children", href: "/parent/children", icon: "Users" },
+  { label: "Weekly Reports", href: "/parent/weekly-reports", icon: "ClipboardList" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
   { label: "Fees", href: "/parent/fees", icon: "CreditCard" },
-  { label: "Attendance", href: "/parent/attendance", icon: "Calendar" },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

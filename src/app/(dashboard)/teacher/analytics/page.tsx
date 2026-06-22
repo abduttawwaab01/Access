@@ -98,7 +98,7 @@ export default function TeacherAnalyticsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
-                    <p className="text-2xl font-bold">{stat.value}</p>
+                    <p className="text-xl md:text-2xl font-bold">{stat.value}</p>
                   </div>
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color}`}>
                     <stat.icon className="h-5 w-5 text-white" />
@@ -113,10 +113,10 @@ export default function TeacherAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="glass-card border-0">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Subject Performance</h3>
               <p className="text-xs text-muted-foreground mb-4">Average scores across subjects</p>
-              <div className="h-64">
+              <div className="h-48 md:h-64 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={subjectAvgScores} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -134,10 +134,10 @@ export default function TeacherAnalyticsPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <Card className="glass-card border-0">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Term Score Trend</h3>
               <p className="text-xs text-muted-foreground mb-4">Performance trajectory</p>
-              <div className="h-64">
+              <div className="h-48 md:h-64 min-h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={termScoreData} margin={{ top: 5, right: 20, bottom: 20, left: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -156,7 +156,7 @@ export default function TeacherAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="glass-card border-0">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Class Enrollment</h3>
               <p className="text-xs text-muted-foreground mb-4">Students per class</p>
               <div className="h-48">
@@ -177,7 +177,7 @@ export default function TeacherAnalyticsPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <Card className="glass-card border-0">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Attendance Breakdown</h3>
               <p className="text-xs text-muted-foreground mb-4">Present / Absent / Late</p>
               <div className="h-48 flex items-center justify-center">
@@ -205,7 +205,7 @@ export default function TeacherAnalyticsPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card className="glass-card border-0">
-            <CardContent className="p-5">
+            <CardContent className="p-4 md:p-5">
               <h3 className="font-semibold mb-1">Assignment Progress</h3>
               <p className="text-xs text-muted-foreground mb-4">Submissions tracking</p>
               <div className="h-48 flex flex-col items-center justify-center text-center">
@@ -232,7 +232,7 @@ export default function TeacherAnalyticsPage() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
         <Card className="glass-card border-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-          <CardContent className="p-5">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500">
                 <Lightbulb className="h-5 w-5 text-white" />

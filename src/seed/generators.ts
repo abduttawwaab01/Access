@@ -895,6 +895,125 @@ export function generateFeedbackTickets() {
 }
 
 // ============================================================
+// WEEKLY REPORTS
+// ============================================================
+export function generateWeeklyReports(
+  students: { id: string; firstName: string; lastName: string; classId: string }[],
+  classes: { id: string; name: string }[],
+  subjects: { id: string; name: string; classId: string }[],
+  results: any[],
+  attendanceRecords: any[],
+  staff: any[]
+) {
+  const reports: any[] = []
+  const terms = ["First Term", "Second Term", "Third Term"]
+  const session = "2024/2025"
+  const teacherIds = staff.filter((s) => s.role === "teacher").map((s) => s.id)
+
+  const comments = [
+    "A good week overall. The student is progressing well and showing consistent effort in all subjects.",
+    "Showed improvement in class participation this week. Encouraged to keep up the good work.",
+    "Needs to focus more on completing assignments on time. Otherwise, performance is satisfactory.",
+    "Excellent week! Demonstrated great leadership skills during group activities.",
+    "Good attendance and punctuality. Homework completion needs slight improvement.",
+    "A very productive week. The student has shown remarkable improvement in attitude and academic performance.",
+    "Average performance this week. With more dedication, can achieve better results.",
+    "Impressive work ethic. The student is a role model for peers in terms of discipline and punctuality.",
+  ]
+
+  const firstName = [...NIGERIAN_FIRST_NAMES_MALE, ...NIGERIAN_FIRST_NAMES_FEMALE]
+
+  for (const student of students) {
+    const cls = classes.find((c) => c.id === student.classId)
+    if (!cls) continue
+    const classSubjects = subjects.filter((s) => s.classId === student.classId)
+    if (classSubjects.length === 0) continue
+
+    const teacherId = teacherIds[Math.floor(Math.random() * teacherIds.length)]
+    const studentResults = results.filter((r) => r.studentId === student.id)
+    const studentAttendance = attendanceRecords.filter((a) => a.studentId === student.id)
+
+    // Generate 3 weeks of reports
+    for (let week = 1; week <= 3; week++) {
+      const subjectPerformances = classSubjects.map((sub) => {
+        const subResult = studentResults.find((r) => r.subjectId === sub.id)
+        const baseScore = subResult ? (subResult.score / subResult.total) * 100 : 50 + Math.floor(Math.random() * 40)
+
+        return {
+          subject: sub.name,
+          subjectId: sub.id,
+          score: Math.round(Math.min(100, Math.max(10, baseScore + (Math.random() > 0.5 ? 5 : -5)))),
+          assignmentsCompleted: Math.floor(Math.random() * 4) + 1,
+          assignmentsTotal: 4,
+          participation: Math.floor(Math.random() * 3) + 3,
+          notes: "",
+        }
+      })
+
+      const weekAttendance = studentAttendance.slice((week - 1) * 5, week * 5)
+      const present = weekAttendance.filter((a) => a.status === "present").length
+      const absent = weekAttendance.filter((a) => a.status === "absent").length
+      const late = weekAttendance.filter((a) => a.status === "late").length
+      const total = weekAttendance.length || 5
+
+      const behavior = {
+        punctuality: Math.floor(Math.random() * 3) + 3,
+        attentiveness: Math.floor(Math.random() * 3) + 2,
+        conduct: Math.floor(Math.random() * 3) + 3,
+        homeworkCompletion: Math.floor(Math.random() * 3) + 2,
+        teamwork: Math.floor(Math.random() * 3) + 3,
+        behaviorNotes: Math.random() > 0.6 ? "Student participated well in extracurricular activities this week." : "",
+      }
+
+      const overallRating = Math.round(
+        (subjectPerformances.reduce((s, p) => s + (p.score >= 70 ? 4 : p.score >= 50 ? 3 : 2), 0) /
+          subjectPerformances.length +
+          behavior.punctuality +
+          behavior.attentiveness +
+          behavior.conduct +
+          behavior.homeworkCompletion +
+          behavior.teamwork) /
+          6
+      )
+
+      reports.push({
+        id: nextId("wr"),
+        studentId: student.id,
+        studentName: `${student.firstName} ${student.lastName}`,
+        classId: student.classId,
+        className: cls.name,
+        week,
+        term: "First Term",
+        session,
+        createdBy: teacherId,
+        teacherName: staff.find((s) => s.id === teacherId)
+          ? `${staff.find((s) => s.id === teacherId).firstName} ${staff.find((s) => s.id === teacherId).lastName}`
+          : "Grace Hopper",
+        subjectPerformances,
+        punctuality: behavior.punctuality,
+        attentiveness: behavior.attentiveness,
+        conduct: behavior.conduct,
+        homeworkCompletion: behavior.homeworkCompletion,
+        teamwork: behavior.teamwork,
+        behaviorNotes: behavior.behaviorNotes,
+        attendancePresent: present,
+        attendanceAbsent: absent,
+        attendanceLate: late,
+        attendanceTotal: total,
+        teacherComment: comments[Math.floor(Math.random() * comments.length)],
+        overallRating: Math.max(1, Math.min(5, overallRating)),
+        status: "published",
+        createdAt: new Date(2024, 8 + week, 15).toISOString(),
+        updatedAt: new Date(2024, 8 + week, 15).toISOString(),
+        publishedAt: new Date(2024, 8 + week, 15).toISOString(),
+      })
+    }
+  }
+
+  return reports
+}
+
+// ============================================================
 // SUPER ANNOUNCEMENTS
 // ============================================================
 export function generateSuperAnnouncements() {
