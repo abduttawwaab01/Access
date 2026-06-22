@@ -91,7 +91,7 @@ export default function ProfilePage({ userData, onSave, isAdmin = false }: Profi
             <Card className="glass-card border-0 overflow-hidden">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center text-center">
-                  <div classn="relative">
+                  <div className="relative">
                     <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-2xl font-bold mb-4">
                       {userData.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </div>
