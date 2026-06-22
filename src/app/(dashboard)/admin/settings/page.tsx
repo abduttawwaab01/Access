@@ -55,7 +55,7 @@ export default function SchoolSettingsPage() {
     try {
       const previewUrl = URL.createObjectURL(file)
       setLogoPreview(previewUrl)
-      const url = await compressAndUpload(file, { maxWidth: 400, quality: 0.7, format: "jpeg" })
+      const url = await compressAndUpload(file, { maxWidth: 400, quality: 0.6, format: "webp", folder: "logos" })
       update("logo", url)
       toast.success("Logo uploaded and compressed")
     } catch {

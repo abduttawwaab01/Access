@@ -3,16 +3,18 @@ export interface CompressOptions {
   maxHeight?: number
   quality?: number
   format?: "jpeg" | "png" | "webp"
+  folder?: string
 }
 
 export function compressImage(file: File, options: CompressOptions = {}): Promise<Blob> {
-  const { maxWidth = 800, quality = 0.7, format = "jpeg" } = options
+  const { maxWidth = 800, maxHeight, quality = 0.6, format = "webp" } = options
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
       let w = img.width
       let h = img.height
       if (w > maxWidth) { h = (h * maxWidth) / w; w = maxWidth }
+      if (maxHeight && h > maxHeight) { w = (w * maxHeight) / h; h = maxHeight }
       const canvas = document.createElement("canvas")
       canvas.width = w; canvas.height = h
       const ctx = canvas.getContext("2d")!
@@ -34,8 +36,12 @@ export function compressImage(file: File, options: CompressOptions = {}): Promis
 export async function compressAndUpload(file: File, options: CompressOptions = {}): Promise<string> {
   const compressed = await compressImage(file, options)
   const formData = new FormData()
-  const ext = options.format === "png" ? "png" : options.format === "webp" ? "webp" : "jpg"
-  formData.append("file", compressed, `${Date.now()}.${ext}`)
+  const fmt = options.format || "webp"
+  const ext = fmt === "png" ? "png" : fmt === "jpeg" ? "jpg" : "webp"
+  const folder = options.folder || "uploads"
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_{2,}/g, "_")
+  formData.append("file", compressed, `${Date.now()}-${safeName}`)
+  formData.append("folder", folder)
   const res = await fetch("/api/upload", { method: "POST", body: formData })
   if (!res.ok) throw new Error("Upload failed")
   const data = await res.json()

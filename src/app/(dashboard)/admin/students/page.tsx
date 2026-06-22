@@ -57,7 +57,7 @@ export default function StudentsPage() {
     if (!file) return
     setPhotoUploading(true)
     try {
-      const url = await compressAndUpload(file, { maxWidth: 200, quality: 0.7, format: "jpeg" })
+      const url = await compressAndUpload(file, { maxWidth: 300, quality: 0.6, format: "webp", folder: "passports" })
       update("passportPhoto", url)
       toast.success("Photo uploaded")
     } catch {
