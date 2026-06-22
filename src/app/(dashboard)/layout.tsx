@@ -33,6 +33,7 @@ const adminNav: NavItem[] = [
   { label: "Report Cards", href: "/admin/report-cards", icon: "Award" },
   { label: "Weekly Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
   { label: "Settings", href: "/admin/settings", icon: "Settings" },
+  { label: "Profile", href: "/admin/profile", icon: "User" },
 ]
 
 const teacherNav: NavItem[] = [
@@ -52,6 +53,7 @@ const teacherNav: NavItem[] = [
   { label: "Question Bank", href: "/teacher/question-bank", icon: "HelpCircle" },
   { label: "Results", href: "/teacher/results", icon: "BarChart3" },
   { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
+  { label: "Profile", href: "/teacher/profile", icon: "User" },
 ]
 
 const parentNav: NavItem[] = [
@@ -68,6 +70,7 @@ const parentNav: NavItem[] = [
   { label: "Communication", href: "/parent/communication", icon: "Bell" },
   { label: "Documents", href: "/parent/documents", icon: "FileText" },
   { label: "Settings", href: "/parent/settings", icon: "Settings" },
+  { label: "Profile", href: "/parent/profile", icon: "User" },
 ]
 
 const studentNav: NavItem[] = [
@@ -80,6 +83,7 @@ const studentNav: NavItem[] = [
   { label: "Lesson Notes", href: "/student/lesson-notes", icon: "FileText" },
   { label: "My Exams", href: "/student/cbt", icon: "ClipboardCheck" },
   { label: "Report Card", href: "/student/report-card", icon: "FileText" },
+  { label: "Profile", href: "/student/profile", icon: "User" },
 ]
 
 const adminBottomNav: NavItem[] = [
@@ -89,6 +93,7 @@ const adminBottomNav: NavItem[] = [
   { label: "AI Assistant", href: "/admin/ai-assistant", icon: "BotMessageSquare" },
   { label: "Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
   { label: "Fees", href: "/admin/fees", icon: "CreditCard" },
+  { label: "Profile", href: "/admin/profile", icon: "User" },
 ]
 
 const teacherBottomNav: NavItem[] = [
@@ -97,22 +102,24 @@ const teacherBottomNav: NavItem[] = [
   { label: "AI Assistant", href: "/teacher/ai-assistant", icon: "BotMessageSquare" },
   { label: "Classes", href: "/teacher/classes", icon: "BookOpen" },
   { label: "Attendance", href: "/teacher/attendance", icon: "Calendar" },
+  { label: "Profile", href: "/teacher/profile", icon: "User" },
 ]
 
 const studentBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/student", icon: "LayoutDashboard" },
-  { label: "Analytics", href: "/student/analytics", icon: "BarChart3" },
   { label: "Results", href: "/student/results", icon: "BarChart3" },
   { label: "Fees", href: "/student/fees", icon: "CreditCard" },
+  { label: "Lesson Notes", href: "/student/lesson-notes", icon: "FileText" },
   { label: "My Exams", href: "/student/cbt", icon: "ClipboardCheck" },
+  { label: "Profile", href: "/student/profile", icon: "User" },
 ]
 
 const parentBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/parent", icon: "LayoutDashboard" },
-  { label: "Analytics", href: "/parent/analytics", icon: "BarChart3" },
   { label: "Children", href: "/parent/children", icon: "Users" },
+  { label: "Weekly Reports", href: "/parent/weekly-reports", icon: "ClipboardList" },
   { label: "Results", href: "/parent/results", icon: "BarChart3" },
-  { label: "Fees", href: "/parent/fees", icon: "CreditCard" },
+  { label: "Profile", href: "/parent/profile", icon: "User" },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
