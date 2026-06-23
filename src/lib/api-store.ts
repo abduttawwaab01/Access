@@ -1,7 +1,3 @@
-// In-memory data store for development
-// Data persisted in globalThis to survive HMR in dev mode
-// Swap with Prisma queries when database is connected
-
 const uid = () => String(Date.now()) + Math.random().toString(36).slice(2, 8)
 
 const PERSIST = "__opencode_store_v1"
@@ -18,9 +14,7 @@ let classes: any[] = g("classes", [])
 let subjects: any[] = g("subjects", [])
 let students: any[] = g("students", [])
 let parents: any[] = g("parents", [])
-
 let staff: any[] = g("staff", [])
-
 let teacherAssignments: any[] = g("teacherAssignments", [])
 let lessonNotes: any[] = g("lessonNotes", [])
 let schemeOfWorks: any[] = g("schemeOfWorks", [])
@@ -35,101 +29,21 @@ let attendanceLogs: any[] = g("attendanceLogs", [])
 let attendanceQRCodes: any[] = g("attendanceQRCodes", [])
 let reportCards: any[] = g("reportCards", [])
 let topics: any[] = g("topics", [])
-
 let lessonQuizResults: any[] = g("lessonQuizResults", [])
 let questions: any[] = g("questions", [])
 let exams: any[] = g("exams", [])
 let examSessions: any[] = g("examSessions", [])
 let submissions: any[] = g("submissions", [])
-
-// Auto-seed some initial data
-const seedExams = () => {
-  if (exams.length === 0) {
-    const now = new Date().toISOString()
-    const seededExams = [
-      {
-        id: "exam1",
-        title: "Mathematics Mid-Term",
-        description: "Mid-term examination for Mathematics",
-        duration: 60,
-        subjectId: "subject1",
-        classId: "class1",
-        type: "regular",
-        status: "published",
-        createdAt: now,
-        updatedAt: now,
-        questions: [],
-        shuffleQuestions: false,
-        showResults: true,
-        requireFullscreen: true,
-        tabSwitchLimit: 3,
-        allowCopyPaste: false,
-        maxAttempts: 1,
-        approvedBy: "admin1",
-        approvedAt: now,
-      },
-      {
-        id: "exam2",
-        title: "English Final Exam",
-        description: "Final examination for English language",
-        duration: 90,
-        subjectId: "subject2",
-        classId: "class1",
-        type: "regular",
-        status: "draft",
-        createdAt: now,
-        updatedAt: now,
-        questions: [],
-        shuffleQuestions: true,
-        showResults: true,
-        requireFullscreen: true,
-        tabSwitchLimit: 5,
-        allowCopyPaste: false,
-        maxAttempts: 2,
-        approvedBy: null,
-        approvedAt: null,
-      },
-      {
-        id: "exam3",
-        title: "Entrance Exam 2024",
-        description: "Entrance examination for new students",
-        duration: 120,
-        subjectId: "subject3",
-        classId: null,
-        type: "entrance",
-        status: "published",
-        createdAt: now,
-        updatedAt: now,
-        questions: [],
-        shuffleQuestions: false,
-        showResults: true,
-        requireFullscreen: true,
-        tabSwitchLimit: 2,
-        allowCopyPaste: false,
-        maxAttempts: 1,
-        approvedBy: "admin1",
-        approvedAt: now,
-      },
-    ]
-    exams.push(...seededExams)
-  }
-}
-
-seedExams()
-
-let bankDetails: any = g("bankDetails", { id: "b1", bankName: "", accountName: "", accountNumber: "", branch: "", swiftCode: "", schoolId: "1", updatedAt: "" })
+let bankDetails: any = g("bankDetails", {})
 let feeStructures: any[] = g("feeStructures", [])
 let payments: any[] = g("payments", [])
 let salaryRecords: any[] = g("salaryRecords", [])
 let salaryStructures: any[] = g("salaryStructures", [])
 let documents: any[] = g("documents", [])
-
-let gradingConfigData: any = g("gradingConfigData", { id: "gc_1", caMax: 40, examMax: 60, gradeBoundaries: [{ min: 75, grade: "A", remark: "Excellent" }, { min: 65, grade: "B", remark: "Very Good" }, { min: 55, grade: "C", remark: "Good" }, { min: 45, grade: "D", remark: "Fair" }, { min: 0, grade: "F", remark: "Needs Improvement" }], updatedAt: "" })
-
-let schoolSettingsData: any = g("schoolSettingsData", { loginEnabled: true, expirationDate: null, superAdminPassword: "successor", schoolName: "My School", schoolMotto: "Excellence in Education", schoolAddress: "", schoolPhone: "", schoolEmail: "", schoolLogo: "", aboutText: "", schoolQRCode: "", studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] }, staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] } })
-
+let gradingConfigData: any = g("gradingConfigData", {})
+let schoolSettingsData: any = g("schoolSettingsData", {})
 let admissionApplications: any[] = g("admissionApplications", [])
-let admissionSettingsData: any = g("admissionSettingsData", { cutOffs: {} as Record<string, number>, entranceExamId: null as string | null })
+let admissionSettingsData: any = g("admissionSettingsData", {})
 let superAnnouncements: any[] = g("superAnnouncements", [])
 let feedbackTickets: any[] = g("feedbackTickets", [])
 let weeklyReports: any[] = g("weeklyReports", [])
@@ -448,63 +362,4 @@ export const store = {
       }
     },
   },
-}
-
-// Auto-seed on module load
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { runSeed } = require("../seed/runner")
-  runSeed(store)
-} catch (e) {
-  // Seed may fail in serverless if module not bundled — log for debugging
-  if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
-    console.warn("[Store] Seed skipped:", (e as Error)?.message || e)
-  }
-}
-
-// Auto-seed exam sessions
-try {
-  if (examSessions.length === 0) {
-    const now = new Date().toISOString()
-    const seededSessions = [
-      {
-        id: "session1",
-        examId: "exam1",
-        examType: "regular",
-        status: "active",
-        startTime: new Date(Date.now() - 3600000).toISOString(),
-        endTime: new Date(Date.now() + 3600000).toISOString(),
-        tabSwitches: 0,
-        flagged: false,
-        createdAt: now,
-      },
-      {
-        id: "session2",
-        examId: "exam2",
-        examType: "regular",
-        status: "upcoming",
-        startTime: new Date(Date.now() + 7200000).toISOString(),
-        endTime: new Date(Date.now() + 10800000).toISOString(),
-        tabSwitches: 0,
-        flagged: false,
-        createdAt: now,
-      },
-      {
-        id: "session3",
-        examId: "exam3",
-        examType: "entrance",
-        status: "active",
-        startTime: new Date(Date.now() - 1800000).toISOString(),
-        endTime: new Date(Date.now() + 7200000).toISOString(),
-        tabSwitches: 0,
-        flagged: false,
-        createdAt: now,
-      },
-    ]
-    examSessions.push(...seededSessions)
-  }
-} catch (e) {
-  if (typeof process !== "undefined" && process.env?.NODE_ENV !== "production") {
-    console.warn("[Store] Seed exam sessions skipped:", (e as Error)?.message || e)
-  }
 }

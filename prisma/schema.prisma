@@ -16,18 +16,23 @@ model School {
   phone        String?
   email        String?
   address      String?
+  motto        String?
+  aboutText    String?
+  exportDefaultExamHeader String?
   primaryColor String   @default("#6366f1")
   secondaryColor String @default("#06b6d4")
   accentColor  String   @default("#f59e0b")
+  settings     Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  users     User[]
-  sessions  AcademicSession[]
-  classes   Class[]
-  subjects  Subject[]
-  students  Student[]
-  staff     Staff[]
+  users        User[]
+  sessions     AcademicSession[]
+  classes      Class[]
+  subjects     Subject[]
+  students     Student[]
+  staff        Staff[]
+  announcements Announcement[]
 }
 
 model User {
@@ -41,8 +46,24 @@ model User {
   schoolId  String
   school    School    @relation(fields: [schoolId], references: [id])
   students  Student[] @relation("ParentStudent")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  audience  String   @default("all")
+  priority  String   @default("normal")
+  author    String?
+  active    Boolean  @default(true)
+  endDate   DateTime?
+  source    String   @default("regular")
+  schoolId  String?
+  school    School?  @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
