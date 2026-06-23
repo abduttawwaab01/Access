@@ -182,6 +182,9 @@ model Student {
   parentId String?
   parent   User?  @relation("ParentStudent", fields: [parentId], references: [id])
 
+  userId String? @unique
+  user   User?  @relation(fields: [userId], references: [id])
+
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
 

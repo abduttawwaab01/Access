@@ -62,6 +62,9 @@ export default function ExamTakePage() {
     const fetchData = async () => {
       try {
         const sRes = await fetch(`/api/exam-sessions/${params.id}`)
+        if (!sRes.ok) {
+          throw new Error(`Failed to fetch exam session: ${sRes.status}`)
+        }
         const sData = await sRes.json()
         setSession(sData)
         if (sData.status === "completed") {
@@ -70,12 +73,18 @@ export default function ExamTakePage() {
         }
         if (sData.examId) {
           const eRes = await fetch(`/api/exams/${sData.examId}`)
+          if (!eRes.ok) {
+            throw new Error(`Failed to fetch exam: ${eRes.status}`)
+          }
           const eData = await eRes.json()
           setExam(eData)
           setTimeLeft(eData.duration * 60)
 
           if (eData.questions) {
             const qRes = await fetch("/api/questions")
+            if (!qRes.ok) {
+              throw new Error(`Failed to fetch questions: ${qRes.status}`)
+            }
             const allQ = await qRes.json()
             const qIds = eData.questions.map((q: any) => q.questionId)
             let qs = allQ.filter((q: any) => qIds.includes(q.id))
@@ -89,11 +98,15 @@ export default function ExamTakePage() {
 
           if (eData.requireFullscreen !== false) enterFullscreen()
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error fetching exam data:", error)
+        toast.error("Failed to load exam data. Please try again.")
+        router.push("/exam-take")
+      }
       setLoading(false)
     }
     fetchData()
-  }, [params.id])
+  }, [params.id, router])
 
   useEffect(() => {
     if (submitted || timeLeft <= 0) return
@@ -130,7 +143,7 @@ export default function ExamTakePage() {
     })
 
     try {
-      await fetch(`/api/exam-sessions/${params.id}`, {
+      const response = await fetch(`/api/exam-sessions/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,10 +156,18 @@ export default function ExamTakePage() {
           flagged,
         }),
       })
+      if (!response.ok) {
+        throw new Error(`Failed to submit exam: ${response.status}`)
+      }
       setSubmitted(true)
       setResult({ totalScore, maxScore, answers: gradedAnswers, flagged })
-    } catch {}
-    setSubmitting(false)
+      toast.success("Exam submitted successfully!")
+    } catch (error) {
+      console.error("Error submitting exam:", error)
+      toast.error("Failed to submit exam. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const formatTime = (secs: number) => {

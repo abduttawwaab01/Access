@@ -17,6 +17,9 @@ export const db = {
     getById: async (id: string) => {
       return prisma.student.findUnique({ where: { id } })
     },
+    getByUserId: async (userId: string) => {
+      return prisma.student.findUnique({ where: { userId } })
+    },
     getByEmail: async (email: string) => {
       return prisma.student.findFirst({ where: { email } })
     },
@@ -31,6 +34,7 @@ export const db = {
           classId: data.classId || "",
           schoolId,
           status: data.status || "active",
+          userId: data.userId || null,
         },
       })
     },
@@ -764,6 +768,34 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
+      
+      const exam = await prisma.exam.findUnique({
+        where: { id: data.examId },
+        include: {
+          class: true,
+          subject: true,
+        },
+      })
+      
+      if (!exam) {
+        throw new Error("Exam not found")
+      }
+      
+      const student = await prisma.student.findUnique({
+        where: { id: data.studentId },
+        include: {
+          class: true,
+        },
+      })
+      
+      if (!student) {
+        throw new Error("Student not found")
+      }
+      
+      if (student.classId !== exam.classId) {
+        throw new Error("Student is not enrolled in the class for this exam")
+      }
+      
       return prisma.examSession.create({
         data: {
           examId: data.examId,

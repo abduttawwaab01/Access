@@ -28,10 +28,10 @@ export default function StudentReportCardPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/results").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
+      fetch("/api/students?userId=" + userId).then((r) => r.json()),
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()),
-      fetch("/api/report-cards").then((r) => r.json()),
+      fetch("/api/report-cards?studentId=" + userId).then((r) => r.json()),
       fetch("/api/attendance-logs").then((r) => r.json()),
     ]).then(([res, stu, cls, sch, rc, att]) => {
       setResults(Array.isArray(res) ? res : [])
@@ -42,15 +42,15 @@ export default function StudentReportCardPage() {
       setAttendance(Array.isArray(att) ? att : [])
       setLoading(false)
     })
-  }, [])
+  }, [userId])
 
-  const student = students.find((s: any) => s.id === userId)
+  const student = students[0] || null
   if (!student && !loading) {
     return (
       <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">
         <FileText className="h-16 w-16 text-muted-foreground/30 mb-4" />
-        <h3 className="font-semibold text-lg">Student Not Found</h3>
-        <p className="text-sm text-muted-foreground">Could not load your profile.</p>
+        <h3 className="font-semibold text-lg">Report Card Not Available</h3>
+        <p className="text-sm text-muted-foreground">Your report card is not yet published or available.</p>
       </div>
     )
   }

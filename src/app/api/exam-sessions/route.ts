@@ -4,11 +4,54 @@ import { db } from "@/lib/prisma-store"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const examId = searchParams.get("examId") || undefined
-  return NextResponse.json(await db.examSessions.getAll(examId))
+  try {
+    const sessions = await db.examSessions.getAll(examId)
+    return NextResponse.json(sessions)
+  } catch (error) {
+    console.error("Error fetching exam sessions:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch exam sessions" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  const item = await db.examSessions.create(body)
-  return NextResponse.json(item, { status: 201 })
+  try {
+    const body = await request.json()
+    if (!body.examId || !body.studentId) {
+      return NextResponse.json(
+        { error: "examId and studentId are required" },
+        { status: 400 }
+      )
+    }
+    const item = await db.examSessions.create(body)
+    return NextResponse.json(item, { status: 201 })
+  } catch (error) {
+    console.error("Error creating exam session:", error)
+    if (error instanceof Error) {
+      if (error.message === "Exam not found") {
+        return NextResponse.json(
+          { error: "Exam not found" },
+          { status: 404 }
+        )
+      }
+      if (error.message === "Student not found") {
+        return NextResponse.json(
+          { error: "Student not found" },
+          { status: 404 }
+        )
+      }
+      if (error.message === "Student is not enrolled in the class for this exam") {
+        return NextResponse.json(
+          { error: "Student is not enrolled in the class for this exam" },
+          { status: 403 }
+        )
+      }
+    }
+    return NextResponse.json(
+      { error: "Failed to create exam session" },
+      { status: 500 }
+    )
+  }
 }

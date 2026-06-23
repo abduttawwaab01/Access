@@ -3,22 +3,46 @@ import { db } from "@/lib/prisma-store"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const item = await db.exams.getById(id)
-  if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json(item)
+  try {
+    const item = await db.exams.getById(id)
+    if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json(item)
+  } catch (error) {
+    console.error("Error fetching exam:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch exam" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const body = await request.json()
-  const item = await db.exams.update(id, body)
-  if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json(item)
+  try {
+    const body = await request.json()
+    const item = await db.exams.update(id, body)
+    if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json(item)
+  } catch (error) {
+    console.error("Error updating exam:", error)
+    return NextResponse.json(
+      { error: "Failed to update exam" },
+      { status: 500 }
+    )
+  }
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const ok = await db.exams.delete(id)
-  if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json({ success: true })
+  try {
+    const ok = await db.exams.delete(id)
+    if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting exam:", error)
+    return NextResponse.json(
+      { error: "Failed to delete exam" },
+      { status: 500 }
+    )
+  }
 }
