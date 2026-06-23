@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { Download, Printer, Send, Share2, FileText, DownloadCloud, Award } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
 import { useSession } from "next-auth/react"
-import { downloadPng, downloadPdf, openPrintWindow, captureElement } from "@/lib/capture"
+import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 
 export default function StudentReportCardPage() {
   const { data: session } = useSession()
@@ -127,27 +127,11 @@ export default function StudentReportCardPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const { jsPDF } = await import("jspdf")
-      const canvas = await captureElement(reportRef.current, { scale: 3 })
-      const imgData = canvas.toDataURL("image/png")
-      const pdfW = 595
-      const pdfH = 842
-      const margin = 30
-      const imgAspect = canvas.width / canvas.height
-      const pdfAspect = pdfW / pdfH
-      let drawW: number, drawH: number
-      if (imgAspect > pdfAspect) {
-        drawW = pdfW - margin * 2
-        drawH = drawW / imgAspect
-      } else {
-        drawH = pdfH - margin * 2
-        drawW = drawH * imgAspect
-      }
-      const offsetX = (pdfW - drawW) / 2
-      const offsetY = (pdfH - drawH) / 2
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
-      pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
-      pdf.save(`Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
+      await downloadPdf(
+        reportRef.current,
+        `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`,
+        { scale: 2 }
+      )
       toast.success("Report card downloaded as PDF")
     } catch (err) {
       console.error("PDF export error:", err)
@@ -163,7 +147,7 @@ export default function StudentReportCardPage() {
       await downloadPng(
         reportRef.current,
         `Report_Card_${reportData.studentName.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`,
-        { scale: 3 }
+        { scale: 2 }
       )
       toast.success("Report card downloaded as PNG")
     } catch {

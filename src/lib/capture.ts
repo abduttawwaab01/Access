@@ -135,7 +135,7 @@ export async function downloadPng(
   options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<void> {
   try {
-    const canvas = await captureElement(element, options)
+    const canvas = await captureElement(element, { ...options, scale: options?.scale ?? 2 })
     const link = document.createElement("a")
     link.download = filename
     link.href = canvas.toDataURL("image/png")
@@ -151,7 +151,7 @@ export async function downloadPdf(
   filename: string,
   options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
 ): Promise<void> {
-  const canvas = await captureElement(element, { ...options, scale: 3 })
+  const canvas = await captureElement(element, { ...options, scale: options?.scale ?? 2 })
   const dataUrl = canvas.toDataURL("image/png")
 
   let JsPdfClass: any
@@ -163,23 +163,8 @@ export async function downloadPdf(
     throw new Error("jspdf library failed to load")
   }
 
-  const pdfW = 595
-  const pdfH = 842
-  const imgAspect = canvas.width / canvas.height
-  const pdfAspect = pdfW / pdfH
-  let drawW: number, drawH: number
-  if (imgAspect > pdfAspect) {
-    drawW = pdfW - 40
-    drawH = drawW / imgAspect
-  } else {
-    drawH = pdfH - 40
-    drawW = drawH * imgAspect
-  }
-  const offsetX = (pdfW - drawW) / 2
-  const offsetY = (pdfH - drawH) / 2
-
-  const pdf = new JsPdfClass({ orientation: "portrait", unit: "pt", format: "a4" })
-  pdf.addImage(dataUrl, "PNG", offsetX, offsetY, drawW, drawH)
+  const pdf = new JsPdfClass({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+  pdf.addImage(dataUrl, "PNG", 0, 0, canvas.width, canvas.height)
   pdf.save(filename)
 }
 

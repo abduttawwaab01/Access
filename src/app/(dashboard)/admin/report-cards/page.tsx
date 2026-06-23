@@ -9,7 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { toast } from "sonner"
 import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, User } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
-import { downloadPng, downloadPdf, openPrintWindow, captureElement } from "@/lib/capture"
+import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
 export default function AdminReportCardsPage() {
@@ -136,27 +136,11 @@ export default function AdminReportCardsPage() {
     if (!reportRef.current) return
     setExporting(true)
     try {
-      const { jsPDF } = await import("jspdf")
-      const canvas = await captureElement(reportRef.current, { scale: 3 })
-      const imgData = canvas.toDataURL("image/png")
-      const pdfW = 595
-      const pdfH = 842
-      const margin = 30
-      const imgAspect = canvas.width / canvas.height
-      const pdfAspect = pdfW / pdfH
-      let drawW: number, drawH: number
-      if (imgAspect > pdfAspect) {
-        drawW = pdfW - margin * 2
-        drawH = drawW / imgAspect
-      } else {
-        drawH = pdfH - margin * 2
-        drawW = drawH * imgAspect
-      }
-      const offsetX = (pdfW - drawW) / 2
-      const offsetY = (pdfH - drawH) / 2
-      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
-      pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
-      pdf.save(`Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`)
+      await downloadPdf(
+        reportRef.current,
+        `Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.pdf`,
+        { scale: 2 }
+      )
       toast.success("Report card downloaded as PDF")
     } catch (err) {
       console.error("PDF export error:", err)
@@ -172,7 +156,7 @@ export default function AdminReportCardsPage() {
       await downloadPng(
         reportRef.current,
         `Report_Card_${reportData?.studentName?.replace(/\s+/g, "_")}_${currentTerm.replace(/\s+/g, "_")}.png`,
-        { scale: 3 }
+        { scale: 2 }
       )
       toast.success("Report card downloaded as PNG")
     } catch {

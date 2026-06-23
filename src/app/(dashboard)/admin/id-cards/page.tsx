@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Search, Download, Printer, Users, GraduationCap, RefreshCw, Edit3, Eye, EyeOff, ArrowLeft, QrCode, RotateCw, FileDown } from "lucide-react"
-import { captureElement } from "@/lib/capture"
+import { captureElement, downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 import { createRoot } from "react-dom/client"
 import { StudentIDCardFront } from "@/components/id-card/StudentIDCardFront"
 import { StudentIDCardBack } from "@/components/id-card/StudentIDCardBack"
@@ -59,82 +59,43 @@ export default function AdminIDCardsPage() {
     `${s.firstName} ${s.lastName} ${s.staffId}`.toLowerCase().includes(search.toLowerCase())
   )
 
-  const renderCardForExport = (container: HTMLElement) => {
-    const root = createRoot(container)
-    if (tab === "students" && selectedStudent) {
-      if (showBack) {
-        root.render(<StudentIDCardBack student={selectedStudent} school={school!} config={idCardConfig} orientation={orientation} />)
-      } else {
-        root.render(<StudentIDCardFront student={selectedStudent} school={school!} classes={classes} orientation={orientation} />)
-      }
-    } else if (selectedStaff) {
-      if (showBack) {
-        root.render(<StaffIDCardBack staff={selectedStaff} school={school!} config={staffIdCardConfig} orientation={orientation} />)
-      } else {
-        root.render(<StaffIDCardFront staff={selectedStaff} school={school!} orientation={orientation} />)
-      }
-    }
-    return root
-  }
+  const cardName = tab === "students" && selectedStudent
+    ? `${selectedStudent.firstName}_${selectedStudent.lastName}_ID`
+    : selectedStaff ? `${selectedStaff.firstName}_${selectedStaff.lastName}_ID` : "ID_Card"
 
   const exportSingleCard = async (format: "png" | "pdf") => {
     const item = tab === "students" ? selectedStudent : selectedStaff
-    if (!item || !school) return
+    if (!item || !school || !cardRef.current) return
     try {
-      const container = document.createElement("div")
-      container.style.position = "absolute"
-      container.style.left = "-9999px"
-      container.style.top = "0"
-      container.style.zIndex = "-1"
-      container.style.opacity = "1"
-      container.style.pointerEvents = "none"
-      container.style.background = "#ffffff"
-      document.body.appendChild(container)
-
-      const root = renderCardForExport(container)
-      await new Promise((r) => setTimeout(r, 300))
-
-      const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
-      root.unmount()
-      document.body.removeChild(container)
-
-      const imgData = canvas.toDataURL("image/png")
-      const name = tab === "students" && selectedStudent
-        ? `${selectedStudent.firstName}_${selectedStudent.lastName}_ID`
-        : selectedStaff ? `${selectedStaff.firstName}_${selectedStaff.lastName}_ID` : "ID_Card"
-
       if (format === "png") {
-        const link = document.createElement("a")
-        link.download = `${name}_${showBack ? "Back" : "Front"}.png`
-        link.href = imgData
-        link.click()
+        await downloadPng(cardRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 2 })
         toast.success("ID card downloaded as PNG")
       } else {
-        const { jsPDF } = await import("jspdf")
-        const isLandscape = orientation === "landscape"
-        const pdfW = isLandscape ? 842 : 595
-        const pdfH = isLandscape ? 595 : 842
-        const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" })
-        const imgAspect = canvas.width / canvas.height
-        const pdfAspect = pdfW / pdfH
-        let drawW, drawH
-        if (imgAspect > pdfAspect) {
-          drawW = pdfW - 40
-          drawH = drawW / imgAspect
-        } else {
-          drawH = pdfH - 40
-          drawW = drawH * imgAspect
-        }
-        const offsetX = (pdfW - drawW) / 2
-        const offsetY = (pdfH - drawH) / 2
-        pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
-        pdf.save(`${name}.pdf`)
+        await downloadPdf(cardRef.current, `${cardName}.pdf`, { scale: 2 })
         toast.success("ID card downloaded as PDF")
       }
     } catch (err) {
       console.error("ID card export error:", err)
       toast.error("Failed to export")
     }
+  }
+
+  const renderCardToContainer = (el: HTMLElement, item: any, side: "front" | "back") => {
+    const root = createRoot(el)
+    if (tab === "students") {
+      if (side === "front") {
+        root.render(<StudentIDCardFront student={item} school={school!} classes={classes} orientation={orientation} />)
+      } else {
+        root.render(<StudentIDCardBack student={item} school={school!} config={idCardConfig} orientation={orientation} />)
+      }
+    } else {
+      if (side === "front") {
+        root.render(<StaffIDCardFront staff={item} school={school!} orientation={orientation} />)
+      } else {
+        root.render(<StaffIDCardBack staff={item} school={school!} config={staffIdCardConfig} orientation={orientation} />)
+      }
+    }
+    return root
   }
 
   const handleBulkExport = async () => {
@@ -145,69 +106,40 @@ export default function AdminIDCardsPage() {
       const slug = tab === "students" ? "Student" : "Staff"
       if (list.length === 0) { toast.error("No items to export"); setBulkExporting(false); return }
 
-      const isLandscape = orientation === "landscape"
-      const pdfW = isLandscape ? 842 : 595
-      const pdfH = isLandscape ? 595 : 842
-      const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" })
+      const cardWidth = orientation === "landscape" ? 600 : 340
+      const cardHeight = orientation === "landscape" ? 300 : 510
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [cardWidth, cardHeight] })
 
-      const captureAndAdd = async (renderFn: (el: HTMLElement) => any): Promise<void> => {
+      const captureAndAdd = async (item: any, side: "front" | "back"): Promise<void> => {
         const container = document.createElement("div")
+        container.style.width = `${cardWidth}px`
+        container.style.height = `${cardHeight}px`
+        container.style.overflow = "hidden"
         container.style.position = "absolute"
         container.style.left = "-9999px"
         container.style.top = "0"
-        container.style.zIndex = "-1"
-        container.style.opacity = "1"
-        container.style.pointerEvents = "none"
         container.style.background = "#ffffff"
         document.body.appendChild(container)
 
-        const root = renderFn(container)
+        const root = renderCardToContainer(container, item, side)
         await new Promise((r) => setTimeout(r, 300))
 
-        const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
+        const canvas = await captureElement(container, { scale: 2, backgroundColor: "#ffffff" })
         root.unmount()
         document.body.removeChild(container)
 
         const imgData = canvas.toDataURL("image/png")
-        const imgAspect = canvas.width / canvas.height
-        const pdfAspect = pdfW / pdfH
-        let drawW, drawH
-        if (imgAspect > pdfAspect) {
-          drawW = pdfW - 40
-          drawH = drawW / imgAspect
-        } else {
-          drawH = pdfH - 40
-          drawW = drawH * imgAspect
-        }
-        const offsetX = (pdfW - drawW) / 2
-        const offsetY = (pdfH - drawH) / 2
-        pdf.addImage(imgData, "PNG", offsetX, offsetY, drawW, drawH)
+        pdf.addImage(imgData, "PNG", 0, 0, cardWidth, cardHeight)
       }
 
       for (let i = 0; i < list.length; i++) {
         const item = list[i]
-        if (i > 0) pdf.addPage()
-
-        await captureAndAdd((el: HTMLElement) => {
-          const root = createRoot(el)
-          if (tab === "students") {
-            root.render(<StudentIDCardFront student={item} school={school!} classes={classes} orientation={orientation} />)
-          } else {
-            root.render(<StaffIDCardFront staff={item} school={school!} orientation={orientation} />)
-          }
-          return root
-        })
-
-        pdf.addPage()
-        await captureAndAdd((el: HTMLElement) => {
-          const root = createRoot(el)
-          if (tab === "students") {
-            root.render(<StudentIDCardBack student={item} school={school!} config={idCardConfig} orientation={orientation} />)
-          } else {
-            root.render(<StaffIDCardBack staff={item} school={school!} config={staffIdCardConfig} orientation={orientation} />)
-          }
-          return root
-        })
+        if (i > 0) {
+          pdf.addPage([cardWidth, cardHeight])
+        }
+        await captureAndAdd(item, "front")
+        pdf.addPage([cardWidth, cardHeight])
+        await captureAndAdd(item, "back")
       }
 
       pdf.save(`${slug}_ID_Cards_Bulk.pdf`)
@@ -216,38 +148,9 @@ export default function AdminIDCardsPage() {
     setBulkExporting(false)
   }
 
-  const handlePrintCard = async () => {
-    const item = tab === "students" ? selectedStudent : selectedStaff
-    if (!item || !school) return
-    try {
-      const container = document.createElement("div")
-      container.style.position = "absolute"
-      container.style.left = "-9999px"
-      container.style.top = "0"
-      container.style.zIndex = "-1"
-      container.style.opacity = "1"
-      container.style.pointerEvents = "none"
-      container.style.background = "#ffffff"
-      document.body.appendChild(container)
-
-      const root = renderCardForExport(container)
-      await new Promise((r) => setTimeout(r, 300))
-
-      const canvas = await captureElement(container, { scale: 3, backgroundColor: "#ffffff" })
-      root.unmount()
-      document.body.removeChild(container)
-
-      const imgData = canvas.toDataURL("image/png")
-      const win = window.open("", "_blank")
-      if (!win) return
-      win.document.write(`<html><head><title>ID Card</title><style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;margin:0}@media print{@page{margin:0}body{margin:0}}img{max-width:100%;height:auto}</style></head><body><img src="${imgData}" /></body></html>`)
-      win.document.close()
-      win.focus()
-      setTimeout(() => win.print(), 500)
-    } catch (err) {
-      console.error("Print error:", err)
-      toast.error("Failed to print")
-    }
+  const handlePrintCard = () => {
+    if (!cardRef.current) return
+    openPrintWindow(cardRef.current, "ID Card")
   }
 
   const handleSaveConfig = async () => {
