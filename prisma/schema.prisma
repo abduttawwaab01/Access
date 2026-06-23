@@ -76,6 +76,7 @@ model User {
   schoolId  String
   school    School    @relation(fields: [schoolId], references: [id])
   students  Student[] @relation("ParentStudent")
+  student   Student?  @relation("StudentUser")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -183,7 +184,7 @@ model Student {
   parent   User?  @relation("ParentStudent", fields: [parentId], references: [id])
 
   userId String? @unique
-  user   User?  @relation(fields: [userId], references: [id])
+  user   User?  @relation("StudentUser", fields: [userId], references: [id])
 
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
