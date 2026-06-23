@@ -69,10 +69,10 @@ export default function AdminIDCardsPage() {
     if (!item || !school || !cardInnerRef.current) return
     try {
       if (format === "png") {
-        await downloadPng(cardInnerRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 2 })
+        await downloadPng(cardInnerRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 4, inlineStyles: false })
         toast.success("ID card downloaded as PNG")
       } else {
-        await downloadPdf(cardInnerRef.current, `${cardName}.pdf`, { scale: 2 })
+        await downloadPdf(cardInnerRef.current, `${cardName}.pdf`, { scale: 4, inlineStyles: false })
         toast.success("ID card downloaded as PDF")
       }
     } catch (err) {
@@ -125,18 +125,21 @@ export default function AdminIDCardsPage() {
         const root = renderCardToContainer(container, item, side)
         await new Promise((r) => setTimeout(r, 300))
 
-        const canvas = await captureElement(container, { scale: 2, backgroundColor: "#ffffff" })
+        const canvas = await captureElement(container, { scale: 4, backgroundColor: "#ffffff", inlineStyles: false })
         root.unmount()
         document.body.removeChild(container)
 
+        const isLandscape = canvas.width > canvas.height
+        const pageSize = isLandscape ? [canvas.height, canvas.width] : [canvas.width, canvas.height]
         const imgData = canvas.toDataURL("image/png")
-        pdf.addImage(imgData, "PNG", 0, 0, cardWidth, cardHeight)
+        pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
       }
 
       for (let i = 0; i < list.length; i++) {
         const item = list[i]
         if (i > 0) {
-          pdf.addPage([cardWidth, cardHeight])
+          const isLandscape = cardWidth > cardHeight
+          pdf.addPage(isLandscape ? [cardHeight, cardWidth] : [cardWidth, cardHeight])
         }
         await captureAndAdd(item, "front")
         pdf.addPage([cardWidth, cardHeight])
@@ -300,7 +303,7 @@ export default function AdminIDCardsPage() {
             </div>
 
             <div ref={cardRef} className="flex justify-center p-4 bg-gray-50 rounded-2xl border border-border/40 overflow-auto">
-              <div ref={cardInnerRef}>
+              <div ref={cardInnerRef} className="w-full" style={{ width: orientation === "landscape" ? 600 : 340, minHeight: orientation === "landscape" ? 300 : 480 }}>
                 {selectedStudent && school ? (
                   showBack ? (
                     <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} orientation={orientation} />

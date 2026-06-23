@@ -248,7 +248,8 @@ export async function downloadPdf(
     throw new Error("jspdf library failed to load")
   }
 
-  const pdf = new JsPdfClass({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
+  const isLandscape = canvas.width > canvas.height
+  const pdf = new JsPdfClass({ orientation: isLandscape ? "landscape" : "portrait", unit: "px", format: [canvas.width, canvas.height] })
   pdf.addImage(dataUrl, "PNG", 0, 0, canvas.width, canvas.height)
   pdf.save(filename)
 }
