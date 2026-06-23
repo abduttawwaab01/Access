@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET() {
-  return NextResponse.json(store.feedbackTickets.getAll())
+  return NextResponse.json(await db.feedbackTickets.getAll())
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const ticket = store.feedbackTickets.create(body)
+  const ticket = await db.feedbackTickets.create(body)
   return NextResponse.json(ticket, { status: 201 })
 }
 
 export async function PUT(request: NextRequest) {
   const body = await request.json()
   const { id, subject, message, priority } = body
-  const updated = store.feedbackTickets.update(id, { subject, message, priority })
+  const updated = await db.feedbackTickets.update(id, { subject, message, priority })
   if (!updated) {
     return NextResponse.json({ success: false, error: "Ticket not found or unauthorized" }, { status: 404 })
   }
@@ -27,7 +27,7 @@ export async function DELETE(request: NextRequest) {
   if (!id) {
     return NextResponse.json({ success: false, error: "ID required" }, { status: 400 })
   }
-  const success = store.feedbackTickets.delete(id)
+  const success = await db.feedbackTickets.delete(id)
   if (!success) {
     return NextResponse.json({ success: false, error: "Ticket not found or unauthorized" }, { status: 404 })
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -10,12 +10,20 @@ export async function GET(request: NextRequest) {
 
   let result: any[]
   if (teacherId) {
-    result = store.questions.getByTeacher(teacherId)
+    const all = await db.questions.getAll()
+    const ta = await db.teacherAssignments.getByTeacher(teacherId)
+    if (ta) {
+      const cids = (ta.classIds || []) as string[]
+      const sids = (ta.subjectIds || []) as string[]
+      result = all.filter((q: any) => cids.includes(q.classId) && sids.includes(q.subjectId))
+    } else {
+      result = []
+    }
   } else {
-    result = store.questions.getAll(subjectId, classId, approved === "true" ? true : approved === "false" ? false : undefined)
+    result = await db.questions.getAll(subjectId, classId, approved === "true" ? true : approved === "false" ? false : undefined)
   }
-  const subjects = store.subjects.getAll()
-  const classes = store.classes.getAll()
+  const subjects = await db.subjects.getAll()
+  const classes = await db.classes.getAll()
   result = result.map((q: any) => ({
     ...q,
     subjectName: subjects.find((s: any) => s.id === q.subjectId)?.name || "Unknown",
@@ -26,20 +34,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const item = store.questions.create(body)
+  const item = await db.questions.create(body)
   return NextResponse.json(item, { status: 201 })
 }
 
 export async function PUT(request: NextRequest) {
   const { action, ids, approvedBy, questionId, data } = await request.json()
   if (action === "approve" && questionId) {
-    return NextResponse.json(store.questions.approve(questionId, approvedBy))
+    return NextResponse.json(await db.questions.approve(questionId, approvedBy))
   }
   if (action === "reject" && questionId) {
-    return NextResponse.json(store.questions.reject(questionId))
+    return NextResponse.json(await db.questions.reject(questionId))
   }
   if (action === "update" && questionId && data) {
-    return NextResponse.json(store.questions.update(questionId, data))
+    return NextResponse.json(await db.questions.update(questionId, data))
   }
   return NextResponse.json({ error: "invalid action" }, { status: 400 })
 }
@@ -48,5 +56,5 @@ export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
-  return NextResponse.json({ deleted: store.questions.delete(id) })
+  return NextResponse.json({ deleted: await db.questions.delete(id) })
 }

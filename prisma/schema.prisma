@@ -33,6 +33,36 @@ model School {
   students     Student[]
   staff        Staff[]
   announcements Announcement[]
+  teacherAssignments TeacherAssignment[]
+  lessonNotes        LessonNote[]
+  schemeOfWorks      SchemeOfWork[]
+  assignments        Assignment[]
+  timetableEntries   TimetableEntry[]
+  results            Result[]
+  attendanceRecords  AttendanceRecord[]
+  fees               Fee[]
+  parentLinks        ParentLink[]
+  attendanceLogs     AttendanceLog[]
+  attendanceQRCodes  AttendanceQRCode[]
+  reportCards        ReportCard[]
+  topics             Topic[]
+  lessonQuizResults  LessonQuizResult[]
+  questions          Question[]
+  exams              Exam[]
+  examSessions       ExamSession[]
+  submissions        Submission[]
+  bankDetails        BankDetails?
+  feeStructures      FeeStructure[]
+  payments           Payment[]
+  salaryStructures   SalaryStructure[]
+  salaryRecords      SalaryRecord[]
+  documents          Document[]
+  gradingConfigs     GradingConfig?
+  admissionSettings  AdmissionSettings?
+  admissionApplications AdmissionApplication[]
+  events             Event[]
+  feedbackTickets    FeedbackTicket[]
+  weeklyReports      WeeklyReport[]
 }
 
 model User {
@@ -182,4 +212,421 @@ model Staff {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TeacherAssignment {
+  id             String  @id @default(cuid())
+  teacherId      String
+  classIds       Json    @default("[]")
+  subjectIds     Json    @default("[]")
+  isClassTeacher Boolean @default(false)
+  schoolId       String
+  school         School  @relation(fields: [schoolId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([teacherId, schoolId])
+}
+
+model LessonNote {
+  id          String   @id @default(cuid())
+  classId     String
+  subjectId   String
+  title       String
+  content     Json?
+  topic       String?
+  quiz        Json     @default("[]")
+  status      String   @default("draft")
+  createdBy   String?
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SchemeOfWork {
+  id         String   @id @default(cuid())
+  classId    String
+  subjectId  String
+  title      String
+  content    Json?
+  status     String   @default("draft")
+  createdBy  String?
+  approvedBy String?
+  approvedAt DateTime?
+  schoolId   String
+  school     School   @relation(fields: [schoolId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  classId     String
+  subjectId   String
+  title       String
+  description String?
+  dueDate     DateTime?
+  createdBy   String?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TimetableEntry {
+  id        String   @id @default(cuid())
+  day       String
+  period    String
+  subjectId String
+  classId   String
+  teacherId String?
+  room      String?
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Result {
+  id         String   @id @default(cuid())
+  studentId  String
+  subjectId  String
+  classId    String
+  term       String
+  session    String?
+  examId     String?
+  caScore    Float    @default(0)
+  examScore  Float    @default(0)
+  caTotal    Float?
+  examTotal  Float?
+  total      Float    @default(0)
+  score      Float    @default(0)
+  totalMax   Float?
+  grade      String   @default("F")
+  remark     String   @default("Needs Improvement")
+  schoolId   String
+  school     School   @relation(fields: [schoolId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  studentId String
+  date      DateTime
+  status    String   @default("present")
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Fee {
+  id        String   @id @default(cuid())
+  studentId String
+  amount    Float
+  paid      Float    @default(0)
+  term      String?
+  session   String?
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ParentLink {
+  id        String   @id @default(cuid())
+  parentId  String
+  studentId String
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model AttendanceLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  timestamp DateTime @default(now())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model AttendanceQRCode {
+  id        String   @id @default(cuid())
+  type      String
+  data      String
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model ReportCard {
+  id        String   @id @default(cuid())
+  studentId String
+  data      Json
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Topic {
+  id        String   @id @default(cuid())
+  name      String
+  subjectId String
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LessonQuizResult {
+  id            String   @id @default(cuid())
+  studentId     String
+  lessonNoteId  String
+  score         Float    @default(0)
+  totalQuestions Int     @default(0)
+  correctAnswers Int     @default(0)
+  answers       Json?
+  subject       String?
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id])
+  attemptedAt   DateTime @default(now())
+}
+
+model Question {
+  id         String   @id @default(cuid())
+  subjectId  String
+  classId    String
+  question   String
+  options    Json?
+  answer     String?
+  difficulty String   @default("medium")
+  topic      String?
+  points     Int      @default(1)
+  approved   Boolean  @default(false)
+  approvedBy String?
+  approvedAt DateTime?
+  createdBy  String?
+  schoolId   String
+  school     School   @relation(fields: [schoolId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Exam {
+  id         String   @id @default(cuid())
+  title      String
+  subjectId  String
+  classId    String
+  type       String?
+  duration   Int?
+  questions  Json     @default("[]")
+  status     String   @default("draft")
+  approvedBy String?
+  approvedAt DateTime?
+  createdBy  String?
+  schoolId   String
+  school     School   @relation(fields: [schoolId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ExamSession {
+  id          String   @id @default(cuid())
+  examId      String
+  examType    String?
+  studentId   String
+  status      String   @default("pending")
+  tabSwitches Int      @default(0)
+  flagged     Boolean  @default(false)
+  answers     Json?
+  score       Float?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Submission {
+  id           String   @id @default(cuid())
+  assignmentId String
+  studentId    String
+  content      Json?
+  fileUrl      String?
+  status       String   @default("pending")
+  score        Float?
+  feedback     String?
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model BankDetails {
+  id            String   @id @default(cuid())
+  schoolId      String   @unique
+  school        School   @relation(fields: [schoolId], references: [id])
+  bankName      String?
+  accountName   String?
+  accountNumber String?
+  updatedAt     DateTime @updatedAt
+}
+
+model FeeStructure {
+  id          String   @id @default(cuid())
+  classId     String
+  amount      Float
+  description String?
+  term        String?
+  session     String?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  studentId     String
+  feeStructureId String?
+  amount        Float
+  status        String   @default("pending")
+  confirmedAt   DateTime?
+  confirmedBy   String?
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SalaryStructure {
+  id       String  @id @default(cuid())
+  staffId  String  @unique
+  amount   Float
+  schoolId String
+  school   School  @relation(fields: [schoolId], references: [id])
+  updatedAt DateTime @updatedAt
+}
+
+model SalaryRecord {
+  id          String   @id @default(cuid())
+  staffId     String
+  month       String
+  year        String
+  amount      Float
+  status      String   @default("pending")
+  paidAt      DateTime?
+  confirmedAt DateTime?
+  confirmedBy String?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([staffId, month, year])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  studentId   String
+  type        String
+  content     Json?
+  fileUrl     String?
+  status      String   @default("final")
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  generatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model GradingConfig {
+  id             String   @id @default(cuid())
+  schoolId       String   @unique
+  school         School   @relation(fields: [schoolId], references: [id])
+  caMax          Float    @default(40)
+  examMax        Float    @default(60)
+  gradeBoundaries Json    @default("[]")
+  updatedAt      DateTime @updatedAt
+}
+
+model AdmissionSettings {
+  id            String   @id @default(cuid())
+  schoolId      String   @unique
+  school        School   @relation(fields: [schoolId], references: [id])
+  cutOffs       Json?
+  entranceExamId String?
+  updatedAt     DateTime @updatedAt
+}
+
+model AdmissionApplication {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  gender          String?
+  dateOfBirth     DateTime?
+  address         String?
+  classApplyingFor String?
+  status          String   @default("pending")
+  entranceExamPassed Boolean @default(false)
+  entranceExamScore Float?
+  schoolId        String
+  school          School   @relation(fields: [schoolId], references: [id])
+  appliedAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  time        String?
+  type        String?
+  audience    String   @default("all")
+  createdBy   String?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FeedbackTicket {
+  id         String   @id @default(cuid())
+  from       String
+  subject    String
+  message    String
+  priority   String?
+  status     String   @default("pending")
+  resolution String?
+  resolvedAt DateTime?
+  schoolId   String
+  school     School   @relation(fields: [schoolId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model WeeklyReport {
+  id          String   @id @default(cuid())
+  studentId   String
+  classId     String
+  week        Int
+  term        String?
+  session     String?
+  content     Json?
+  status      String   @default("draft")
+  createdBy   String?
+  publishedAt DateTime?
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

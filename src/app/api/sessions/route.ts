@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET() {
-  return NextResponse.json(store.sessions.getAll())
+  return NextResponse.json(await db.sessions.getAll())
 }
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const item = store.sessions.create(body)
+  const item = await db.sessions.create(body)
   return NextResponse.json(item, { status: 201 })
 }

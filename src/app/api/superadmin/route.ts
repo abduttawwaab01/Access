@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action")
   if (action === "dashboard") {
-    const students = store.students.getAll()
-    const staff = store.staff.getAll()
-    const classes = store.classes.getAll()
-    const exams = store.exams.getAll()
-    const settings = store.schoolSettings.get()
-    const pendingApplications = store.admissionApplications.getByStatus("pending")
-    const announcements = store.superAnnouncements.getAll()
-    const feedback = store.feedbackTickets.getAll()
+    const [students, staff, classes, exams, settings, pendingApplications, announcements, feedback] = await Promise.all([
+      db.students.getAll(),
+      db.staff.getAll(),
+      db.classes.getAll(),
+      db.exams.getAll(),
+      db.school.get(),
+      db.admissionApplications.getByStatus("pending"),
+      db.superAnnouncements.getAll(),
+      db.feedbackTickets.getAll(),
+    ])
     return NextResponse.json({
       stats: { students: students.length, staff: staff.length, classes: classes.length, exams: exams.length, pendingApplications: pendingApplications.length },
       settings, pendingApplications, announcements,
@@ -20,25 +22,25 @@ export async function GET(request: NextRequest) {
     })
   }
   if (action === "announcements") {
-    return NextResponse.json(store.superAnnouncements.getActive())
+    return NextResponse.json(await db.superAnnouncements.getActive())
   }
   if (action === "feedback") {
-    return NextResponse.json(store.feedbackTickets.getAll())
+    return NextResponse.json(await db.feedbackTickets.getAll())
   }
   if (action === "updateFeedback") {
     const body = await request.json()
     const { id, subject, message, priority } = body
-    const ticket = store.feedbackTickets.getById(id)
+    const ticket = await db.feedbackTickets.getById(id)
     if (!ticket) {
       return NextResponse.json({ success: false, error: "Ticket not found" }, { status: 404 })
     }
-    const updated = store.feedbackTickets.update(id, { subject, message, priority }, ticket.from)
+    const updated = await db.feedbackTickets.update(id, { subject, message, priority }, ticket.from)
     return NextResponse.json({ success: true, data: { ticket: updated } })
   }
   if (action === "deleteFeedback") {
     const body = await request.json()
     const { id, from } = body
-    const success = store.feedbackTickets.delete(id, from)
+    const success = await db.feedbackTickets.delete(id, from)
     if (!success) {
       return NextResponse.json({ success: false, error: "Failed to delete ticket or unauthorized" }, { status: 403 })
     }
@@ -57,89 +59,89 @@ export async function POST(request: NextRequest) {
 
   switch (action) {
     case "login": {
-      const settings = store.schoolSettings.get()
+      const settings = await db.school.get()
       if (body.password === settings.superAdminPassword) {
         return NextResponse.json({ success: true, token: "superadmin-authenticated" })
       }
       return NextResponse.json({ success: false, error: "Invalid password" })
     }
     case "toggleLogin": {
-      const settings = store.schoolSettings.get()
-      const updated = store.schoolSettings.update({ loginEnabled: !settings.loginEnabled })
+      const settings = await db.school.get()
+      const updated = await db.school.update({ loginEnabled: !settings.loginEnabled })
       return NextResponse.json({ success: true, data: { settings: updated }, message: `Login ${updated.loginEnabled ? "enabled" : "disabled"}` })
     }
     case "setExpiration": {
       if (!body.expirationDate) return NextResponse.json({ success: false, error: "Date required" })
-      const updated = store.schoolSettings.update({ expirationDate: body.expirationDate })
+      const updated = await db.school.update({ expirationDate: body.expirationDate })
       return NextResponse.json({ success: true, data: { settings: updated }, message: "Expiration date set" })
     }
     case "clearExpiration": {
-      const updated = store.schoolSettings.update({ expirationDate: null })
+      const updated = await db.school.update({ expirationDate: null })
       return NextResponse.json({ success: true, data: { settings: updated }, message: "Expiration cleared" })
     }
     case "changeAdminPassword": {
       if (!body.newPassword) return NextResponse.json({ success: false, error: "Password required" })
-      store.schoolSettings.update({ superAdminPassword: body.newPassword })
+      await db.school.update({ superAdminPassword: body.newPassword })
       return NextResponse.json({ success: true, message: "Admin password updated" })
     }
     case "acceptApplication": {
-      const app = store.admissionApplications.getById(body.id)
+      const app = await db.admissionApplications.getById(body.id)
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
-      store.admissionApplications.update(body.id, { status: "accepted", entranceExamPassed: true, entranceExamScore: body.score || null })
-      store.students.create({
+      await db.admissionApplications.update(body.id, { status: "accepted", entranceExamPassed: true, entranceExamScore: body.score || null })
+      await db.students.create({
         firstName: app.firstName, lastName: app.lastName, email: app.email, gender: app.gender, classId: app.classApplyingFor, phone: app.phone, status: "active",
       })
-      const pendingApplications = store.admissionApplications.getByStatus("pending")
+      const pendingApplications = await db.admissionApplications.getByStatus("pending")
       return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application accepted" })
     }
     case "rejectApplication": {
-      const app = store.admissionApplications.getById(body.id)
+      const app = await db.admissionApplications.getById(body.id)
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
-      store.admissionApplications.update(body.id, { status: "rejected" })
-      const pendingApplications = store.admissionApplications.getByStatus("pending")
+      await db.admissionApplications.update(body.id, { status: "rejected" })
+      const pendingApplications = await db.admissionApplications.getByStatus("pending")
       return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application rejected" })
     }
     case "transferApplication": {
-      const app = store.admissionApplications.getById(body.id)
+      const app = await db.admissionApplications.getById(body.id)
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
-      const targetClass = store.classes.getById(body.transferToClassId)
-      store.admissionApplications.update(body.id, { status: "transferred", classId: body.transferToClassId, className: targetClass?.name || "Unknown", transferToClassId: body.transferToClassId })
-      const pendingApplications = store.admissionApplications.getByStatus("pending")
+      const targetClass = await db.classes.getById(body.transferToClassId)
+      await db.admissionApplications.update(body.id, { status: "transferred", classId: body.transferToClassId, className: targetClass?.name || "Unknown", transferToClassId: body.transferToClassId })
+      const pendingApplications = await db.admissionApplications.getByStatus("pending")
       return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application transferred" })
     }
     // Announcements
     case "createAnnouncement": {
-      store.superAnnouncements.create({
-        title: body.title, content: body.content, type: body.type || "text", displayType: body.displayType || "banner",
-        targetAudience: body.targetAudience || "all", priority: body.priority || "normal",
-        startDate: body.startDate || null, endDate: body.endDate || null,
+      await db.superAnnouncements.create({
+        title: body.title, content: body.content, audience: body.targetAudience || "all", priority: body.priority || "normal",
+        endDate: body.endDate || null,
       })
-      return NextResponse.json({ success: true, message: "Announcement created", data: { announcements: store.superAnnouncements.getAll() } })
+      return NextResponse.json({ success: true, message: "Announcement created", data: { announcements: await db.superAnnouncements.getAll() } })
     }
     case "toggleAnnouncement": {
-      const ann = store.superAnnouncements.getById(body.id)
+      const ann = await db.superAnnouncements.getById(body.id)
       if (!ann) return NextResponse.json({ success: false, error: "Not found" })
       if (body.title) {
-        store.superAnnouncements.update(body.id, { title: body.title, content: body.content, displayType: body.displayType, targetAudience: body.targetAudience, priority: body.priority, startDate: body.startDate, endDate: body.endDate })
+        await db.superAnnouncements.update(body.id, { title: body.title, content: body.content, endDate: body.endDate })
       } else {
-        store.superAnnouncements.update(body.id, { active: !ann.active })
+        await db.superAnnouncements.update(body.id, { active: !ann.active })
       }
-      return NextResponse.json({ success: true, message: body.title ? "Updated" : "Toggled", data: { announcements: store.superAnnouncements.getAll() } })
+      return NextResponse.json({ success: true, message: body.title ? "Updated" : "Toggled", data: { announcements: await db.superAnnouncements.getAll() } })
     }
     case "deleteAnnouncement": {
-      store.superAnnouncements.delete(body.id)
-      return NextResponse.json({ success: true, message: "Deleted", data: { announcements: store.superAnnouncements.getAll() } })
+      await db.superAnnouncements.delete(body.id)
+      return NextResponse.json({ success: true, message: "Deleted", data: { announcements: await db.superAnnouncements.getAll() } })
     }
     // Feedback
     case "resolveFeedback": {
       if (!body.resolution) return NextResponse.json({ success: false, error: "Resolution required" })
-      store.feedbackTickets.resolve(body.id, body.resolution)
-      return NextResponse.json({ success: true, message: "Ticket resolved", data: { feedbackTickets: store.feedbackTickets.getAll().filter((t: any) => t.status !== "resolved") } })
+      await db.feedbackTickets.resolve(body.id, body.resolution)
+      const allTickets = await db.feedbackTickets.getAll()
+      return NextResponse.json({ success: true, message: "Ticket resolved", data: { feedbackTickets: allTickets.filter((t: any) => t.status !== "resolved") } })
     }
     // Renewal
     case "renewSchool": {
       if (!body.newExpirationDate) return NextResponse.json({ success: false, error: "Date required" })
-      const updated = store.schoolSettings.update({ expirationDate: body.newExpirationDate, loginEnabled: true })
+      const updated = await db.school.update({ expirationDate: body.newExpirationDate, loginEnabled: true })
       return NextResponse.json({ success: true, message: "School renewed", data: { settings: updated } })
     }
     default:

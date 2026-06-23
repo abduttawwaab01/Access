@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const app = store.admissionApplications.getById(id)
+  const app = await db.admissionApplications.getById(id)
   if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json(app)
 }
@@ -11,14 +11,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
-  const app = store.admissionApplications.update(id, body)
+  const app = await db.admissionApplications.update(id, body)
   if (!app) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json(app)
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const ok = store.admissionApplications.delete(id)
+  const ok = await db.admissionApplications.delete(id)
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json({ success: true })
 }

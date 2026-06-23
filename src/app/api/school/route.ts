@@ -1,45 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET() {
-  const saSettings = store.schoolSettings.get()
-  return NextResponse.json({
-    id: "1",
-    name: saSettings.schoolName || "Access International School",
-    shortName: "Access",
-    email: saSettings.schoolEmail || "info@access.school",
-    phone: saSettings.schoolPhone || "+1 234 567 8900",
-    address: saSettings.schoolAddress || "123 Education Lane, Learning City",
-    motto: saSettings.schoolMotto || "Excellence in Education",
-    logo: saSettings.schoolLogo || null,
-    aboutText: saSettings.aboutText || "",
-    exportDefaultExamHeader: saSettings.exportDefaultExamHeader || "",
-    primaryColor: "#6366f1",
-    secondaryColor: "#06b6d4",
-    accentColor: "#f59e0b",
-    loginEnabled: saSettings.loginEnabled,
-    expirationDate: saSettings.expirationDate,
-    schoolQRCode: saSettings.schoolQRCode || "",
-    studentIdCardConfig: saSettings.studentIdCardConfig || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] },
-    staffIdCardConfig: saSettings.staffIdCardConfig || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] },
-  })
+  const data = await db.school.get()
+  if (!data) {
+    return NextResponse.json({
+      id: "1",
+      name: "Access International School",
+      shortName: "Access",
+      email: "info@access.school",
+      phone: "+1 234 567 8900",
+      address: "123 Education Lane, Learning City",
+      motto: "Excellence in Education",
+      logo: null,
+      aboutText: "",
+      exportDefaultExamHeader: "",
+      primaryColor: "#6366f1",
+      secondaryColor: "#06b6d4",
+      accentColor: "#f59e0b",
+      studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customFields: [] },
+      staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customFields: [] },
+    })
+  }
+  return NextResponse.json(data)
 }
 
 export async function PUT(request: NextRequest) {
   const body = await request.json()
-  const current = store.schoolSettings.get()
-  store.schoolSettings.update({
-    schoolName: body.name ?? current.schoolName,
-    schoolEmail: body.email ?? current.schoolEmail,
-    schoolPhone: body.phone ?? current.schoolPhone,
-    schoolAddress: body.address ?? current.schoolAddress,
-    schoolMotto: body.motto ?? current.schoolMotto,
-    schoolLogo: body.logo !== undefined ? body.logo : current.schoolLogo,
-    aboutText: body.aboutText ?? current.aboutText,
-    exportDefaultExamHeader: body.exportDefaultExamHeader ?? current.exportDefaultExamHeader,
-    studentIdCardConfig: body.studentIdCardConfig !== undefined ? body.studentIdCardConfig : current.studentIdCardConfig,
-    staffIdCardConfig: body.staffIdCardConfig !== undefined ? body.staffIdCardConfig : current.staffIdCardConfig,
-    schoolQRCode: body.schoolQRCode !== undefined ? body.schoolQRCode : current.schoolQRCode,
-  })
+  await db.school.update(body)
   return NextResponse.json({ success: true })
 }

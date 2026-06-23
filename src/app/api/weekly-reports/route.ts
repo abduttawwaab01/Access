@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -20,12 +20,12 @@ export async function GET(request: Request) {
   if (createdBy) filters.createdBy = createdBy
   if (status) filters.status = status
 
-  const data = store.weeklyReports.getAll(Object.keys(filters).length ? filters : undefined)
+  const data = await db.weeklyReports.getAll(Object.keys(filters).length ? filters : undefined)
   return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const item = store.weeklyReports.create(body)
+  const item = await db.weeklyReports.create(body)
   return NextResponse.json(item, { status: 201 })
 }

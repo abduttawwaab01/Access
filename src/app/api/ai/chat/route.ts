@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { systemPrompt } = buildContext(role, teacherId)
+    const { systemPrompt } = await buildContext(role, teacherId)
 
     const chatMessages = [
       { role: "system", content: systemPrompt },

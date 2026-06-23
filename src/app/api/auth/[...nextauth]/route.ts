@@ -1,6 +1,6 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 const secret = process.env.NEXTAUTH_SECRET || "access-fallback-secret-for-development-only"
 
@@ -11,25 +11,25 @@ const handler = NextAuth({
       name: "Credentials",
       credentials: {},
       async authorize(credentials) {
-        const settings = store.schoolSettings.get()
+        const settings = await db.school.get()
         if (!settings.loginEnabled) throw new Error("School login is currently disabled")
         if (settings.expirationDate && new Date(settings.expirationDate) < new Date()) throw new Error("School access has expired")
         const { email, password } = credentials as Record<string, string>
         if (!email) throw new Error("Email is required")
 
-        const staff = store.staff.getByEmail(email)
-        if (staff && staff.password === password) {
+        const staff = await db.staff.getByEmail(email)
+        if (staff && (staff as any).password === password) {
           return { id: staff.id, name: `${staff.firstName} ${staff.lastName}`, email: staff.email, role: staff.role }
         }
 
-        const student = store.students.getByEmail(email)
-        if (student && student.password === password) {
+        const student = await db.students.getByEmail(email)
+        if (student && (student as any).password === password) {
           return { id: student.id, name: `${student.firstName} ${student.lastName}`, email: student.email, role: "student" }
         }
 
-        const parent = store.parents.getByEmail(email)
-        if (parent && parent.password === password) {
-          return { id: parent.id, name: `${parent.firstName} ${parent.lastName}`, email: parent.email, role: "parent" }
+        const parent = await db.users.getByEmail(email)
+        if (parent && parent.role === "parent" && parent.password === password) {
+          return { id: parent.id, name: parent.name, email: parent.email, role: "parent" }
         }
 
         throw new Error("Invalid credentials")

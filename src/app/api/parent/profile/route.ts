@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId") || "par_1001"
-    let user = store.parents.getById(userId)
+    let user = await db.users.getById(userId)
     
     if (!user) {
-      user = store.parents.getAll()[0]
+      const users = await db.users.getAll("parent")
+      user = users[0]
     }
     
     if (!user) {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       id: user.id,
-      name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+      name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
       role: "parent"
@@ -32,15 +33,15 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const userId = body.id || "par_1001"
     
-    let current = store.parents.getById(userId)
+    let current = await db.users.getById(userId)
     if (!current) {
-      current = store.parents.getAll()[0]
+      const users = await db.users.getAll("parent")
+      current = users[0]
     }
     const targetId = current?.id || userId
     
-    const updated = store.parents.update(targetId, {
-      firstName: body.name?.split(" ")[0] || "",
-      lastName: body.name?.split(" ").slice(1).join(" ") || "",
+    const updated = await db.users.update(targetId, {
+      name: body.name || current?.name || "",
       email: body.email,
       phone: body.phone
     })
@@ -51,7 +52,7 @@ export async function PUT(request: NextRequest) {
     
     return NextResponse.json({
       id: updated.id,
-      name: `${updated.firstName || ""} ${updated.lastName || ""}`.trim(),
+      name: updated.name || "",
       email: updated.email || "",
       phone: updated.phone || "",
       role: "parent"

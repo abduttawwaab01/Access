@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Megaphone, Plus, Bell, AlertTriangle, Info, Trash2, Filter, Send } from "lucide-react"
+import { Megaphone, Plus, Bell, AlertTriangle, Info, Trash2, Filter, Send, Pencil } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Audience = "all" | "teachers" | "parents" | "students"
@@ -31,6 +31,7 @@ export default function AdminAnnouncementsPage() {
   const [filterPriority, setFilterPriority] = useState<string>("all")
 
   const [form, setForm] = useState({ title: "", content: "", audience: "all" as Audience, priority: "normal" as Priority })
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -48,24 +49,36 @@ export default function AdminAnnouncementsPage() {
 
   useEffect(() => { load() }, [])
 
-  const create = async () => {
+  const resetForm = () => {
+    setForm({ title: "", content: "", audience: "all", priority: "normal" })
+    setEditingId(null)
+    setShowForm(false)
+  }
+
+  const openEdit = (item: any) => {
+    if (item.source === "super") { toast.error("Cannot edit super admin announcements"); return }
+    setForm({ title: item.title, content: item.content, audience: item.audience || "all", priority: item.priority || "normal" })
+    setEditingId(item.id)
+    setShowForm(true)
+  }
+
+  const save = async () => {
     if (!form.title.trim() || !form.content.trim()) { toast.error("Title and content are required"); return }
-    const res = await fetch("/api/announcements", {
-      method: "POST",
+    const url = editingId ? `/api/announcements/${editingId}` : "/api/announcements"
+    const method = editingId ? "PUT" : "POST"
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, author: "Administrator", createdAt: new Date().toISOString() }),
+      body: JSON.stringify({ ...form, author: "Administrator" }),
     })
     if (res.ok) {
-      toast.success("Announcement created")
-      setShowForm(false)
-      setForm({ title: "", content: "", audience: "all", priority: "normal" })
+      toast.success(editingId ? "Announcement updated" : "Announcement created")
+      resetForm()
       load()
-    } else { toast.error("Failed to create") }
+    } else { toast.error("Failed to save") }
   }
 
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
-
-  const remove = (id: string) => setConfirmDelete(id)
 
   const confirmDeleteItem = async () => {
     if (!confirmDelete) return
@@ -101,7 +114,7 @@ export default function AdminAnnouncementsPage() {
           <h2 className="text-2xl font-bold">Announcements</h2>
           <p className="text-sm text-muted-foreground">Send announcements to staff, parents, or students</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+        <Button onClick={() => { resetForm(); setShowForm(true) }} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
           <Plus className="h-4 w-4 mr-1" /> New Announcement
         </Button>
       </motion.div>
@@ -111,7 +124,7 @@ export default function AdminAnnouncementsPage() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
             <Card className="border-0 glass-card border-t-2 border-t-primary/30">
               <CardContent className="p-4 md:p-5 space-y-4">
-                <h3 className="font-semibold flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /> Create Announcement</h3>
+                <h3 className="font-semibold flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /> {editingId ? "Edit Announcement" : "Create Announcement"}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
                     <label className="text-xs font-medium mb-1 block">Title</label>
@@ -148,8 +161,8 @@ export default function AdminAnnouncementsPage() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-                  <Button onClick={create} className="animated-gradient border-0 text-white"><Send className="h-4 w-4 mr-1" /> Send Announcement</Button>
+                  <Button variant="outline" onClick={resetForm}>Cancel</Button>
+                  <Button onClick={save} className="animated-gradient border-0 text-white"><Send className="h-4 w-4 mr-1" /> {editingId ? "Update" : "Send Announcement"}</Button>
                 </div>
               </CardContent>
             </Card>
@@ -213,7 +226,12 @@ export default function AdminAnnouncementsPage() {
                             <Badge variant="outline" className={cn("text-[10px]", item.priority === "high" ? "border-danger/30 text-danger" : "")}>
                               {item.priority}
                             </Badge>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(item.id)}>
+                            {item.source !== "super" && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
+                                <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setConfirmDelete(item.id)}>
                               <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-danger" />
                             </Button>
                           </div>

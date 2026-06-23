@@ -1,4 +1,4 @@
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 interface ContextResult {
   systemPrompt: string
@@ -9,14 +9,14 @@ function round(v: number) {
   return Math.round(v * 10) / 10
 }
 
-function buildAdminContext(): ContextResult {
-  const students = store.students.getAll()
-  const classes = store.classes.getAll()
-  const staff = store.staff.getAll()
-  const subjects = store.subjects.getAll()
-  const results = store.results.getAll()
-  const schoolSettings = store.schoolSettings.get()
-  const lessonNotes = store.lessonNotes.getAll()
+async function buildAdminContext(): Promise<ContextResult> {
+  const students = await db.students.getAll()
+  const classes = await db.classes.getAll()
+  const staff = await db.staff.getAll()
+  const subjects = await db.subjects.getAll()
+  const results = await db.results.getAll()
+  const schoolSettings = await db.school.get()
+  const lessonNotes = await db.lessonNotes.getAll()
 
   const teachers = staff.filter((s: any) => s.role === "teacher")
   const classEnrollments = classes.map((c: any) => ({
@@ -45,7 +45,7 @@ function buildAdminContext(): ContextResult {
   const draftNotes = lessonNotes.filter((n: any) => n.status === "draft" || n.status === "pending").length
 
   const snapshot = {
-    schoolName: schoolSettings?.schoolName || "Access School",
+    schoolName: (schoolSettings as any)?.name || "Access School",
     totalStudents: students.length,
     totalTeachers: teachers.length,
     totalClasses: classes.length,
@@ -82,32 +82,34 @@ Always format responses with clear structure. If the answer requires specific da
   return { systemPrompt, contextSummary }
 }
 
-function buildTeacherContext(teacherId: string): ContextResult {
-  const ta = store.teacherAssignments.getByTeacher(teacherId)
-  const teacher = store.staff.getById(teacherId)
-  const schoolSettings = store.schoolSettings.get()
+async function buildTeacherContext(teacherId: string): Promise<ContextResult> {
+  const ta = await db.teacherAssignments.getByTeacher(teacherId)
+  const teacher = await db.staff.getById(teacherId)
+  const schoolSettings = await db.school.get()
 
   if (!ta) {
     return {
-      systemPrompt: `You are an AI assistant for a teacher at "${schoolSettings?.schoolName || "Access School"}".
+      systemPrompt: `You are an AI assistant for a teacher at "${(schoolSettings as any)?.name || "Access School"}".
 No class assignments found for your account. Please contact the admin.
 Answer general teaching questions concisely with bullet points.`,
       contextSummary: "No class assignments",
     }
   }
 
-  const students = store.students.getAll()
-  const classes = store.classes.getAll()
-  const subjects = store.subjects.getAll()
-  const results = store.results.getAll()
-  const lessonNotes = store.lessonNotes.getAll()
-  const assignments = store.assignments.getAll()
+  const students = await db.students.getAll()
+  const classes = await db.classes.getAll()
+  const subjects = await db.subjects.getAll()
+  const results = await db.results.getAll()
+  const lessonNotes = await db.lessonNotes.getAll()
+  const assignments = await db.assignments.getAll()
 
-  const myClasses = classes.filter((c: any) => ta.classIds.includes(c.id))
-  const mySubjects = subjects.filter((s: any) => ta.subjectIds.includes(s.id))
-  const myStudents = students.filter((s: any) => ta.classIds.includes(s.classId))
+  const taClassIds = (ta as any).classIds || []
+  const taSubjectIds = (ta as any).subjectIds || []
+  const myClasses = classes.filter((c: any) => taClassIds.includes(c.id))
+  const mySubjects = subjects.filter((s: any) => taSubjectIds.includes(s.id))
+  const myStudents = students.filter((s: any) => taClassIds.includes(s.classId))
   const myLessonNotes = lessonNotes.filter((n: any) => n.createdBy === teacherId)
-  const myAssignments = assignments.filter((a: any) => ta.classIds.includes(a.classId))
+  const myAssignments = assignments.filter((a: any) => taClassIds.includes(a.classId))
 
   const classData = myClasses.map((c: any) => {
     const clsStudents = myStudents.filter((s: any) => s.classId === c.id)
@@ -127,7 +129,7 @@ Answer general teaching questions concisely with bullet points.`,
   const activeAssignments = myAssignments.filter((a: any) => a.status === "active").length
 
   const snapshot = {
-    schoolName: schoolSettings?.schoolName || "Access School",
+    schoolName: (schoolSettings as any)?.name || "Access School",
     teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : "Teacher",
     classes: myClasses.map((c: any) => c.name),
     subjects: mySubjects.map((s: any) => s.name),
@@ -158,7 +160,7 @@ Always format responses with clear structure using bullet points and bold text.`
   return { systemPrompt, contextSummary }
 }
 
-export function buildContext(role: string, userId?: string): ContextResult {
+export async function buildContext(role: string, userId?: string): Promise<ContextResult> {
   if (role === "teacher" && userId) {
     return buildTeacherContext(userId)
   }

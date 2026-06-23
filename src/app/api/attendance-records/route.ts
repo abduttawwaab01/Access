@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId")
   const summary = searchParams.get("summary") === "true"
-  if (!studentId) return NextResponse.json(store.attendance.getAll())
-  if (summary) return NextResponse.json(store.attendance.getSummary(studentId))
-  return NextResponse.json(store.attendance.getByStudent(studentId))
+  if (!studentId) return NextResponse.json(await db.attendance.getAll())
+  if (summary) return NextResponse.json(await db.attendance.getSummary(studentId))
+  return NextResponse.json(await db.attendance.getByStudent(studentId))
 }

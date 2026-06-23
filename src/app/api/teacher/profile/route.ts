@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId") || "stf_1001"
-    let user = store.staff.getById(userId)
+    let user = await db.staff.getById(userId)
     
     if (!user) {
-      user = store.staff.getAll().find((s: any) => s.role === "teacher")
+      const allStaff = await db.staff.getAll()
+      user = allStaff.find((s: any) => s.role === "teacher") || null
     }
     
     if (!user) {
@@ -32,13 +33,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const userId = body.id || "stf_1001"
     
-    let current = store.staff.getById(userId)
+    let current = await db.staff.getById(userId)
     if (!current) {
-      current = store.staff.getAll().find((s: any) => s.role === "teacher")
+      const allStaff = await db.staff.getAll()
+      current = allStaff.find((s: any) => s.role === "teacher") || null
     }
     const targetId = current?.id || userId
     
-    const updated = store.staff.update(targetId, {
+    const updated = await db.staff.update(targetId, {
       firstName: body.name?.split(" ")[0] || "",
       lastName: body.name?.split(" ").slice(1).join(" ") || "",
       email: body.email,

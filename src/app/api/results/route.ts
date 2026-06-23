@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -11,33 +11,30 @@ export async function GET(request: Request) {
 
   if (classId && subjectId) {
     const session = searchParams.get("session") || undefined
-    let results = store.results.getByClassAndSubject(classId, subjectId, term, session)
-    if (examId) {
-      results = results.filter((r: any) => r.examId === examId)
-    }
+    const results = await db.results.getByClassAndSubject(classId, subjectId, term, session, examId)
     return NextResponse.json(results)
   }
   if (studentId) {
-    if (term) return NextResponse.json(store.results.getByStudentAndTerm(studentId, term))
-    return NextResponse.json(store.results.getByStudent(studentId))
+    if (term) return NextResponse.json(await db.results.getByStudentAndTerm(studentId, term))
+    return NextResponse.json(await db.results.getByStudent(studentId))
   }
-  return NextResponse.json(store.results.getAll())
+  return NextResponse.json(await db.results.getAll())
 }
 
 export async function POST(request: Request) {
   const body = await request.json()
   if (Array.isArray(body)) {
-    const items = body.map((data: any) => store.results.create(data))
+    const items = await Promise.all(body.map((data: any) => db.results.create(data)))
     return NextResponse.json(items, { status: 201 })
   }
-  const item = store.results.create(body)
+  const item = await db.results.create(body)
   return NextResponse.json(item, { status: 201 })
 }
 
 export async function PUT(request: Request) {
   const body = await request.json()
   if (body.id) {
-    const item = store.results.update(body.id, body)
+    const item = await db.results.update(body.id, body)
     if (!item) return NextResponse.json({ error: "Result not found" }, { status: 404 })
     return NextResponse.json(item)
   }
@@ -48,7 +45,7 @@ export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 })
-  const ok = store.results.delete(id)
+  const ok = await db.results.delete(id)
   if (!ok) return NextResponse.json({ error: "Result not found" }, { status: 404 })
   return NextResponse.json({ success: true })
 }

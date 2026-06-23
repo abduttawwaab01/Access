@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -8,22 +8,30 @@ export async function GET(request: NextRequest) {
 
   let result: any[]
   if (teacherId) {
-    result = store.lessonNotes.getByTeacher(teacherId)
+    const allNotes = await db.lessonNotes.getAll()
+    const ta = await db.teacherAssignments.getByTeacher(teacherId)
+    if (ta) {
+      const cids = (ta.classIds || []) as string[]
+      const sids = (ta.subjectIds || []) as string[]
+      result = allNotes.filter((n: any) => cids.includes(n.classId) && sids.includes(n.subjectId))
+    } else {
+      result = []
+    }
   } else {
-    result = store.lessonNotes.getAll(classId)
+    result = await db.lessonNotes.getAll(classId)
   }
-  const staff = store.staff.getAll()
+  const staff = await db.staff.getAll()
   result = result.map((n: any) => ({
     ...n,
-    creatorName: n.createdBy ? (staff.find((s: any) => s.id === n.createdBy) ? `${staff.find((s: any) => s.id === n.createdBy).firstName} ${staff.find((s: any) => s.id === n.createdBy).lastName}` : "Unknown") : "Unknown",
-    approverName: n.approvedBy ? (staff.find((s: any) => s.id === n.approvedBy) ? `${staff.find((s: any) => s.id === n.approvedBy).firstName} ${staff.find((s: any) => s.id === n.approvedBy).lastName}` : "Unknown") : null,
+    creatorName: n.createdBy ? (() => { const s = staff.find((s: any) => s.id === n.createdBy); return s ? `${s.firstName} ${s.lastName}` : "Unknown" })() : "Unknown",
+    approverName: n.approvedBy ? (() => { const s = staff.find((s: any) => s.id === n.approvedBy); return s ? `${s.firstName} ${s.lastName}` : "Unknown" })() : null,
   }))
   return NextResponse.json(result)
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const item = store.lessonNotes.create(body)
+  const item = await db.lessonNotes.create(body)
   return NextResponse.json(item, { status: 201 })
 }
 
@@ -31,13 +39,13 @@ export async function PUT(request: NextRequest) {
   const body = await request.json()
   const { action, id, data, approvedBy, status } = body
   if (action === "approve" || status === "approved") {
-    return NextResponse.json(store.lessonNotes.approve(id, approvedBy || action === "approve" ? approvedBy : "4"))
+    return NextResponse.json(await db.lessonNotes.approve(id, approvedBy || action === "approve" ? approvedBy : "4"))
   }
   if (action === "reject" || status === "rejected") {
-    return NextResponse.json(store.lessonNotes.reject(id))
+    return NextResponse.json(await db.lessonNotes.reject(id))
   }
   if (action === "update" && data) {
-    return NextResponse.json(store.lessonNotes.update(id, data))
+    return NextResponse.json(await db.lessonNotes.update(id, data))
   }
   return NextResponse.json({ error: "invalid action" }, { status: 400 })
 }
@@ -46,5 +54,5 @@ export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
-  return NextResponse.json({ deleted: store.lessonNotes.delete(id) })
+  return NextResponse.json({ deleted: await db.lessonNotes.delete(id) })
 }

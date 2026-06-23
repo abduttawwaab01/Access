@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   try {
     const userId = request.nextUrl.searchParams.get("userId") || "stu_1001"
-    let user = store.students.getById(userId)
+    let user = await db.students.getById(userId)
     
     if (!user) {
-      user = store.students.getAll()[0]
+      const allStudents = await db.students.getAll()
+      user = allStudents[0]
     }
     
     if (!user) {
@@ -32,13 +33,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const userId = body.id || "stu_1001"
     
-    let current = store.students.getById(userId)
+    let current = await db.students.getById(userId)
     if (!current) {
-      current = store.students.getAll()[0]
+      const allStudents = await db.students.getAll()
+      current = allStudents[0]
     }
     const targetId = current?.id || userId
     
-    const updated = store.students.update(targetId, {
+    const updated = await db.students.update(targetId, {
       firstName: body.name?.split(" ")[0] || "",
       lastName: body.name?.split(" ").slice(1).join(" ") || "",
       email: body.email,

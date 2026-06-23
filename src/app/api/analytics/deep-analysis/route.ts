@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
   const subject = searchParams.get("subject")
 
   if (classId) {
-    const analysis = store.lessonQuizResults.getClassAnalysis(classId)
-    const students = store.students.getAll()
-    const subjects = store.subjects.getAll()
+    const analysis = await db.lessonQuizResults.getClassAnalysis(classId)
+    const students = await db.students.getAll()
+    const subjects = await db.subjects.getAll()
     const gapAnalysis = analysis.students
       .map((s: any) => {
         const weakSubjects: string[] = []
@@ -28,14 +28,14 @@ export async function GET(request: NextRequest) {
   }
 
   if (studentId) {
-    const student = store.students.getById(studentId)
-    const analysis = store.lessonQuizResults.getAnalysis(studentId)
-    const examResults = store.results.getByStudent(studentId)
+    const student = await db.students.getById(studentId)
+    const analysis = await db.lessonQuizResults.getAnalysis(studentId)
+    const examResults = await db.results.getByStudent(studentId)
     const classId = student?.classId
-    const allNotes = store.lessonNotes.getAll(classId)
-    const attemptedNotes = store.lessonQuizResults.getByStudent(studentId)
+    const allNotes = await db.lessonNotes.getAll(classId)
+    const attemptedNotes = await db.lessonQuizResults.getByStudent(studentId)
     const notesWithQuiz = allNotes.filter((n: any) => n.quiz && n.quiz.length > 0)
-    const subjects = store.subjects.getAll()
+    const subjects = await db.subjects.getAll()
 
     const subjectMastery: Record<string, { total: number; correct: number; quizCount: number }> = {}
     const subMap: Record<string, string> = {}
@@ -87,15 +87,16 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  const allStudents = store.students.getAll()
-  const classList = store.classes.getAll()
-  const classAnalyses = classList.map((c: any) => {
-    const analysis = store.lessonQuizResults.getClassAnalysis(c.id)
-    return {
+  const allStudents = await db.students.getAll()
+  const classList = await db.classes.getAll()
+  const classAnalyses = []
+  for (const c of classList) {
+    const analysis = await db.lessonQuizResults.getClassAnalysis(c.id)
+    classAnalyses.push({
       classId: c.id,
       className: `${c.name}${c.arm ? ` ${c.arm}` : ""}`,
       ...analysis,
-    }
-  })
+    })
+  }
   return NextResponse.json({ classAnalyses, totalStudents: allStudents.length })
 }

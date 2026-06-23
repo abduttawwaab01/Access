@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import { store } from "@/lib/api-store"
+import { db } from "@/lib/prisma-store"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const item = store.weeklyReports.getById(id)
+  const item = await db.weeklyReports.getById(id)
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json(item)
 }
@@ -11,14 +11,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
-  const item = store.weeklyReports.update(id, body)
+  const item = await db.weeklyReports.update(id, body)
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json(item)
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const ok = store.weeklyReports.delete(id)
+  const ok = await db.weeklyReports.delete(id)
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json({ success: true })
 }
