@@ -77,16 +77,22 @@ async function main() {
   for (const s of staffList) {
     const email = s.email
     const existing = await prisma.user.findUnique({ where: { email } })
+    const adminPw = email === "admin@skoolar.org"
     if (!existing) {
       await prisma.user.create({
         data: {
           name: `${s.firstName} ${s.lastName}`.trim(),
           email: s.email,
-          password: email === "admin@skoolar.org" ? passwordHash : teacherPasswordHash,
+          password: adminPw ? passwordHash : teacherPasswordHash,
           role: s.role,
           phone: s.phone || null,
           schoolId,
         },
+      })
+    } else if (adminPw) {
+      await prisma.user.update({
+        where: { email },
+        data: { password: passwordHash },
       })
     }
   }
