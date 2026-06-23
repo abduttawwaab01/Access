@@ -42,7 +42,7 @@ export default function StudentReportCardPage() {
       setReportCards(Array.isArray(rc) ? rc : [])
       setAttendance(Array.isArray(att) ? att : [])
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [userId])
 
   const student = students[0] || null

@@ -50,7 +50,7 @@ export default function AdminReportCardsPage() {
       setReportCards(Array.isArray(rc) ? rc : [])
       setAttendance(Array.isArray(att) ? att : [])
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [])
 
   const student = students.find((s: any) => s.id === selectedStudentId)

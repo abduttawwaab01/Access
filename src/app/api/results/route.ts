@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { prisma } from "@/lib/prisma"
+
+async function mapSubjectNames(results: any[]): Promise<any[]> {
+  if (!results.length) return results
+  const subjects = await prisma.subject.findMany({ select: { id: true, name: true } })
+  const subjectMap = Object.fromEntries(subjects.map((s) => [s.id, s.name]))
+  return results.map((r: any) => ({
+    ...r,
+    subject: subjectMap[r.subjectId] || r.subjectId,
+  }))
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -12,13 +23,18 @@ export async function GET(request: Request) {
   if (classId && subjectId) {
     const session = searchParams.get("session") || undefined
     const results = await db.results.getByClassAndSubject(classId, subjectId, term, session, examId)
-    return NextResponse.json(results)
+    return NextResponse.json(await mapSubjectNames(results))
   }
   if (studentId) {
-    if (term) return NextResponse.json(await db.results.getByStudentAndTerm(studentId, term))
-    return NextResponse.json(await db.results.getByStudent(studentId))
+    if (term) {
+      const results = await db.results.getByStudentAndTerm(studentId, term)
+      return NextResponse.json(await mapSubjectNames(results))
+    }
+    const results = await db.results.getByStudent(studentId)
+    return NextResponse.json(await mapSubjectNames(results))
   }
-  return NextResponse.json(await db.results.getAll())
+  const results = await db.results.getAll()
+  return NextResponse.json(await mapSubjectNames(results))
 }
 
 export async function POST(request: Request) {

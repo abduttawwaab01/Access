@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,11 +30,13 @@ export default function AdminFeesPage() {
   const FEE_TYPES = [...new Set([...DEFAULT_FEE_TYPES, ...feeStructures.map((fs) => fs.type).filter(Boolean)])]
   const [bankDetails, setBankDetails] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const feeFormRef = useRef<HTMLDivElement>(null)
 
   const [showBankForm, setShowBankForm] = useState(false)
   const [showFeeForm, setShowFeeForm] = useState(false)
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null)
   const [confirmDeleteFee, setConfirmDeleteFee] = useState<string | null>(null)
+  const [savingFee, setSavingFee] = useState(false)
   const [bankForm, setBankForm] = useState({ bankName: "", accountName: "", accountNumber: "", swiftCode: "", branch: "" })
   const [feeForm, setFeeForm] = useState({ classId: "", type: "Tuition", amount: "", term: "First Term", dueDate: "", session: currentSession() })
 
@@ -75,6 +77,10 @@ export default function AdminFeesPage() {
   const barData = Object.values(classData)
   const pieData = [{ name: "Collected", value: totalCollected, color: "#22c55e" }, { name: "Outstanding", value: Math.max(outstanding, 0), color: "#ef4444" }].filter((d) => d.value > 0)
 
+  useEffect(() => {
+    if (showFeeForm) feeFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }, [showFeeForm])
+
   const saveBankDetails = async () => {
     await fetch("/api/school/bank", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(bankForm) })
     setBankDetails({ ...bankDetails, ...bankForm })
@@ -96,21 +102,26 @@ export default function AdminFeesPage() {
 
   const saveFeeStructure = async () => {
     if (!feeForm.classId || !feeForm.amount) { toast.error("Fill all fields"); return }
+    setSavingFee(true)
     const body = { ...feeForm, amount: Number(feeForm.amount) }
-    if (editingFeeId) {
-      const res = await fetch("/api/fee-structures", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingFeeId, ...body }) })
-      if (!res.ok) { toast.error("Failed to update"); return }
-      const updated = await res.json()
-      setFeeStructures(feeStructures.map((f) => f.id === editingFeeId ? updated : f))
-      toast.success("Fee structure updated")
-    } else {
-      const res = await fetch("/api/fee-structures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-      if (!res.ok) { toast.error("Failed to create"); return }
-      const item = await res.json()
-      setFeeStructures([...feeStructures, item])
-      toast.success("Fee structure added")
+    try {
+      if (editingFeeId) {
+        const res = await fetch("/api/fee-structures", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingFeeId, ...body }) })
+        if (!res.ok) { const err = await res.json().catch(() => ({ error: "Unknown error" })); toast.error(err.error || "Failed to update"); return }
+        toast.success("Fee structure updated")
+      } else {
+        const res = await fetch("/api/fee-structures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        if (!res.ok) { const err = await res.json().catch(() => ({ error: "Unknown error" })); toast.error(err.error || "Failed to create"); return }
+        toast.success("Fee structure added")
+      }
+      const refreshed = await fetch("/api/fee-structures").then((r) => r.json())
+      setFeeStructures(refreshed)
+      resetFeeForm()
+    } catch (err) {
+      toast.error("Something went wrong")
+    } finally {
+      setSavingFee(false)
     }
-    resetFeeForm()
   }
 
   const deleteFeeStructure = async () => {
@@ -240,7 +251,7 @@ export default function AdminFeesPage() {
             </div>
             <AnimatePresence>
             {showFeeForm && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+              <motion.div ref={feeFormRef} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/30">
                   <div><label className="text-xs">Class</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.classId} onChange={(e) => setFeeForm({ ...feeForm, classId: e.target.value })}>{classes.map((c) => <option key={c.id} value={c.id}>{c.name} {c.arm}</option>)}</select></div>
                   <div><label className="text-xs">Fee Type</label>
@@ -259,7 +270,7 @@ export default function AdminFeesPage() {
                   <div><label className="text-xs">Due Date</label><Input type="date" value={feeForm.dueDate} onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })} /></div>
                   <div><label className="text-xs">Session</label><Input value={feeForm.session} onChange={(e) => setFeeForm({ ...feeForm, session: e.target.value })} placeholder={`e.g. ${currentSession()}`} /></div>
                   <div className="flex items-end gap-2">
-                    <Button size="sm" onClick={saveFeeStructure}>{editingFeeId ? "Update" : "Save"}</Button>
+                    <Button size="sm" onClick={saveFeeStructure} disabled={savingFee}>{savingFee ? "Saving..." : editingFeeId ? "Update" : "Save"}</Button>
                     <Button size="sm" variant="outline" onClick={resetFeeForm}>Cancel</Button>
                   </div>
                 </div>
@@ -279,10 +290,10 @@ export default function AdminFeesPage() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       <p className="text-sm font-mono font-bold mr-1">₦{(fs.amount ?? 0).toLocaleString()}</p>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => openEditFee(fs)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditFee(fs)}>
                         <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setConfirmDeleteFee(fs.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setConfirmDeleteFee(fs.id)}>
                         <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-400" />
                       </Button>
                     </div>

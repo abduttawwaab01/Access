@@ -35,7 +35,7 @@ export default function ParentReportCardPage() {
       setSchool(sch)
       setAttendance(Array.isArray(att) ? att : [])
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [activeChildId])
 
   if (childrenLoading) return <div className="p-4 md:p-6 space-y-4">{["h-24", "h-96"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>

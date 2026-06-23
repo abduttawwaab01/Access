@@ -109,6 +109,13 @@ function sanitizeUnsupportedColors(doc: Document): void {
       ;(el as HTMLElement).setAttribute("style", safe)
     }
   }
+  const styles = doc.querySelectorAll("style")
+  for (const style of styles) {
+    style.textContent = style.textContent
+      .replace(/oklab\([^)]*\)/gi, "transparent")
+      .replace(/oklch\([^)]*\)/gi, "transparent")
+      .replace(/color-mix\([^)]*\)/gi, "transparent")
+  }
 }
 
 export async function captureElement(

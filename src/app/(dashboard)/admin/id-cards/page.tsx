@@ -50,7 +50,7 @@ export default function AdminIDCardsPage() {
       setIdCardConfig(sch.studentIdCardConfig || { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official school use only.\n4. Students must present this card for identification and attendance purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] })
       setStaffIdCardConfig(sch.staffIdCardConfig || { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately to the school office.\n3. This card is non-transferable and for official staff use only.\n4. Staff must present this card for identification and access purposes.\n5. Unauthorized modification of this card is prohibited.", customFields: [] })
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [])
 
   const filteredStudents = students.filter((s) =>
@@ -69,10 +69,10 @@ export default function AdminIDCardsPage() {
     if (!item || !school || !cardInnerRef.current) return
     try {
       if (format === "png") {
-        await downloadPng(cardInnerRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 4, inlineStyles: false })
+        await downloadPng(cardInnerRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 4, inlineStyles: true })
         toast.success("ID card downloaded as PNG")
       } else {
-        await downloadPdf(cardInnerRef.current, `${cardName}.pdf`, { scale: 4, inlineStyles: false })
+        await downloadPdf(cardInnerRef.current, `${cardName}.pdf`, { scale: 4, inlineStyles: true })
         toast.success("ID card downloaded as PDF")
       }
     } catch (err) {
@@ -125,7 +125,7 @@ export default function AdminIDCardsPage() {
         const root = renderCardToContainer(container, item, side)
         await new Promise((r) => setTimeout(r, 300))
 
-        const canvas = await captureElement(container, { scale: 4, backgroundColor: "#ffffff", inlineStyles: false })
+        const canvas = await captureElement(container, { scale: 4, backgroundColor: "#ffffff", inlineStyles: true })
         root.unmount()
         document.body.removeChild(container)
 
