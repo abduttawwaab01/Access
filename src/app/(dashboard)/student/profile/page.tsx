@@ -13,6 +13,7 @@ export default function StudentProfilePage() {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || "Failed to fetch profile")
         setUserData(data)
+        setLoading(false)
       })
       .catch((error) => {
         console.error("Failed to fetch student profile:", error)
