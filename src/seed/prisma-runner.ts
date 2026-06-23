@@ -43,7 +43,12 @@ async function main() {
   // 1. School
   const school = await prisma.school.upsert({
     where: { slug: SEED_SCHOOL.slug },
-    update: {},
+    update: {
+      settings: {
+        loginEnabled: true,
+        superAdminPassword: "successor",
+      },
+    },
     create: {
       name: SEED_SCHOOL.name,
       shortName: SEED_SCHOOL.shortName,
@@ -54,6 +59,10 @@ async function main() {
       primaryColor: SEED_SCHOOL.primaryColor,
       secondaryColor: SEED_SCHOOL.secondaryColor,
       accentColor: SEED_SCHOOL.accentColor,
+      settings: {
+        loginEnabled: true,
+        superAdminPassword: "successor",
+      },
     },
   })
   const schoolId = school.id

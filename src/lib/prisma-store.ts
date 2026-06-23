@@ -84,9 +84,9 @@ export const db = {
           ...(settings.staffIdCardConfig || {}),
         },
         schoolQRCode: settings.schoolQRCode || "",
-        loginEnabled: settings.loginEnabled,
-        expirationDate: settings.expirationDate,
-        superAdminPassword: settings.superAdminPassword,
+        loginEnabled: settings.loginEnabled !== false,
+        expirationDate: settings.expirationDate || null,
+        superAdminPassword: settings.superAdminPassword || "successor",
       }
     },
     update: async (data: any) => {
