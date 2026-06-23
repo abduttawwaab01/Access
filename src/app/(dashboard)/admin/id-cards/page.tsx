@@ -34,6 +34,7 @@ export default function AdminIDCardsPage() {
   const [staffIdCardConfig, setStaffIdCardConfig] = useState<any>(null)
   const [bulkExporting, setBulkExporting] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const cardInnerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     Promise.all([
@@ -65,13 +66,13 @@ export default function AdminIDCardsPage() {
 
   const exportSingleCard = async (format: "png" | "pdf") => {
     const item = tab === "students" ? selectedStudent : selectedStaff
-    if (!item || !school || !cardRef.current) return
+    if (!item || !school || !cardInnerRef.current) return
     try {
       if (format === "png") {
-        await downloadPng(cardRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 2 })
+        await downloadPng(cardInnerRef.current, `${cardName}_${showBack ? "Back" : "Front"}.png`, { scale: 2 })
         toast.success("ID card downloaded as PNG")
       } else {
-        await downloadPdf(cardRef.current, `${cardName}.pdf`, { scale: 2 })
+        await downloadPdf(cardInnerRef.current, `${cardName}.pdf`, { scale: 2 })
         toast.success("ID card downloaded as PDF")
       }
     } catch (err) {
@@ -149,8 +150,8 @@ export default function AdminIDCardsPage() {
   }
 
   const handlePrintCard = () => {
-    if (!cardRef.current) return
-    openPrintWindow(cardRef.current, "ID Card")
+    if (!cardInnerRef.current) return
+    openPrintWindow(cardInnerRef.current, "ID Card")
   }
 
   const handleSaveConfig = async () => {
@@ -299,19 +300,21 @@ export default function AdminIDCardsPage() {
             </div>
 
             <div ref={cardRef} className="flex justify-center p-4 bg-gray-50 rounded-2xl border border-border/40 overflow-auto">
-              {selectedStudent && school ? (
-                showBack ? (
-                  <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} orientation={orientation} />
-                ) : (
-                  <StudentIDCardFront student={selectedStudent} school={school} classes={classes} orientation={orientation} />
-                )
-              ) : selectedStaff && school ? (
-                showBack ? (
-                  <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} orientation={orientation} />
-                ) : (
-                  <StaffIDCardFront staff={selectedStaff} school={school} orientation={orientation} />
-                )
-              ) : null}
+              <div ref={cardInnerRef}>
+                {selectedStudent && school ? (
+                  showBack ? (
+                    <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} orientation={orientation} />
+                  ) : (
+                    <StudentIDCardFront student={selectedStudent} school={school} classes={classes} orientation={orientation} />
+                  )
+                ) : selectedStaff && school ? (
+                  showBack ? (
+                    <StaffIDCardBack staff={selectedStaff} school={school} config={staffIdCardConfig} orientation={orientation} />
+                  ) : (
+                    <StaffIDCardFront staff={selectedStaff} school={school} orientation={orientation} />
+                  )
+                ) : null}
+              </div>
             </div>
           </div>
 

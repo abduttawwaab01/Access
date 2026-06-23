@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
-import { BookOpen, CalendarCheck, TrendingUp, Award, ArrowRight } from "lucide-react"
+import { BookOpen, CalendarCheck, TrendingUp, Award, ArrowRight, Clock } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useSession } from "next-auth/react"
-import { DashboardAnnouncements } from "@/components/DashboardAnnouncements"
 
 const gradientMap: Record<string, string> = {
   "Avg Score": "from-blue-600 via-blue-500 to-cyan-400",
@@ -36,6 +35,7 @@ export default function StudentDashboard() {
   const [attendance, setAttendance] = useState<any[]>([])
   const [exams, setExams] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const student = students.find((s: any) => s.id === userId)
@@ -43,17 +43,20 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [r, a, e, sRes] = await Promise.all([
+      const [r, a, e, sRes, evts] = await Promise.all([
         fetch(`/api/results?studentId=${userId}`),
         fetch(`/api/attendance-records`),
         fetch(`/api/exam-sessions`),
         fetch("/api/students"),
+        fetch("/api/events?upcoming=true"),
       ])
       setResults(await r.json())
       const attData = await a.json()
       setAttendance(attData.filter((x: any) => x.studentId === userId))
       setExams(await e.json())
       setStudents(await sRes.json())
+      const evtsData = await evts.json()
+      setEvents(Array.isArray(evtsData) ? evtsData.slice(0, 5) : [])
       setLoading(false)
     }
     if (userId) fetchAll()
@@ -105,8 +108,6 @@ export default function StudentDashboard() {
         </h2>
         <p className="text-sm text-muted-foreground">{student?.className || ""}</p>
       </motion.div>
-
-      <DashboardAnnouncements role="student" />
 
       <motion.div
         variants={containerVariants}
@@ -239,11 +240,58 @@ export default function StudentDashboard() {
         </motion.div>
       </div>
 
+      {/* Upcoming Events */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.5 }}
+      >
+        <Card className="glass-card border-0 overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarCheck className="h-4 w-4 text-primary" />
+              Upcoming Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2 text-center">No upcoming events</p>
+            ) : (
+              <div className="space-y-2">
+                {events.map((event, i) => {
+                  const d = new Date(event.date + (event.time ? `T${event.time}` : ""))
+                  const day = d.getDate()
+                  const month = d.toLocaleDateString("en-US", { month: "short" })
+                  return (
+                    <motion.div
+                      key={event.id || i}
+                      initial={{ opacity: 0, x: -16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.35 + i * 0.04, duration: 0.3 }}
+                      className="flex items-center gap-3 rounded-lg border border-border/50 p-3"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10">
+                        <span className="text-[10px] font-bold text-primary">{day}</span>
+                        <span className="text-[8px] text-primary/70">{month}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{event.title}</p>
+                        {event.time && <p className="text-[11px] text-muted-foreground">{new Date(`2000-01-01T${event.time}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>}
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {results.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35, duration: 0.5 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
         >
           <Card className="glass-card border-0 overflow-hidden">
             <CardContent className="p-4 md:p-5">

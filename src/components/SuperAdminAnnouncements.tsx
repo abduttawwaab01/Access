@@ -3,9 +3,22 @@
 import { useEffect, useState } from "react"
 import { X, Megaphone, AlertTriangle, Info } from "lucide-react"
 
+const DISMISSED_KEY = "super-announcement-dismissed"
+
+function loadDismissed(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(DISMISSED_KEY)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch { return new Set() }
+}
+
+function saveDismissed(ids: Set<string>) {
+  try { sessionStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids])) } catch {}
+}
+
 export function SuperAdminAnnouncements() {
   const [announcements, setAnnouncements] = useState<any[]>([])
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [dismissed, setDismissed] = useState<Set<string>>(loadDismissed)
 
   useEffect(() => {
     fetch("/api/superadmin?action=announcements")
@@ -16,6 +29,8 @@ export function SuperAdminAnnouncements() {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => { saveDismissed(dismissed) }, [dismissed])
 
   const visible = announcements.filter((a) => !dismissed.has(a.id))
 

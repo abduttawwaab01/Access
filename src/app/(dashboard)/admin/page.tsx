@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +25,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { DashboardAnnouncements } from "@/components/DashboardAnnouncements"
 
 const containerVariants = {
   hidden: {},
@@ -68,13 +68,16 @@ const quickActions = [
   { label: "Record Payment", icon: CreditCard, href: "/admin/fees", gradient: "from-rose-600 to-rose-500" },
 ]
 
-const upcomingEvents = [
-  { event: "PTA Meeting", date: "Jun 25", time: "10:00 AM" },
-  { event: "Mid-Term Break Begins", date: "Jun 28" },
-  { event: "Second Term Exams Start", date: "Jul 10" },
-]
-
 export default function AdminDashboard() {
+  const [events, setEvents] = useState<any[]>([])
+  const [eventsLoading, setEventsLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/events?upcoming=true")
+      .then((r) => r.json())
+      .then((data) => { setEvents(Array.isArray(data) ? data.slice(0, 5) : []); setEventsLoading(false) })
+      .catch(() => setEventsLoading(false))
+  }, [])
   return (
     <div className="floating-orbs p-4 md:p-6 space-y-6">
       <motion.div
@@ -100,8 +103,6 @@ export default function AdminDashboard() {
           </motion.button>
         </Link>
       </motion.div>
-
-      <DashboardAnnouncements role="admin" />
 
       {/* Pending Tasks */}
       <motion.div
@@ -250,35 +251,45 @@ export default function AdminDashboard() {
         >
           <Card className="glass-card border-0 overflow-hidden h-full">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4 text-primary" />
-                Upcoming Events
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarCheck className="h-4 w-4 text-primary" />
+                  Upcoming Events
+                </CardTitle>
+                <Link href="/admin/events">
+                  <Badge variant="outline" className="text-[10px] cursor-pointer hover:bg-primary/10">Manage</Badge>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
-              <motion.div
-                variants={listVariants}
-                initial="hidden"
-                animate="show"
-                className="space-y-2"
-              >
-                {upcomingEvents.map((event, i) => (
-                  <motion.div
-                    key={i}
-                    variants={itemVariants}
-                    className="flex items-center gap-3 rounded-lg border border-border/50 p-3"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10">
-                      <span className="text-[10px] font-bold text-primary">{event.date.split(" ")[0]}</span>
-                      <span className="text-[8px] text-primary/70">{event.date.split(" ")[1]}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{event.event}</p>
-                      {event.time && <p className="text-[11px] text-muted-foreground">{event.time}</p>}
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
+              {eventsLoading ? (
+                <div className="space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />)}</div>
+              ) : events.length === 0 ? (
+                <div className="text-center py-6 text-xs text-muted-foreground">
+                  <p>No upcoming events</p>
+                  <Link href="/admin/events" className="text-primary hover:underline mt-1 inline-block">Create one</Link>
+                </div>
+              ) : (
+                <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-2">
+                  {events.map((event, i) => {
+                    const d = new Date(event.date + (event.time ? `T${event.time}` : ""))
+                    const day = d.getDate()
+                    const month = d.toLocaleDateString("en-US", { month: "short" })
+                    return (
+                      <motion.div key={event.id || i} variants={itemVariants} className="flex items-center gap-3 rounded-lg border border-border/50 p-3">
+                        <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10">
+                          <span className="text-[10px] font-bold text-primary">{day}</span>
+                          <span className="text-[8px] text-primary/70">{month}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{event.title}</p>
+                          {event.time && <p className="text-[11px] text-muted-foreground">{new Date(`2000-01-01T${event.time}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>}
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </motion.div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

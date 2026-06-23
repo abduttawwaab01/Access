@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3, CalendarCheck, DollarSign, TrendingUp, BookOpen, ChevronRight } from "lucide-react"
+import { BarChart3, CalendarCheck, DollarSign, TrendingUp, BookOpen, ChevronRight, Clock } from "lucide-react"
 import { getInitials, cn } from "@/lib/utils"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import Link from "next/link"
 import { useParentChildren } from "@/hooks/useParentChildren"
-import { DashboardAnnouncements } from "@/components/DashboardAnnouncements"
 
 const containerVariants = {
   hidden: {},
@@ -27,6 +26,7 @@ export default function ParentDashboard() {
   const [results, setResults] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any>({})
   const [fees, setFees] = useState<any>({})
+  const [events, setEvents] = useState<any[]>([])
 
   useEffect(() => {
     if (!activeChildId) return
@@ -34,10 +34,12 @@ export default function ParentDashboard() {
       fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()),
       fetch(`/api/attendance-records?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
       fetch(`/api/fees?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
-    ]).then(([res, att, fee]) => {
+      fetch("/api/events?upcoming=true").then((r) => r.json()).catch(() => []),
+    ]).then(([res, att, fee, evts]) => {
       setResults(res)
       setAttendance(att)
       setFees(fee)
+      setEvents(Array.isArray(evts) ? evts.slice(0, 5) : [])
     })
   }, [activeChildId])
 
@@ -114,8 +116,6 @@ export default function ParentDashboard() {
           </motion.button>
         ))}
       </motion.div>
-
-      <DashboardAnnouncements role="parent" />
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -250,6 +250,46 @@ export default function ParentDashboard() {
                 )
               })}
             </div>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="mt-5">
+            <Card className="glass-card border-0 overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CalendarCheck className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Upcoming Events</p>
+                </div>
+                {events.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2 text-center">No upcoming events</p>
+                ) : (
+                  <div className="space-y-2">
+                    {events.map((event, i) => {
+                      const d = new Date(event.date + (event.time ? `T${event.time}` : ""))
+                      const day = d.getDate()
+                      const month = d.toLocaleDateString("en-US", { month: "short" })
+                      return (
+                        <motion.div
+                          key={event.id || i}
+                          initial={{ opacity: 0, x: -12 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04, duration: 0.3 }}
+                          className="flex items-center gap-3 rounded-lg border border-border/50 p-2.5"
+                        >
+                          <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10">
+                            <span className="text-[9px] font-bold text-primary">{day}</span>
+                            <span className="text-[7px] text-primary/70">{month}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{event.title}</p>
+                            {event.time && <p className="text-[10px] text-muted-foreground">{new Date(`2000-01-01T${event.time}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</p>}
+                          </div>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
 
           <motion.div variants={itemVariants} className="mt-5">
