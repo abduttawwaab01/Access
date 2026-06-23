@@ -82,7 +82,7 @@ async function main() {
         data: {
           name: `${s.firstName} ${s.lastName}`.trim(),
           email: s.email,
-          password: email === "admin@access.edu.ng" ? passwordHash : teacherPasswordHash,
+          password: email === "admin@skoolar.org" ? passwordHash : teacherPasswordHash,
           role: s.role,
           phone: s.phone || null,
           schoolId,

@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { db } from "@/lib/prisma-store"
+import bcrypt from "bcryptjs"
 
 const secret = process.env.NEXTAUTH_SECRET || "access-fallback-secret-for-development-only"
 
@@ -17,22 +18,13 @@ const handler = NextAuth({
         const { email, password } = credentials as Record<string, string>
         if (!email) throw new Error("Email is required")
 
-        const staff = await db.staff.getByEmail(email)
-        if (staff && (staff as any).password === password) {
-          return { id: staff.id, name: `${staff.firstName} ${staff.lastName}`, email: staff.email, role: staff.role }
-        }
-
-        const student = await db.students.getByEmail(email)
-        if (student && (student as any).password === password) {
-          return { id: student.id, name: `${student.firstName} ${student.lastName}`, email: student.email, role: "student" }
-        }
-
-        const parent = await db.users.getByEmail(email)
-        if (parent && parent.role === "parent" && parent.password === password) {
-          return { id: parent.id, name: parent.name, email: parent.email, role: "parent" }
-        }
-
-        throw new Error("Invalid credentials")
+        const user = await db.users.getByEmail(email)
+        if (!user) throw new Error("Invalid credentials")
+        const isValid = await bcrypt.compare(password, user.password)
+        if (!isValid) throw new Error("Invalid credentials")
+        const roleMap: Record<string, string> = { admin: "admin", teacher: "teacher", student: "student", parent: "parent" }
+        const role = roleMap[user.role] || user.role
+        return { id: user.id, name: user.name, email: user.email, role }
       },
     }),
   ],
