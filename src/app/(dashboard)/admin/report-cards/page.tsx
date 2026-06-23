@@ -23,7 +23,15 @@ export default function AdminReportCardsPage() {
   const [exporting, setExporting] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("")
+  const [chartReady, setChartReady] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Defer chart rendering until container has dimensions
+    const timer = setTimeout(() => setChartReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [selectedStudentId, selectedTerm])
 
   useEffect(() => {
     Promise.all([
@@ -255,30 +263,34 @@ export default function AdminReportCardsPage() {
             <Card className="glass-card border-0">
               <CardContent className="p-4">
                 <h3 className="text-sm font-semibold mb-3">Term Performance Trend</h3>
-                <div className="h-48 min-h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={termAverages}>
-                      <XAxis dataKey="term" tick={{ fontSize: 10 }} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={25} />
-                      <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                      <Bar dataKey="average" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={36} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div ref={chartContainerRef} className="h-48 min-h-[180px] w-full" style={{ minWidth: 0 }}>
+                  {chartReady && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={termAverages}>
+                        <XAxis dataKey="term" tick={{ fontSize: 10 }} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={30} />
+                        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                        <Bar dataKey="average" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </CardContent>
             </Card>
             <Card className="glass-card border-0">
               <CardContent className="p-4">
                 <h3 className="text-sm font-semibold mb-3">Subject Performance (Radar)</h3>
-                <div className="h-48 min-h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={subjectChart}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 8 }} />
-                      <Radar dataKey="average" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                <div className="h-48 min-h-[180px] w-full" style={{ minWidth: 0 }}>
+                  {chartReady && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={subjectChart}>
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 8 }} />
+                        <Radar dataKey="average" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </CardContent>
             </Card>

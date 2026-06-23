@@ -27,8 +27,8 @@ export default function SchoolSettingsPage() {
     primaryColor: "#6366f1",
     secondaryColor: "#06b6d4",
     accentColor: "#f59e0b",
-    studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, customAddress: "", customBloodGroup: "", customEmergencyContact: "", customMedicalNotes: "", customFields: [] },
-    staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, customDepartment: "", customEmergencyContact: "", customFields: [] },
+    studentIdCardConfig: { backTitle: "Student Information", showAddress: true, showBloodGroup: true, showEmergencyContact: true, showMedicalNotes: true, showRules: true, rulesText: "1. This card is the property of the school and must be returned upon request.\n2. Report lost or damaged cards immediately.\n3. This card is non-transferable.\n4. Students must present this card for identification.\n5. Unauthorized modification is prohibited.", customAddress: "", customBloodGroup: "", customEmergencyContact: "", customMedicalNotes: "", customFields: [] as Array<{label:string;value:string}> },
+    staffIdCardConfig: { backTitle: "Staff Information", showDepartment: true, showEmergencyContact: true, showRules: true, rulesText: "1. This card is the property of the school.\n2. Report lost or damaged cards immediately.\n3. This card is non-transferable.\n4. Staff must present this card for identification.\n5. Unauthorized modification is prohibited.", customDepartment: "", customEmergencyContact: "", customFields: [] as Array<{label:string;value:string}> },
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -223,7 +223,50 @@ export default function SchoolSettingsPage() {
                         className="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent"
                       />
                       <span className="text-xs font-mono text-muted-foreground">{form[key]}</span>
-                    </div>
+              </div>
+              <div className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.studentIdCardConfig?.showRules ?? true}
+                    onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, showRules: e.target.checked } })}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                  <span className="text-sm font-medium">Rules &amp; Regulations</span>
+                </label>
+                {form.studentIdCardConfig?.showRules && (
+                  <Textarea value={form.studentIdCardConfig?.rulesText || ""}
+                    onChange={(e) => setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, rulesText: e.target.value } })}
+                    rows={4} className="text-xs" placeholder="Enter rules and regulations for this card..." />
+                )}
+              </div>
+              <div className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                <span className="text-sm font-medium block mb-1">Custom Back Fields</span>
+                <p className="text-[10px] text-muted-foreground mb-2">Additional fields shown on the back of the card.</p>
+                {((form.studentIdCardConfig?.customFields) || []).map((f: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 mb-1">
+                    <Input value={f.label} onChange={(e) => {
+                      const cf: Array<{label:string;value:string}> = [...(form.studentIdCardConfig?.customFields || [])]
+                      cf[i] = { ...cf[i], label: e.target.value }
+                      setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, customFields: cf } })
+                    }} placeholder="Label" className="h-8 text-xs flex-1" />
+                    <Input value={f.value} onChange={(e) => {
+                      const cf: Array<{label:string;value:string}> = [...(form.studentIdCardConfig?.customFields || [])]
+                      cf[i] = { ...cf[i], value: e.target.value }
+                      setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, customFields: cf } })
+                    }} placeholder="Value" className="h-8 text-xs flex-1" />
+                    <button type="button" onClick={() => {
+                      const cf: Array<{label:string;value:string}> = (form.studentIdCardConfig?.customFields || []).filter((_: any, j: number) => j !== i)
+                      setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, customFields: cf } })
+                    }} className="text-danger hover:text-danger/80 p-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => {
+                  const cf: Array<{label:string;value:string}> = [...(form.studentIdCardConfig?.customFields || []), { label: "", value: "" }]
+                  setForm({ ...form, studentIdCardConfig: { ...form.studentIdCardConfig, customFields: cf } })
+                }} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                  <Plus className="h-3 w-3" /> Add custom field
+                </button>
+              </div>
                   </div>
                 ))}
               </div>
@@ -320,7 +363,6 @@ export default function SchoolSettingsPage() {
               </div>
               <div className="space-y-4">
                 {[
-                  { key: "showDepartment", label: "Department", customKey: "customDepartment" },
                   { key: "showEmergencyContact", label: "Emergency Contact", customKey: "customEmergencyContact" },
                 ].map(({ key, label, customKey }) => (
                   <div key={key} className="space-y-1.5 rounded-lg border border-border/50 p-3">
@@ -339,6 +381,49 @@ export default function SchoolSettingsPage() {
                       className="h-9 text-xs" />
                   </div>
                 ))}
+              </div>
+              <div className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.staffIdCardConfig?.showRules ?? true}
+                    onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, showRules: e.target.checked } })}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                  <span className="text-sm font-medium">Rules &amp; Regulations</span>
+                </label>
+                {form.staffIdCardConfig?.showRules && (
+                  <Textarea value={form.staffIdCardConfig?.rulesText || ""}
+                    onChange={(e) => setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, rulesText: e.target.value } })}
+                    rows={4} className="text-xs" placeholder="Enter rules and regulations for this card..." />
+                )}
+              </div>
+              <div className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                <span className="text-sm font-medium block mb-1">Custom Back Fields</span>
+                <p className="text-[10px] text-muted-foreground mb-2">Additional fields shown on the back of the card.</p>
+                {((form.staffIdCardConfig?.customFields) || []).map((f: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 mb-1">
+                    <Input value={f.label} onChange={(e) => {
+                      const cf: Array<{label:string;value:string}> = [...(form.staffIdCardConfig?.customFields || [])]
+                      cf[i] = { ...cf[i], label: e.target.value }
+                      setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, customFields: cf } })
+                    }} placeholder="Label" className="h-8 text-xs flex-1" />
+                    <Input value={f.value} onChange={(e) => {
+                      const cf: Array<{label:string;value:string}> = [...(form.staffIdCardConfig?.customFields || [])]
+                      cf[i] = { ...cf[i], value: e.target.value }
+                      setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, customFields: cf } })
+                    }} placeholder="Value" className="h-8 text-xs flex-1" />
+                    <button type="button" onClick={() => {
+                      const cf: Array<{label:string;value:string}> = (form.staffIdCardConfig?.customFields || []).filter((_: any, j: number) => j !== i)
+                      setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, customFields: cf } })
+                    }} className="text-danger hover:text-danger/80 p-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => {
+                  const cf: Array<{label:string;value:string}> = [...(form.staffIdCardConfig?.customFields || []), { label: "", value: "" }]
+                  setForm({ ...form, staffIdCardConfig: { ...form.staffIdCardConfig, customFields: cf } })
+                }} className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
+                  <Plus className="h-3 w-3" /> Add custom field
+                </button>
               </div>
             </CardContent>
           </Card>

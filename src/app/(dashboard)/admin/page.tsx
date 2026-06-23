@@ -46,19 +46,6 @@ const itemVariants = {
   show: { opacity: 1, x: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
 }
 
-const pendingTasks = [
-  { task: "Review 12 admission applications", priority: "high", href: "/admin/admissions", icon: UserPlus },
-  { task: "Approve 3 salary disbursements", priority: "medium", href: "/admin/salary", icon: DollarSign },
-  { task: "Publish weekly report for Week 12", priority: "medium", href: "/admin/weekly-reports", icon: FileText },
-  { task: "Review feedback from 8 parents", priority: "low", href: "/admin/feedback", icon: Bell },
-]
-
-const alerts = [
-  { message: "5 teachers have not submitted lesson notes this week", type: "warning", href: "/admin/lesson-notes" },
-  { message: "18 students have outstanding fee balances", type: "info", href: "/admin/fees" },
-  { message: "CBT Exam scheduled for tomorrow - 4 classes", type: "info", href: "/admin/cbt/exams" },
-]
-
 const quickActions = [
   { label: "Add Student", icon: UserPlus, href: "/admin/admissions", gradient: "from-blue-600 to-blue-500" },
   { label: "Create Exam", icon: ClipboardCheck, href: "/admin/cbt", gradient: "from-amber-600 to-amber-500" },
@@ -71,13 +58,58 @@ const quickActions = [
 export default function AdminDashboard() {
   const [events, setEvents] = useState<any[]>([])
   const [eventsLoading, setEventsLoading] = useState(true)
+  const [tasksLoading, setTasksLoading] = useState(true)
+  const [pendingAdmissions, setPendingAdmissions] = useState(0)
+  const [pendingSalary, setPendingSalary] = useState(0)
+  const [draftReports, setDraftReports] = useState(0)
+  const [pendingFeedback, setPendingFeedback] = useState(0)
+  const [teachersMissingNotes, setTeachersMissingNotes] = useState(0)
+  const [outstandingFees, setOutstandingFees] = useState(0)
+  const [upcomingExams, setUpcomingExams] = useState(0)
 
   useEffect(() => {
-    fetch("/api/events?upcoming=true")
-      .then((r) => r.json())
-      .then((data) => { setEvents(Array.isArray(data) ? data.slice(0, 5) : []); setEventsLoading(false) })
-      .catch(() => setEventsLoading(false))
+    Promise.all([
+      fetch("/api/events?upcoming=true").then((r) => r.json()).catch(() => []),
+      fetch("/api/admissions").then((r) => r.json()).catch(() => []),
+      fetch("/api/salary").then((r) => r.json()).catch(() => []),
+      fetch("/api/weekly-reports").then((r) => r.json()).catch(() => []),
+      fetch("/api/feedback").then((r) => r.json()).catch(() => []),
+      fetch("/api/lesson-notes").then((r) => r.json()).catch(() => []),
+      fetch("/api/fees").then((r) => r.json()).catch(() => []),
+      fetch("/api/exams").then((r) => r.json()).catch(() => []),
+    ]).then(([evts, admissions, salary, reports, feedback, notes, feesData, exams]) => {
+      setEvents(Array.isArray(evts) ? evts.slice(0, 5) : [])
+      setEventsLoading(false)
+      const admissionsArr = Array.isArray(admissions) ? admissions : []
+      const salaryArr = Array.isArray(salary) ? salary : []
+      const reportsArr = Array.isArray(reports) ? reports : []
+      const feedbackArr = Array.isArray(feedback) ? feedback : []
+      const notesArr = Array.isArray(notes) ? notes : []
+      const feesArr = Array.isArray(feesData) ? feesData : []
+      const examsArr = Array.isArray(exams) ? exams : []
+      setPendingAdmissions(admissionsArr.filter((a: any) => a.status === "pending").length)
+      setPendingSalary(salaryArr.filter((s: any) => s.status === "pending").length)
+      setDraftReports(reportsArr.filter((r: any) => r.status === "draft").length)
+      setPendingFeedback(feedbackArr.filter((f: any) => f.status === "pending").length)
+      setTeachersMissingNotes(notesArr.filter((n: any) => n.status === "draft").length)
+      setOutstandingFees(feesArr.filter((f: any) => (f.outstanding || f.balance || 0) > 0).length)
+      setUpcomingExams(examsArr.filter((e: any) => new Date(e.date) > new Date()).length)
+      setTasksLoading(false)
+    })
   }, [])
+
+  const pendingTasks = [
+    pendingAdmissions > 0 && { task: `Review ${pendingAdmissions} admission application${pendingAdmissions !== 1 ? "s" : ""}`, priority: "high" as const, href: "/admin/admissions", icon: UserPlus },
+    pendingSalary > 0 && { task: `Approve ${pendingSalary} salary disbursement${pendingSalary !== 1 ? "s" : ""}`, priority: "medium" as const, href: "/admin/salary", icon: DollarSign },
+    draftReports > 0 && { task: `Publish ${draftReports} weekly report${draftReports !== 1 ? "s" : ""}`, priority: "medium" as const, href: "/admin/weekly-reports", icon: FileText },
+    pendingFeedback > 0 && { task: `Review feedback from ${pendingFeedback} parent${pendingFeedback !== 1 ? "s" : ""}`, priority: "low" as const, href: "/admin/feedback", icon: Bell },
+  ].filter(Boolean) as { task: string; priority: "high" | "medium" | "low"; href: string; icon: any }[]
+
+  const alerts = [
+    teachersMissingNotes > 0 && { message: `${teachersMissingNotes} lesson note${teachersMissingNotes !== 1 ? "s" : ""} need${teachersMissingNotes === 1 ? "s" : ""} publishing`, type: "warning" as const, href: "/admin/lesson-notes" },
+    outstandingFees > 0 && { message: `${outstandingFees} student${outstandingFees !== 1 ? "s" : ""} ha${outstandingFees === 1 ? "s" : "ve"} outstanding fee balances`, type: "info" as const, href: "/admin/fees" },
+    upcomingExams > 0 && { message: `${upcomingExams} exam${upcomingExams !== 1 ? "s" : ""} scheduled`, type: "info" as const, href: "/admin/cbt/exams" },
+  ].filter(Boolean) as { message: string; type: "warning" | "info"; href: string }[]
   return (
     <div className="floating-orbs p-4 md:p-6 space-y-6">
       <motion.div
@@ -116,9 +148,13 @@ export default function AdminDashboard() {
               <Clock className="h-4 w-4 text-primary" />
               Pending Tasks
             </CardTitle>
-            <Badge variant="outline" className="text-[10px] border-amber-300/30 bg-amber-500/10 text-amber-600">
-              {pendingTasks.length} pending
-            </Badge>
+            {tasksLoading ? (
+              <div className="h-5 w-16 rounded-full bg-muted animate-pulse" />
+            ) : (
+              <Badge variant="outline" className="text-[10px] border-amber-300/30 bg-amber-500/10 text-amber-600">
+                {pendingTasks.length} pending
+              </Badge>
+            )}
           </CardHeader>
           <CardContent>
             <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-2">

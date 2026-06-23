@@ -10,6 +10,7 @@ import { Pool } from "pg"
 import {
   generateClasses,
   generateSubjects,
+  generateStaff,
   generateStudents,
   generateParents,
   generateParentLinks,
@@ -30,6 +31,7 @@ import {
 } from "./generators"
 import { generateAllQuestions, generateExams, generateExamSessionsAndSubmissions } from "./questions"
 import { SEED_SCHOOL, CURRENT_SESSION, TERM_NAMES } from "./data"
+import bcrypt from "bcryptjs"
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
@@ -56,6 +58,30 @@ async function main() {
   })
   const schoolId = school.id
   console.log(`[Seed] School: ${school.name} (${schoolId})`)
+
+  // 1b. Users (admin + teachers + students + parents) for login
+  const passwordHash = await bcrypt.hash("successor", 10)
+  const teacherPasswordHash = await bcrypt.hash("password123", 10)
+  const studentPasswordHash = await bcrypt.hash("student123", 10)
+  const parentPasswordHash = await bcrypt.hash("parent123", 10)
+  const staffList = generateStaff()
+  for (const s of staffList) {
+    const email = s.email
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          name: `${s.firstName} ${s.lastName}`.trim(),
+          email: s.email,
+          password: email === "admin@access.edu.ng" ? passwordHash : teacherPasswordHash,
+          role: s.role,
+          phone: s.phone || null,
+          schoolId,
+        },
+      })
+    }
+  }
+  console.log(`[Seed] ${staffList.length} staff users created`)
 
   // 2. Academic session & terms
   let session = await prisma.academicSession.findFirst({
@@ -215,19 +241,47 @@ async function main() {
     const found = await prisma.student.findFirst({ where: { studentId: s.studentId } })
     if (found) createdStudents.push(found)
   }
+  // Create student user accounts for login
+  for (const s of studentList) {
+    const email = s.email
+    if (!email) continue
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          name: `${s.firstName} ${s.lastName}`.trim(),
+          email,
+          password: studentPasswordHash,
+          role: "student",
+          schoolId,
+        },
+      })
+    }
+  }
   console.log(`[Seed] ${createdStudents.length} students`)
 
-  // 9. Parents (from User model)
-  const parentEmails = [
-    "emeka.okafor@email.com", "yetunde.adebayo@email.com", "musa.bello@email.com",
-    "chioma.nwachukwu@email.com", "tunde.olawale@email.com", "aisha.mohammed@email.com",
-    "kelechi.eze@email.com", "folake.ogunlade@email.com", "nnamdi.okonkwo@email.com",
-    "zainab.yusuf@email.com",
-  ]
+  // 9. Parents (from User model) — create if missing
+  const parentList = generateParents()
+  const parentEmails = parentList.map((p: any) => p.email)
+  for (const p of parentList) {
+    const existing = await prisma.user.findUnique({ where: { email: p.email } })
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          name: `${p.firstName} ${p.lastName}`.trim(),
+          email: p.email,
+          password: parentPasswordHash,
+          role: "parent",
+          phone: p.phone || null,
+          schoolId,
+        },
+      })
+    }
+  }
   const createdParents = await prisma.user.findMany({
     where: { email: { in: parentEmails } },
   })
-  console.log(`[Seed] ${createdParents.length} parents found in DB`)
+  console.log(`[Seed] ${createdParents.length} parents`)
 
   // 10. Parent Links
   const parentLinkList = generateParentLinks(createdStudents, createdParents)

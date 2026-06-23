@@ -36,6 +36,7 @@ export default function StudentDashboard() {
   const [exams, setExams] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
+  const [activeSession, setActiveSession] = useState("")
   const [loading, setLoading] = useState(true)
 
   const student = students.find((s: any) => s.id === userId)
@@ -43,12 +44,13 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [r, a, e, sRes, evts] = await Promise.all([
+      const [r, a, e, sRes, evts, sessions] = await Promise.all([
         fetch(`/api/results?studentId=${userId}`),
         fetch(`/api/attendance-records`),
         fetch(`/api/exam-sessions`),
         fetch("/api/students"),
         fetch("/api/events?upcoming=true"),
+        fetch("/api/sessions").catch(() => null),
       ])
       setResults(await r.json())
       const attData = await a.json()
@@ -57,6 +59,11 @@ export default function StudentDashboard() {
       setStudents(await sRes.json())
       const evtsData = await evts.json()
       setEvents(Array.isArray(evtsData) ? evtsData.slice(0, 5) : [])
+      if (sessions) {
+        const sData = await sessions.json()
+        const active = Array.isArray(sData) ? sData.find((s: any) => s.isActive || s.status === "active") : sData
+        setActiveSession(active?.name || active?.session || "")
+      }
       setLoading(false)
     }
     if (userId) fetchAll()
@@ -69,14 +76,16 @@ export default function StudentDashboard() {
   const myExams = exams.filter((e) => e.studentId === userId || e.studentName === studentName)
   const completedExams = myExams.filter((e) => e.status === "completed").length
 
-  const subjectScores = results.filter((r) => r.session === "2024/2025").reduce<Record<string, number[]>>((acc, r) => {
+  const sessionFilter = activeSession || results[0]?.session || ""
+  const subjectScores = results.filter((r) => !sessionFilter || r.session === sessionFilter).reduce<Record<string, number[]>>((acc, r) => {
     if (!acc[r.term]) acc[r.term] = []
     acc[r.term].push(r.score)
     return acc
   }, {})
 
+  const termLabels: Record<string, string> = { "First Term": "1st Term", "Second Term": "2nd Term", "Third Term": "3rd Term" }
   const chartData = Object.entries(subjectScores).map(([term, scores]) => ({
-    term: term === "First Term" ? "1st Term" : "2nd Term",
+    term: termLabels[term] || term,
     score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
   }))
 

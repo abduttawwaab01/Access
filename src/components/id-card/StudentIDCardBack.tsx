@@ -28,14 +28,9 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
         </div>
         <div className="flex-1 p-5 flex flex-col">
           <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 flex-1">
-            <InfoRow label="Full Name" value={`${student.firstName} ${student.lastName}`} />
-            <InfoRow label="Student ID" value={student.studentId} />
-            {student.dateOfBirth && <InfoRow label="Date of Birth" value={new Date(student.dateOfBirth).toLocaleDateString()} />}
-            {student.gender && <InfoRow label="Gender" value={student.gender} />}
-            {cfg.showBloodGroup && (cfg.customBloodGroup || student.bloodGroup) && <InfoRow label="Blood Group" value={cfg.customBloodGroup || student.bloodGroup || ""} />}
-            {cfg.showAddress && (cfg.customAddress || student.address) && <InfoRow label="Address" value={cfg.customAddress || student.address || ""} />}
             {student.email && <InfoRow label="Email" value={student.email} />}
             {student.phone && <InfoRow label="Phone" value={student.phone} />}
+            {cfg.showAddress && (cfg.customAddress || student.address) && <InfoRow label="Address" value={cfg.customAddress || student.address || ""} />}
             {student.parentName && <InfoRow label="Parent/Guardian" value={student.parentName} />}
             {cfg.showEmergencyContact && (cfg.customEmergencyContact || student.parentPhone) && <InfoRow label="Emergency" value={cfg.customEmergencyContact || student.parentPhone || ""} />}
             {(cfg.customFields || []).filter((f) => f.value).map((f, i) => <InfoRow key={i} label={f.label} value={f.value} />)}
@@ -64,14 +59,9 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
       </div>
       <div className="flex-1 p-5 space-y-3">
         <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-          <InfoRow label="Full Name" value={`${student.firstName} ${student.lastName}`} />
-          <InfoRow label="Student ID" value={student.studentId} />
-          {student.dateOfBirth && <InfoRow label="Date of Birth" value={new Date(student.dateOfBirth).toLocaleDateString()} />}
-          {student.gender && <InfoRow label="Gender" value={student.gender} />}
-          {cfg.showBloodGroup && (cfg.customBloodGroup || student.bloodGroup) && <InfoRow label="Blood Group" value={cfg.customBloodGroup || student.bloodGroup || ""} />}
-          {cfg.showAddress && (cfg.customAddress || student.address) && <InfoRow label="Address" value={cfg.customAddress || student.address || ""} />}
           {student.email && <InfoRow label="Email" value={student.email} />}
           {student.phone && <InfoRow label="Phone" value={student.phone} />}
+          {cfg.showAddress && (cfg.customAddress || student.address) && <InfoRow label="Address" value={cfg.customAddress || student.address || ""} />}
           {student.parentName && <InfoRow label="Parent/Guardian" value={student.parentName} />}
           {cfg.showEmergencyContact && (cfg.customEmergencyContact || student.parentPhone) && <InfoRow label="Emergency" value={cfg.customEmergencyContact || student.parentPhone || ""} />}
           {(cfg.customFields || []).filter((f) => f.value).map((f, i) => <InfoRow key={i} label={f.label} value={f.value} />)}

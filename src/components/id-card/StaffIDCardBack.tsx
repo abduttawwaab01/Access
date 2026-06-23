@@ -28,15 +28,8 @@ export function StaffIDCardBack({ staff, school, config, orientation = "portrait
         </div>
         <div className="flex-1 p-5 flex flex-col">
           <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 flex-1">
-            <InfoRow label="Full Name" value={`${staff.firstName} ${staff.lastName}`} />
-            <InfoRow label="Staff ID" value={staff.staffId} />
-            {staff.role && <InfoRow label="Role" value={staff.role} />}
-            {cfg.showDepartment && (cfg.customDepartment || staff.department) && <InfoRow label="Department" value={cfg.customDepartment || staff.department || ""} />}
-            {staff.gender && <InfoRow label="Gender" value={staff.gender} />}
             {staff.qualification && <InfoRow label="Qualification" value={staff.qualification} />}
             {staff.employmentDate && <InfoRow label="Employed" value={new Date(staff.employmentDate).toLocaleDateString()} />}
-            {staff.email && <InfoRow label="Email" value={staff.email} />}
-            {staff.phone && <InfoRow label="Phone" value={staff.phone} />}
             {staff.address && <InfoRow label="Address" value={staff.address} />}
             {cfg.showEmergencyContact && (cfg.customEmergencyContact || staff.emergencyContact) && <InfoRow label="Emergency" value={cfg.customEmergencyContact || staff.emergencyContact || ""} />}
             {(cfg.customFields || []).filter((f) => f.value).map((f, i) => <InfoRow key={i} label={f.label} value={f.value} />)}
@@ -59,15 +52,8 @@ export function StaffIDCardBack({ staff, school, config, orientation = "portrait
       </div>
       <div className="flex-1 p-5 space-y-3">
         <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-          <InfoRow label="Full Name" value={`${staff.firstName} ${staff.lastName}`} />
-          <InfoRow label="Staff ID" value={staff.staffId} />
-          {staff.role && <InfoRow label="Role" value={staff.role} />}
-          {cfg.showDepartment && (cfg.customDepartment || staff.department) && <InfoRow label="Department" value={cfg.customDepartment || staff.department || ""} />}
-          {staff.gender && <InfoRow label="Gender" value={staff.gender} />}
           {staff.qualification && <InfoRow label="Qualification" value={staff.qualification} />}
           {staff.employmentDate && <InfoRow label="Employed" value={new Date(staff.employmentDate).toLocaleDateString()} />}
-          {staff.email && <InfoRow label="Email" value={staff.email} />}
-          {staff.phone && <InfoRow label="Phone" value={staff.phone} />}
           {staff.address && <InfoRow label="Address" value={staff.address} />}
           {cfg.showEmergencyContact && (cfg.customEmergencyContact || staff.emergencyContact) && <InfoRow label="Emergency" value={cfg.customEmergencyContact || staff.emergencyContact || ""} />}
           {(cfg.customFields || []).filter((f) => f.value).map((f, i) => <InfoRow key={i} label={f.label} value={f.value} />)}

@@ -38,17 +38,19 @@ export default function TeacherDashboard() {
   const [assignments, setAssignments] = useState<any[]>([])
   const [schedule, setSchedule] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
+  const [attendanceMarked, setAttendanceMarked] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const today = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()]
     Promise.all([
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/lesson-notes").then((r) => r.json()),
       fetch("/api/assignments").then((r) => r.json()),
       fetch("/api/timetable").then((r) => r.json()),
       fetch("/api/events?upcoming=true").then((r) => r.json()).catch(() => []),
-    ]).then(([classes, notes, asgns, tt, evts]) => {
-      const today = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()]
+      fetch("/api/attendance-logs").then((r) => r.json()).catch(() => []),
+    ]).then(([classes, notes, asgns, tt, evts, logs]) => {
       setStats({
         classes: classes.length,
         students: classes.reduce((s: number, c: any) => s + (c.studentCount || 0), 0),
@@ -59,14 +61,20 @@ export default function TeacherDashboard() {
       setAssignments(asgns.filter((a: any) => a.status === "active"))
       setSchedule(tt.filter((t: any) => t.day === today))
       setEvents(Array.isArray(evts) ? evts.slice(0, 5) : [])
+      const logsArr = Array.isArray(logs) ? logs : []
+      setAttendanceMarked(logsArr.some((l: any) => {
+        const logDate = new Date(l.date || l.createdAt)
+        const now = new Date()
+        return logDate.toDateString() === now.toDateString()
+      }))
       setLoading(false)
     })
   }, [])
 
   const pendingTasks = [
-    { task: `${lessons.length} lesson notes need publishing`, priority: "medium", href: "/teacher/lesson-notes", icon: FileText },
-    { task: `${assignments.filter((a: any) => a.submissions < a.total).length} assignments need grading`, priority: "high", href: "/teacher/assignments", icon: ClipboardCheck },
-    { task: "Mark attendance for Period 1", priority: "high", href: "/teacher/attendance", icon: CalendarCheck },
+    { task: `${lessons.length} lesson note${lessons.length !== 1 ? "s" : ""} need${lessons.length === 1 ? "s" : ""} publishing`, priority: "medium" as const, href: "/teacher/lesson-notes", icon: FileText },
+    { task: `${assignments.filter((a: any) => a.submissions < a.total).length} assignment${assignments.filter((a: any) => a.submissions < a.total).length !== 1 ? "s" : ""} need grading`, priority: "high" as const, href: "/teacher/assignments", icon: ClipboardCheck },
+    ...(!attendanceMarked ? [{ task: "Mark today's attendance", priority: "high" as const, href: "/teacher/attendance", icon: CalendarCheck }] : []),
   ]
 
   const quickActions = [

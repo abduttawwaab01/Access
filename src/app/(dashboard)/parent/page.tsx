@@ -27,6 +27,19 @@ export default function ParentDashboard() {
   const [attendance, setAttendance] = useState<any>({})
   const [fees, setFees] = useState<any>({})
   const [events, setEvents] = useState<any[]>([])
+  const [gradeBoundaries, setGradeBoundaries] = useState<{ min: number; grade: string; color: string }[]>([])
+
+  useEffect(() => {
+    fetch("/api/grading-config").then((r) => r.json()).catch(() => null).then((config) => {
+      if (config?.gradeBoundaries) {
+        const sorted = [...config.gradeBoundaries].sort((a: any, b: any) => b.min - a.min)
+        const colors: Record<string, string> = { A: "#10b981", B: "#3b82f6", C: "#f59e0b", D: "#f97316", E: "#ef4444", F: "#ef4444" }
+        setGradeBoundaries(sorted.map((g: any) => ({ min: g.min, grade: g.grade, color: colors[g.grade] || "#6b7280" })))
+      } else {
+        setGradeBoundaries([{ min: 75, grade: "A", color: "#10b981" }, { min: 60, grade: "B", color: "#3b82f6" }, { min: 0, grade: "C", color: "#ef4444" }])
+      }
+    })
+  }, [])
 
   useEffect(() => {
     if (!activeChildId) return
@@ -43,10 +56,17 @@ export default function ParentDashboard() {
     })
   }, [activeChildId])
 
+  const getBoundaryColor = (score: number) => {
+    for (const b of gradeBoundaries) {
+      if (score >= b.min) return b.color
+    }
+    return "#ef4444"
+  }
+
   const chartData = results.filter((r: any) => r.term === "First Term").map((r: any) => ({
     subject: r.subject.substring(0, 4),
     score: r.score,
-    fill: r.score >= 80 ? "#10b981" : r.score >= 60 ? "#f59e0b" : "#ef4444",
+    fill: getBoundaryColor(r.score),
   }))
 
   if (childrenLoading) {
