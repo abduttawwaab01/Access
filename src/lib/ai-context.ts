@@ -1,4 +1,5 @@
 import { db } from "@/lib/prisma-store"
+import { prisma } from "@/lib/prisma"
 
 interface ContextResult {
   systemPrompt: string
@@ -160,7 +161,132 @@ Always format responses with clear structure using bullet points and bold text.`
   return { systemPrompt, contextSummary }
 }
 
+async function buildSuperAdminContext(): Promise<ContextResult> {
+  const [
+    schools, students, classes, subjects, staff, results,
+    lessonNotes, users, payments, feeStructures, exams,
+    examSessions, questions, admissionApps, feedbackTickets,
+    parentLinks, salaryRecords, announcements,
+  ] = await Promise.all([
+    prisma.school.findMany(),
+    prisma.student.findMany(),
+    prisma.class.findMany(),
+    prisma.subject.findMany(),
+    prisma.staff.findMany(),
+    prisma.result.findMany(),
+    prisma.lessonNote.findMany(),
+    prisma.user.findMany(),
+    prisma.payment.findMany(),
+    prisma.feeStructure.findMany(),
+    prisma.exam.findMany(),
+    prisma.examSession.findMany(),
+    prisma.question.findMany(),
+    prisma.admissionApplication.findMany(),
+    prisma.feedbackTicket.findMany(),
+    prisma.parentLink.findMany(),
+    prisma.salaryRecord.findMany(),
+    prisma.announcement.findMany(),
+  ])
+
+  const teachers = staff.filter((s) => s.role === "teacher")
+  const admins = staff.filter((s) => s.role === "admin")
+  const parents = users.filter((u) => u.role === "parent")
+  const studentUsers = users.filter((u) => u.role === "student")
+
+  const resultsWithScores = results.filter((r) => r.total > 0 && r.score !== undefined)
+  const avgScore = resultsWithScores.length > 0
+    ? round(resultsWithScores.reduce((s, r) => s + (r.score / r.total) * 100, 0) / resultsWithScores.length)
+    : 0
+  const passRate = resultsWithScores.length > 0
+    ? round(resultsWithScores.filter((r) => (r.score / r.total) * 100 >= 50).length / resultsWithScores.length * 100)
+    : 0
+
+  const classEnrollments = classes.map((c) => ({
+    name: c.name,
+    students: students.filter((s) => s.classId === c.id).length,
+  }))
+
+  const publishedNotes = lessonNotes.filter((n) => n.status === "published").length
+  const draftNotes = lessonNotes.filter((n) => n.status === "draft" || n.status === "pending").length
+
+  const totalRevenue = payments.reduce((s, p) => s + (p.status === "confirmed" ? p.amount : 0), 0)
+  const pendingPayments = payments.filter((p) => p.status === "pending").length
+  const pendingApps = admissionApps.filter((a) => a.status === "pending").length
+  const openTickets = feedbackTickets.filter((t) => t.status === "open" || t.status === "pending").length
+  const totalFees = feeStructures.reduce((s, f) => s + f.amount, 0)
+  const totalSalaryPaid = salaryRecords.filter((r) => r.status === "paid").reduce((s, r) => s + r.amount, 0)
+
+  const snapshot = {
+    totalSchools: schools.length,
+    totalStudents: students.length,
+    totalTeachers: teachers.length,
+    totalAdmins: admins.length,
+    totalStaff: staff.length,
+    totalClasses: classes.length,
+    totalSubjects: subjects.length,
+    totalParents: parents.length,
+    totalStudentUsers: studentUsers.length,
+    totalExams: exams.length,
+    totalExamSessions: examSessions.length,
+    totalQuestions: questions.length,
+    totalLessonNotes: lessonNotes.length,
+    totalAnnouncements: announcements.length,
+    totalParentLinks: parentLinks.length,
+    overallAvgScore: avgScore,
+    passRate,
+    publishedLessonNotes: publishedNotes,
+    draftLessonNotes: draftNotes,
+    totalRevenue,
+    pendingPayments,
+    totalFeesOwed: totalFees,
+    totalSalaryPaid,
+    pendingAdmissionApps: pendingApps,
+    openFeedbackTickets: openTickets,
+    classEnrollments,
+  }
+
+  const systemPrompt = `You are an AI assistant for the Super Admin of the entire school management system.
+You have FULL access to ALL data across ALL schools. Answer helpfully and concisely — use bullet points, bold text, and short paragraphs.
+
+SYSTEM OVERVIEW:
+- Schools: ${snapshot.totalSchools}
+- Students: ${snapshot.totalStudents} | Teachers: ${snapshot.totalTeachers} | Staff: ${snapshot.totalStaff}
+- Classes: ${snapshot.totalClasses} | Subjects: ${snapshot.totalSubjects}
+- Parent accounts: ${snapshot.totalParents} | Student accounts: ${snapshot.totalStudentUsers}
+- Parent-student links: ${snapshot.totalParentLinks}
+
+ACADEMICS:
+- Overall average score: ${snapshot.overallAvgScore}% | Pass rate: ${snapshot.passRate}%
+- Lesson notes: ${snapshot.publishedLessonNotes} published, ${snapshot.draftLessonNotes} drafts
+- Exams created: ${snapshot.totalExams} | Exam sessions: ${snapshot.totalExamSessions}
+- Questions in bank: ${snapshot.totalQuestions}
+
+Class breakdown:
+${snapshot.classEnrollments.map((c) => `- ${c.name}: ${c.students} students`).join("\n")}
+
+FINANCE:
+- Total confirmed revenue: $${snapshot.totalRevenue.toLocaleString()}
+- Pending payments: ${snapshot.pendingPayments}
+- Total fee structures: $${snapshot.totalFeesOwed.toLocaleString()}
+- Total salary paid: $${snapshot.totalSalaryPaid.toLocaleString()}
+
+OPERATIONS:
+- Pending admission applications: ${snapshot.pendingAdmissionApps}
+- Open feedback/support tickets: ${snapshot.openFeedbackTickets}
+- Active announcements: ${snapshot.totalAnnouncements}
+
+You help with: system-wide analytics, financial insights, school management, data summaries, operational overview, user management insights.
+Always format responses with clear structure. If the answer requires specific data not in this snapshot, note what data you'd need.`
+
+  const contextSummary = `System: ${snapshot.totalSchools} schools | ${snapshot.totalStudents} students, ${snapshot.totalTeachers} teachers | Avg: ${snapshot.overallAvgScore}% | Revenue: $${snapshot.totalRevenue.toLocaleString()}`
+
+  return { systemPrompt, contextSummary }
+}
+
 export async function buildContext(role: string, userId?: string): Promise<ContextResult> {
+  if (role === "superadmin") {
+    return buildSuperAdminContext()
+  }
   if (role === "teacher" && userId) {
     return buildTeacherContext(userId)
   }

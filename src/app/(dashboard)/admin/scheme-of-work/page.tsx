@@ -391,7 +391,7 @@ export default function SchemeOfWorkPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="session">Session</Label>
-              <Input id="session" placeholder="e.g. 2024/2025" value={form.session} onChange={(e) => update("session", e.target.value)} className="h-12" required />
+              <Input id="session" placeholder="e.g. 2025/2026" value={form.session} onChange={(e) => update("session", e.target.value)} className="h-12" required />
             </div>
           </div>
 

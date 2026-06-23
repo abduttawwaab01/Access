@@ -135,7 +135,7 @@ export default function TeacherQuestionsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant="outline" className={`${typeColors[item.type]} text-[10px] px-2 py-0.5 border-0`}>
-                              <Icon className="h-3 w-3 mr-1" />{item.type === "true_false" ? "T/F" : item.type.toUpperCase()}
+                              <Icon className="h-3 w-3 mr-1" />{(item.type || "mcq") === "true_false" ? "T/F" : (item.type || "mcq").toUpperCase()}
                             </Badge>
                             <Badge variant="outline" className="text-[10px] px-2 py-0.5">{getSubjectName(item.subjectId)}</Badge>
                             <span className="text-xs text-muted-foreground">{item.points} pts</span>

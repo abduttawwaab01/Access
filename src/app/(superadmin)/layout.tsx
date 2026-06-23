@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import {
   Shield, LayoutDashboard, Settings, BookOpen, Calendar, Users,
   GraduationCap, HelpCircle, ClipboardCheck, FileText, CreditCard,
-  Wallet, Building2, Download, Megaphone, MessageSquare, ScanLine
+  Wallet, Building2, Download, Megaphone, MessageSquare, ScanLine, Bot
 } from "lucide-react"
 
 interface NavItem { id: string; icon: any; label: string }
@@ -15,6 +15,7 @@ const navGroups: NavGroup[] = [
   { label: "Overview", items: [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { id: "school-settings", icon: Settings, label: "School Settings" },
+    { id: "ai-assistant", icon: Bot, label: "AI Assistant" },
   ]},
   { label: "Academic Management", items: [
     { id: "classes", icon: BookOpen, label: "Classes" },

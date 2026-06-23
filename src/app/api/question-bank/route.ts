@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 
+function mapQuestion(q: any) {
+  return {
+    id: q.id,
+    subjectId: q.subjectId,
+    classId: q.classId,
+    text: q.question,
+    type: q.type || "mcq",
+    options: q.options,
+    correctAnswer: q.answer,
+    difficulty: q.difficulty,
+    topic: q.topic,
+    points: q.points,
+    approved: q.approved,
+    approvedBy: q.approvedBy,
+    createdBy: q.createdBy,
+    createdAt: q.createdAt,
+    updatedAt: q.updatedAt,
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
@@ -25,7 +45,7 @@ export async function GET(request: NextRequest) {
   const subjects = await db.subjects.getAll()
   const classes = await db.classes.getAll()
   result = result.map((q: any) => ({
-    ...q,
+    ...mapQuestion(q),
     subjectName: subjects.find((s: any) => s.id === q.subjectId)?.name || "Unknown",
     className: classes.find((c: any) => c.id === q.classId)?.name || "Unknown",
   }))
@@ -35,7 +55,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json()
   const item = await db.questions.create(body)
-  return NextResponse.json(item, { status: 201 })
+  return NextResponse.json(mapQuestion(item), { status: 201 })
 }
 
 export async function PUT(request: NextRequest) {
@@ -47,7 +67,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(await db.questions.reject(questionId))
   }
   if (action === "update" && questionId && data) {
-    return NextResponse.json(await db.questions.update(questionId, data))
+    const item = await db.questions.update(questionId, data)
+    return NextResponse.json(item ? mapQuestion(item) : null)
   }
   return NextResponse.json({ error: "invalid action" }, { status: 400 })
 }

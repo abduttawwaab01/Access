@@ -117,7 +117,7 @@ export default function SessionsPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Session Name</Label>
-            <Input id="name" placeholder="e.g. 2024/2025 Academic Session" value={form.name} onChange={(e) => update("name", e.target.value)} className="h-12" required />
+            <Input id="name" placeholder="e.g. 2025/2026 Academic Session" value={form.name} onChange={(e) => update("name", e.target.value)} className="h-12" required />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">

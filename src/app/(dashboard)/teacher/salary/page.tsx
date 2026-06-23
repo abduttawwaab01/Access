@@ -41,7 +41,7 @@ export default function TeacherSalaryPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Base Salary", value: myStructure ? `₦${myStructure.baseSalary}` : "Not set", icon: DollarSign, color: "bg-blue-500/15 text-blue-600" },
+          { label: "Base Salary", value: myStructure ? `₦${myStructure.amount}` : "Not set", icon: DollarSign, color: "bg-blue-500/15 text-blue-600" },
           { label: "Total Earned", value: `₦${totalEarned}`, icon: Wallet, color: "bg-green-500/15 text-green-600" },
           { label: "Last Payment", value: latestRecord?.status === "paid" ? latestRecord.month : "None", icon: CalendarDays, color: "bg-purple-500/15 text-purple-600" },
           { label: "Status", value: latestRecord?.status === "paid" ? "Current" : "Pending", icon: latestRecord?.status === "paid" ? CheckCircle2 : Clock, color: latestRecord?.status === "paid" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600" },
@@ -52,16 +52,10 @@ export default function TeacherSalaryPage() {
 
       {myStructure && (
         <Card className="border-0 glass-card"><CardContent className="p-4">
-          <h3 className="font-semibold mb-3">Bank Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: "Bank Name", value: myStructure.bankName },
-              { label: "Account Name", value: myStructure.accountName },
-              { label: "Account Number", value: myStructure.accountNumber },
-              { label: "Department", value: myStructure.department },
-            ].map((d) => (
-              <div key={d.label} className="rounded-xl bg-muted/30 p-3"><p className="text-xs text-muted-foreground">{d.label}</p><p className="text-sm font-bold mt-0.5">{d.value}</p></div>
-            ))}
+          <h3 className="font-semibold mb-3">Salary Details</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-muted/30 p-3"><p className="text-xs text-muted-foreground">Monthly Amount</p><p className="text-sm font-bold mt-0.5">₦{myStructure.amount}</p></div>
+            <div className="rounded-xl bg-muted/30 p-3"><p className="text-xs text-muted-foreground">Staff ID</p><p className="text-sm font-bold mt-0.5">{myStructure.staffId}</p></div>
           </div>
         </CardContent></Card>
       )}
@@ -72,7 +66,7 @@ export default function TeacherSalaryPage() {
           <div className="space-y-2">
             {myRecords.slice().reverse().map((rec) => (
               <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                <div><p className="text-sm font-medium">{rec.month} {rec.year}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
+                <div><p className="text-sm font-medium">{rec.month} {rec.year}</p></div>
                 <div className="text-right"><p className="font-mono font-bold">₦{rec.amount}</p><Badge className={rec.status === "paid" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{rec.status}</Badge></div>
               </div>
             ))}

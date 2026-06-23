@@ -18,7 +18,7 @@ interface QuickAction {
 }
 
 interface AIAssistantProps {
-  role: "admin" | "teacher"
+  role: "admin" | "teacher" | "superadmin"
   teacherId?: string
   quickActions?: QuickAction[]
   placeholder?: string

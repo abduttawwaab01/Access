@@ -165,7 +165,7 @@ export default function TeacherSessionDetailPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono">Q{i + 1}</span>
-                          <Badge variant="outline" className="text-[10px]">{q.type === "true_false" ? "T/F" : q.type.toUpperCase()}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{(q.type || "mcq") === "true_false" ? "T/F" : (q.type || "mcq").toUpperCase()}</Badge>
                           <span className="text-xs text-muted-foreground">{maxPts} pts</span>
                         </div>
                         {isAutoGraded && <Badge className="bg-green-500/10 text-green-600 border-0 text-xs"><CheckCircle className="h-3 w-3 mr-1" />Auto</Badge>}

@@ -195,9 +195,11 @@ export default function TeachersPage() {
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span className="capitalize">{item.role}</span>
                           {item.department && <span>· {item.department}</span>}
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", item.status === "active" ? "text-success border-success/30" : "text-muted-foreground")}>
-                            {item.status}
-                          </Badge>
+                          {item.status && (
+                            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", item.status === "active" ? "text-success border-success/30" : "text-muted-foreground")}>
+                              {item.status}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">

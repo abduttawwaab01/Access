@@ -292,7 +292,7 @@ export default function AdminTimetablePage() {
                   </div>
                   <div>
                     <Label className="text-xs">Session (optional)</Label>
-                    <Input value={setForm.session} onChange={(e) => setSetForm({ ...setForm, session: e.target.value })} placeholder="e.g. 2024/2025" />
+                    <Input value={setForm.session} onChange={(e) => setSetForm({ ...setForm, session: e.target.value })} placeholder="e.g. 2025/2026" />
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { FileText, CheckCircle2, Clock, Download, Printer, Search, Eye, Star, Send, DownloadCloud, ChevronDown, ChevronRight } from "lucide-react"
+import { currentSession } from "@/lib/utils"
 import { captureElement } from "@/lib/capture"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
@@ -176,7 +177,7 @@ export default function AdminWeeklyReportsPage() {
         className: classes.find((c) => c.id === (selectedClassId === "all" ? editingStudent.classId : selectedClassId))?.name || "",
         week: selectedWeek || 1,
         term: selectedTerm,
-        session: "2024/2025",
+        session: currentSession(),
         createdBy: adminId,
         teacherName: adminName,
         ...form,

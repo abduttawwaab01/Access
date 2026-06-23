@@ -287,12 +287,13 @@ export const db = {
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
       const staffId = `STF${Date.now()}`
+      const { password, ...rest } = data
       return prisma.staff.create({
-        data: { ...data, staffId, schoolId, status: data.status || "active" },
+        data: { ...rest, staffId, schoolId },
       })
     },
     update: async (id: string, data: any) => {
-      const { staffId, createdAt, ...rest } = data
+      const { staffId, createdAt, password, status, ...rest } = data
       return prisma.staff.update({ where: { id }, data: rest })
     },
     delete: async (id: string) => {
@@ -683,19 +684,35 @@ export const db = {
         data: {
           subjectId: data.subjectId,
           classId: data.classId,
-          question: data.question,
-          options: data.options || undefined,
-          answer: data.answer || null,
-          difficulty: data.difficulty || "medium",
-          topic: data.topic || null,
-          points: data.points || 1,
-          createdBy: data.createdBy || null,
+          question: data.question ?? data.text ?? "",
+          type: data.type ?? "mcq",
+          options: data.options ?? undefined,
+          answer: data.answer ?? data.correctAnswer ?? null,
+          difficulty: data.difficulty ?? "medium",
+          topic: data.topic ?? null,
+          points: data.points ?? 1,
+          createdBy: data.createdBy ?? null,
           schoolId,
         },
       })
     },
     update: async (id: string, data: any) => {
-      return prisma.question.update({ where: { id }, data })
+      const mapped: any = {}
+      if (data.question !== undefined) mapped.question = data.question
+      else if (data.text !== undefined) mapped.question = data.text
+      if (data.type !== undefined) mapped.type = data.type
+      if (data.options !== undefined) mapped.options = data.options
+      if (data.answer !== undefined) mapped.answer = data.answer
+      else if (data.correctAnswer !== undefined) mapped.answer = data.correctAnswer
+      if (data.difficulty !== undefined) mapped.difficulty = data.difficulty
+      if (data.topic !== undefined) mapped.topic = data.topic
+      if (data.points !== undefined) mapped.points = data.points
+      if (data.approved !== undefined) mapped.approved = data.approved
+      if (data.approvedBy !== undefined) mapped.approvedBy = data.approvedBy
+      if (data.createdBy !== undefined) mapped.createdBy = data.createdBy
+      if (data.subjectId !== undefined) mapped.subjectId = data.subjectId
+      if (data.classId !== undefined) mapped.classId = data.classId
+      return prisma.question.update({ where: { id }, data: mapped })
     },
     delete: async (id: string) => {
       await prisma.question.delete({ where: { id } })
@@ -1030,12 +1047,14 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
-      return prisma.salaryStructure.create({ data: { ...data, schoolId } })
+      const { amount } = data
+      return prisma.salaryStructure.create({ data: { staffId: data.staffId, amount, schoolId } })
     },
     update: async (staffId: string, data: any) => {
       const existing = await prisma.salaryStructure.findUnique({ where: { staffId } })
       if (!existing) return null
-      return prisma.salaryStructure.update({ where: { staffId }, data })
+      const { amount } = data
+      return prisma.salaryStructure.update({ where: { staffId }, data: { amount } })
     },
   },
 
@@ -1137,6 +1156,8 @@ export const db = {
           dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
           address: data.address || null,
           classApplyingFor: data.classApplyingFor || null,
+          parentName: data.parentName || null,
+          parentPhone: data.parentPhone || null,
           schoolId,
         },
       })
@@ -1213,6 +1234,7 @@ export const db = {
           content: data.content,
           audience: data.audience || "all",
           priority: data.priority || "normal",
+          displayType: data.displayType || "banner",
           active: data.active !== undefined ? data.active : true,
           endDate: data.endDate ? new Date(data.endDate) : null,
           source: "super",

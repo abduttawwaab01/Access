@@ -269,7 +269,7 @@ export default function QuestionBankPage() {
                           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                             <Badge variant="outline" className={`${typeColors[item.type]} text-[10px] px-2 py-0.5 border-0`}>
                               <Icon className="h-3 w-3 mr-1" />
-                              {item.type === "true_false" ? "T/F" : item.type.toUpperCase()}
+                              {(item.type || "mcq") === "true_false" ? "T/F" : (item.type || "mcq").toUpperCase()}
                             </Badge>
                             {item.topic && (
                               <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-0 bg-muted/50">

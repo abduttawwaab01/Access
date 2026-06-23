@@ -13,6 +13,7 @@ import { CheckCircle2, Clock, Search, Star } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { currentSession } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
@@ -177,7 +178,7 @@ export default function TeacherWeeklyReportsPage() {
         className: classes.find((c) => c.id === selectedClassId)?.name || "",
         week: selectedWeek,
         term: selectedTerm,
-        session: "2024/2025",
+        session: currentSession(),
         createdBy: teacherId,
         teacherName,
         ...form,

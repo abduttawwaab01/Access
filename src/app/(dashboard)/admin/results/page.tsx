@@ -34,6 +34,7 @@ export default function AdminResultsPage() {
   const [selectedSession, setSelectedSession] = useState("")
   const [scores, setScores] = useState<Record<string, { caScore: string; examScore: string }>>({})
   const [terms, setTerms] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
   const [exporting, setExporting] = useState(false)
   const dashboardRef = useRef<HTMLDivElement>(null)
 
@@ -44,12 +45,14 @@ export default function AdminResultsPage() {
       fetch("/api/students").then((r) => r.json()),
       fetch("/api/terms").then((r) => r.json()),
       fetch("/api/grading-config").then((r) => r.json()),
-    ]).then(([cls, sub, stu, trm, gc]) => {
+      fetch("/api/sessions").then((r) => r.json()),
+    ]).then(([cls, sub, stu, trm, gc, sess]) => {
       setClasses(Array.isArray(cls) ? cls : [])
       setSubjects(Array.isArray(sub) ? sub : [])
       setStudents(Array.isArray(stu) ? stu : [])
       setTerms(Array.isArray(trm) ? trm : [])
       setGradingConfig(gc)
+      setSessions(Array.isArray(sess) ? sess : [])
       setLoading(false)
     })
   }, [])
@@ -242,8 +245,7 @@ export default function AdminResultsPage() {
                   <Label className="text-xs">Session</Label>
                   <select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
                     <option value="">Current session</option>
-                    <option value="2023/2024">2023/2024</option>
-                    <option value="2024/2025">2024/2025</option>
+                    {sessions.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
                   </select>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import ImageToText from "@/components/ImageToText"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSuperAdmin } from "../layout"
+import AIAssistant from "@/components/AIAssistant"
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, FileText, Calendar,
   Power, Clock, Key, CheckCircle, XCircle, RefreshCw, Plus, Trash2,
@@ -12,7 +13,7 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot
 } from "lucide-react"
 
 const saFetch = async (url: string, options: RequestInit = {}) => {
@@ -66,6 +67,7 @@ export default function SuperAdminPage() {
       case "documents": return <DocumentsSection />
       case "announcements": return <AnnouncementsSection />
       case "feedback": return <FeedbackSection />
+      case "ai-assistant": return <AIAssistantSection />
       case "bank-details": return <BankDetailsSection />
       case "data-export": return <DataExportSection />
       default: return <DashboardSection />
@@ -1689,8 +1691,8 @@ function AnnouncementsSection() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const d = await saApi("dashboard")
-    setItems(d.data?.announcements || [])
+    const d = await saFetch("/api/superadmin?action=dashboard")
+    setItems(d.announcements || [])
     setLoading(false)
   }, [])
 
@@ -1990,6 +1992,37 @@ function DataExportSection() {
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-800 p-4 text-sm font-semibold text-white hover:opacity-90">
         <Download className="h-5 w-5" /> Export All Data as JSON
       </button>
+    </div>
+  )
+}
+
+// ========================== AI ASSISTANT ==========================
+const SUPER_ADMIN_QUICK_ACTIONS = [
+  { label: "System Overview", prompt: "Give me a complete overview of the entire system including all schools, users, and financial data." },
+  { label: "Financial Health", prompt: "Summarize the financial health of the system. Include revenue, pending payments, salary costs, and fee structures." },
+  { label: "Academic Performance", prompt: "Show me the overall academic performance across all classes. Include average scores, pass rates, and class breakdowns." },
+  { label: "Pending Tasks", prompt: "What needs my attention? Show pending admission applications, open feedback tickets, and draft lesson notes." },
+  { label: "User Statistics", prompt: "Give me user statistics across all roles — students, teachers, admins, parents, and staff." },
+  { label: "Data Export Help", prompt: "How can I export data from the system? What export options are available?" },
+]
+
+function AIAssistantSection() {
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/20 flex items-center justify-center">
+          <Bot className="h-5 w-5 text-red-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">AI Assistant</h2>
+          <p className="text-sm text-zinc-500">System-wide intelligence for super admin</p>
+        </div>
+      </div>
+      <AIAssistant
+        role="superadmin"
+        quickActions={SUPER_ADMIN_QUICK_ACTIONS}
+        placeholder="Ask about system-wide data, finances, schools, users, academics..."
+      />
     </div>
   )
 }

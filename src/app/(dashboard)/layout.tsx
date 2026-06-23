@@ -12,6 +12,7 @@ const adminNav: NavItem[] = [
   { label: "Classes", href: "/admin/classes", icon: "BookOpen" },
   { label: "Subjects", href: "/admin/subjects", icon: "BookOpen" },
   { label: "Students", href: "/admin/students", icon: "Users" },
+  { label: "Parents", href: "/admin/parents", icon: "Users" },
   { label: "Teachers", href: "/admin/teachers", icon: "GraduationCap" },
   { label: "AI Assistant", href: "/admin/ai-assistant", icon: "BotMessageSquare" },
   { label: "CBT Engine", href: "/admin/cbt/exams", icon: "ClipboardCheck" },

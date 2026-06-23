@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,12 +9,16 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts"
-import { Wallet, TrendingUp, Users, AlertTriangle, Download, Plus, Banknote, CheckCircle2, XCircle, Clock, Eye, Edit3, Building, Landmark, Percent } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Wallet, TrendingUp, Users, AlertTriangle, Download, Plus, Banknote, CheckCircle2, XCircle, Clock, Eye, Edit3, Building, Landmark, Percent, Pencil, Trash2, X } from "lucide-react"
+import { cn, currentSession } from "@/lib/utils"
 import { toast } from "sonner"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 const COLORS = ["#22c55e", "#f59e0b", "#ef4444", "#3b82f6"]
+
+const DEFAULT_FEE_TYPES = ["Tuition", "Transport", "Hostel", "Lab Fee", "Sports", "ICT", "Library", "Development Levy"]
+const TERMS = ["First Term", "Second Term", "Third Term"]
 
 export default function AdminFeesPage() {
   const [activeTab, setActiveTab] = useState("overview")
@@ -23,13 +27,16 @@ export default function AdminFeesPage() {
   const [classes, setClasses] = useState<any[]>([])
   const [payments, setPayments] = useState<any[]>([])
   const [feeStructures, setFeeStructures] = useState<any[]>([])
+  const FEE_TYPES = [...new Set([...DEFAULT_FEE_TYPES, ...feeStructures.map((fs) => fs.type).filter(Boolean)])]
   const [bankDetails, setBankDetails] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   const [showBankForm, setShowBankForm] = useState(false)
   const [showFeeForm, setShowFeeForm] = useState(false)
+  const [editingFeeId, setEditingFeeId] = useState<string | null>(null)
+  const [confirmDeleteFee, setConfirmDeleteFee] = useState<string | null>(null)
   const [bankForm, setBankForm] = useState({ bankName: "", accountName: "", accountNumber: "", swiftCode: "", branch: "" })
-  const [feeForm, setFeeForm] = useState({ classId: "", type: "Tuition", amount: "", term: "First Term", dueDate: "", session: "2024/2025" })
+  const [feeForm, setFeeForm] = useState({ classId: "", type: "Tuition", amount: "", term: "First Term", dueDate: "", session: currentSession() })
 
   useEffect(() => {
     Promise.all([
@@ -75,14 +82,44 @@ export default function AdminFeesPage() {
     toast.success("Bank details updated")
   }
 
+  const resetFeeForm = () => {
+    setFeeForm({ classId: "", type: "Tuition", amount: "", term: "First Term", dueDate: "", session: currentSession() })
+    setEditingFeeId(null)
+    setShowFeeForm(false)
+  }
+
+  const openEditFee = (fs: any) => {
+    setFeeForm({ classId: fs.classId, type: fs.type || "Tuition", amount: String(fs.amount), term: fs.term || "First Term", dueDate: fs.dueDate || "", session: fs.session || currentSession() })
+    setEditingFeeId(fs.id)
+    setShowFeeForm(true)
+  }
+
   const saveFeeStructure = async () => {
     if (!feeForm.classId || !feeForm.amount) { toast.error("Fill all fields"); return }
-    const res = await fetch("/api/fee-structures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...feeForm, amount: Number(feeForm.amount) }) })
-    const item = await res.json()
-    setFeeStructures([...feeStructures, item])
-    setShowFeeForm(false)
-    setFeeForm({ classId: "", type: "Tuition", amount: "", term: "First Term", dueDate: "", session: "2024/2025" })
-    toast.success("Fee structure added")
+    const body = { ...feeForm, amount: Number(feeForm.amount) }
+    if (editingFeeId) {
+      const res = await fetch("/api/fee-structures", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingFeeId, ...body }) })
+      if (!res.ok) { toast.error("Failed to update"); return }
+      const updated = await res.json()
+      setFeeStructures(feeStructures.map((f) => f.id === editingFeeId ? updated : f))
+      toast.success("Fee structure updated")
+    } else {
+      const res = await fetch("/api/fee-structures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      if (!res.ok) { toast.error("Failed to create"); return }
+      const item = await res.json()
+      setFeeStructures([...feeStructures, item])
+      toast.success("Fee structure added")
+    }
+    resetFeeForm()
+  }
+
+  const deleteFeeStructure = async () => {
+    if (!confirmDeleteFee) return
+    const res = await fetch(`/api/fee-structures?id=${confirmDeleteFee}`, { method: "DELETE" })
+    if (!res.ok) { toast.error("Failed to delete"); setConfirmDeleteFee(null); return }
+    setFeeStructures(feeStructures.filter((f) => f.id !== confirmDeleteFee))
+    toast.success("Fee structure deleted")
+    setConfirmDeleteFee(null)
   }
 
   const confirmPayment = async (id: string) => {
@@ -108,6 +145,13 @@ export default function AdminFeesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      <ConfirmDialog
+        open={!!confirmDeleteFee}
+        onOpenChange={(o) => !o && setConfirmDeleteFee(null)}
+        onConfirm={deleteFeeStructure}
+        title="Delete Fee Structure"
+        description="Permanently delete this fee structure? This cannot be undone."
+      />
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="text-2xl font-bold">Fee Management</h2>
         <p className="text-sm text-muted-foreground">Bank details, fee structures, and payment confirmation</p>
@@ -192,27 +236,56 @@ export default function AdminFeesPage() {
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-semibold">Fee Structures</h3>
-              <Button size="sm" onClick={() => setShowFeeForm(!showFeeForm)}><Plus className="h-4 w-4 mr-1" /> Add Fee</Button>
+              <Button size="sm" onClick={() => { resetFeeForm(); setShowFeeForm(true) }}><Plus className="h-4 w-4 mr-1" /> Add Fee</Button>
             </div>
+            <AnimatePresence>
             {showFeeForm && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/30">
-                <div><label className="text-xs">Class</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.classId} onChange={(e) => setFeeForm({ ...feeForm, classId: e.target.value })}>{classes.map((c) => <option key={c.id} value={c.id}>{c.name} {c.arm}</option>)}</select></div>
-                <div><label className="text-xs">Type</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.type} onChange={(e) => setFeeForm({ ...feeForm, type: e.target.value })}>{["Tuition", "Transport", "Hostel", "Lab Fee", "Sports", "ICT", "Library", "Development Levy"].map((t) => <option key={t}>{t}</option>)}</select></div>
-                <div><label className="text-xs">Amount (₦)</label><Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} /></div>
-                <div><label className="text-xs">Term</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.term} onChange={(e) => setFeeForm({ ...feeForm, term: e.target.value })}>{["First Term", "Second Term", "Third Term"].map((t) => <option key={t}>{t}</option>)}</select></div>
-                <div><label className="text-xs">Due Date</label><Input type="date" value={feeForm.dueDate} onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })} /></div>
-                <div className="flex items-end"><Button size="sm" onClick={saveFeeStructure}>Save</Button></div>
-              </div>
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/30">
+                  <div><label className="text-xs">Class</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.classId} onChange={(e) => setFeeForm({ ...feeForm, classId: e.target.value })}>{classes.map((c) => <option key={c.id} value={c.id}>{c.name} {c.arm}</option>)}</select></div>
+                  <div><label className="text-xs">Fee Type</label>
+                    <div className="relative">
+                      <select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm appearance-none" value={FEE_TYPES.includes(feeForm.type) ? feeForm.type : "other"} onChange={(e) => { if (e.target.value === "other") setFeeForm({ ...feeForm, type: "" }); else setFeeForm({ ...feeForm, type: e.target.value }) }}>
+                        {FEE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                        <option value="other">Other...</option>
+                      </select>
+                      {!FEE_TYPES.includes(feeForm.type) && feeForm.type && (
+                        <Input value={feeForm.type} onChange={(e) => setFeeForm({ ...feeForm, type: e.target.value })} placeholder="Custom fee type" className="mt-1" />
+                      )}
+                    </div>
+                  </div>
+                  <div><label className="text-xs">Amount (₦)</label><Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} /></div>
+                  <div><label className="text-xs">Term</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.term} onChange={(e) => setFeeForm({ ...feeForm, term: e.target.value })}>{TERMS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><label className="text-xs">Due Date</label><Input type="date" value={feeForm.dueDate} onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })} /></div>
+                  <div><label className="text-xs">Session</label><Input value={feeForm.session} onChange={(e) => setFeeForm({ ...feeForm, session: e.target.value })} placeholder={`e.g. ${currentSession()}`} /></div>
+                  <div className="flex items-end gap-2">
+                    <Button size="sm" onClick={saveFeeStructure}>{editingFeeId ? "Update" : "Save"}</Button>
+                    <Button size="sm" variant="outline" onClick={resetFeeForm}>Cancel</Button>
+                  </div>
+                </div>
+              </motion.div>
             )}
+            </AnimatePresence>
             {feeStructures.length === 0 ? <EmptyState title="No fee structures" description="Add fees for each class and term" /> : (
               <div className="space-y-2">
                 {feeStructures.map((fs) => (
-                  <div key={fs.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                  <div key={fs.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 group">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Wallet className="h-4 w-4 text-primary" /></div>
-                      <div className="min-w-0"><p className="text-sm font-medium truncate">{fs.type} - {getClassName(fs.classId)}</p><p className="text-xs text-muted-foreground">{fs.term} • Due: {fs.dueDate}</p></div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{fs.type || "Fee"} - {getClassName(fs.classId)}</p>
+                        <p className="text-xs text-muted-foreground">{fs.term || "—"} {fs.dueDate ? <>• Due: {fs.dueDate}</> : null} {fs.session ? <>• {fs.session}</> : null}</p>
+                      </div>
                     </div>
-                    <p className="text-sm font-mono font-bold shrink-0 ml-2">₦{(fs.amount ?? 0).toLocaleString()}</p>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <p className="text-sm font-mono font-bold mr-1">₦{(fs.amount ?? 0).toLocaleString()}</p>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => openEditFee(fs)}>
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setConfirmDeleteFee(fs.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-400" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

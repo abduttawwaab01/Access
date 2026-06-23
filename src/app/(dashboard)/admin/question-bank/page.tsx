@@ -408,7 +408,7 @@ export default function QuestionBankPage() {
                           <div className="flex md:hidden items-center gap-2 flex-wrap mb-1">
                             <Badge variant="outline" className={`${typeColors[item.type]} text-[10px] px-2 py-0.5 border-0`}>
                               <Icon className="h-3 w-3 mr-1" />
-                              {item.type === "true_false" ? "T/F" : item.type.toUpperCase()}
+                              {item.type === "true_false" ? "T/F" : (item.type || "mcq").toUpperCase()}
                             </Badge>
                             <Badge variant="outline" className="text-[10px] px-2 py-0.5">
                               {item.subjectName}
@@ -434,7 +434,7 @@ export default function QuestionBankPage() {
                           <div className="w-[10%] text-center">
                             <Badge variant="outline" className={`${typeColors[item.type]} text-[10px] px-2 py-0.5 border-0`}>
                               <Icon className="h-3 w-3 mr-1" />
-                              {item.type === "true_false" ? "T/F" : item.type.toUpperCase()}
+                              {item.type === "true_false" ? "T/F" : (item.type || "mcq").toUpperCase()}
                             </Badge>
                           </div>
                           <div className="w-[10%] text-xs text-muted-foreground">{item.subjectName}</div>

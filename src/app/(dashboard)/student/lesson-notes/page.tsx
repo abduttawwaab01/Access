@@ -126,7 +126,7 @@ export default function StudentLessonNotesPage() {
       const userAnswer = answers[i] || ""
       const isCorrect = userAnswer.toLowerCase() === (q.correctAnswer || "").toLowerCase()
       if (isCorrect) correct++
-      return { questionIndex: i, question: q.text, userAnswer, correctAnswer: q.correctAnswer, isCorrect }
+      return { questionIndex: i, question: q.questionText, userAnswer, correctAnswer: q.correctAnswer, isCorrect }
     })
     const score = quizState.questions.length > 0 ? Math.round((correct / quizState.questions.length) * 100) : 0
     const payload = {
@@ -227,11 +227,11 @@ export default function StudentLessonNotesPage() {
               <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }} />
               </div>
-              <p className="text-sm font-medium">{q.text}</p>
+              <p className="text-sm font-medium">{q.questionText}</p>
               <div className="space-y-2">
-                {(q.type === "mcq" && q.options?.length
+                {(q.type?.toLowerCase() === "mcq" && q.options?.length
                   ? q.options
-                  : q.type === "true_false"
+                  : q.type?.toLowerCase() === "true_false"
                     ? ["True", "False"]
                     : []
                 ).map((opt: string) => {

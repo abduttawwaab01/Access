@@ -22,14 +22,13 @@ export default function ParentSettingsPage() {
   const [smsNotifications, setSmsNotifications] = useState(false)
 
   useEffect(() => {
-    fetch("/api/parents")
+    fetch("/api/parent/profile")
       .then((r) => r.json())
       .then((data) => {
-        const parent = Array.isArray(data) ? data[0] : data
-        if (parent) {
-          setName(parent.name || `${parent.firstName || ""} ${parent.lastName || ""}`.trim())
-          setEmail(parent.email || "")
-          setPhone(parent.phone || "")
+        if (data && !data.error) {
+          setName(data.name || "")
+          setEmail(data.email || "")
+          setPhone(data.phone || "")
         }
         setLoading(false)
       })
@@ -38,7 +37,7 @@ export default function ParentSettingsPage() {
 
   const saveProfile = async () => {
     setSaving(true)
-    const res = await fetch("/api/parents", {
+    const res = await fetch("/api/parent/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, phone }),

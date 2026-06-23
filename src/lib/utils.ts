@@ -32,3 +32,11 @@ export function getInitials(name: string): string {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9)
 }
+
+export function currentSession(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  if (month >= 8) return `${year}/${year + 1}`
+  return `${year - 1}/${year}`
+}

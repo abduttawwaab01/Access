@@ -17,6 +17,7 @@ import ImageToText from "@/components/ImageToText"
 import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
+import { currentSession } from "@/lib/utils"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function AdminLessonNotes() {
@@ -36,6 +37,7 @@ export default function AdminLessonNotes() {
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerNote, setViewerNote] = useState<any>(null)
   const [school, setSchool] = useState<any>(null)
+  const [sessions, setSessions] = useState<any[]>([])
 
   useEffect(() => {
     Promise.all([
@@ -43,7 +45,8 @@ export default function AdminLessonNotes() {
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/staff").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()),
-    ]).then(([d, c, s, sch]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setSchool(sch); setLoading(false) })
+      fetch("/api/sessions").then((r) => r.json()),
+    ]).then(([d, c, s, sch, sess]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setSchool(sch); setSessions(Array.isArray(sess) ? sess : []); setLoading(false) })
   }, [])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
@@ -84,7 +87,7 @@ export default function AdminLessonNotes() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ title: "", subject: "", classId: "", week: "", term: "First Term", session: "2024/2025", content: "", resources: "", status: "draft", createdBy: "" })
+    setForm({ title: "", subject: "", classId: "", week: "", term: "First Term", session: currentSession(), content: "", resources: "", status: "draft", createdBy: "" })
     setQuiz([])
     setSheetOpen(true)
   }
@@ -355,9 +358,7 @@ export default function AdminLessonNotes() {
             <Select value={form.session} onValueChange={(v) => v && update("session", v)}>
               <SelectTrigger className="h-12"><SelectValue placeholder="Select session" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="2024/2025">2024/2025</SelectItem>
-                <SelectItem value="2025/2026">2025/2026</SelectItem>
-                <SelectItem value="2026/2027">2026/2027</SelectItem>
+                {sessions.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

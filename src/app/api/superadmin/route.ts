@@ -88,11 +88,27 @@ export async function POST(request: NextRequest) {
       const app = await db.admissionApplications.getById(body.id)
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
       await db.admissionApplications.update(body.id, { status: "accepted", entranceExamPassed: true, entranceExamScore: body.score || null })
-      await db.students.create({
+      const student = await db.students.create({
         firstName: app.firstName, lastName: app.lastName, email: app.email, gender: app.gender, classId: app.classApplyingFor, phone: app.phone, status: "active",
       })
+      if (app.parentName || app.parentPhone) {
+        const { prisma } = await import("@/lib/prisma")
+        const schoolId = student.schoolId
+        const parentEmail = app.email ? `parent.${app.email}` : null
+        const parentUser = await prisma.user.create({
+          data: {
+            name: app.parentName || `${app.firstName}'s Parent`,
+            email: parentEmail || `${app.firstName.toLowerCase()}.parent@school.com`,
+            phone: app.parentPhone || null,
+            password: "parent123",
+            role: "parent",
+            schoolId,
+          },
+        })
+        await db.parentLinks.create({ parentId: parentUser.id, studentId: student.id })
+      }
       const pendingApplications = await db.admissionApplications.getByStatus("pending")
-      return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application accepted" })
+      return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application accepted. Parent account created and linked." })
     }
     case "rejectApplication": {
       const app = await db.admissionApplications.getById(body.id)
@@ -113,6 +129,7 @@ export async function POST(request: NextRequest) {
     case "createAnnouncement": {
       await db.superAnnouncements.create({
         title: body.title, content: body.content, audience: body.targetAudience || "all", priority: body.priority || "normal",
+        displayType: body.displayType || "banner",
         endDate: body.endDate || null,
       })
       return NextResponse.json({ success: true, message: "Announcement created", data: { announcements: await db.superAnnouncements.getAll() } })
@@ -121,7 +138,7 @@ export async function POST(request: NextRequest) {
       const ann = await db.superAnnouncements.getById(body.id)
       if (!ann) return NextResponse.json({ success: false, error: "Not found" })
       if (body.title) {
-        await db.superAnnouncements.update(body.id, { title: body.title, content: body.content, endDate: body.endDate })
+        await db.superAnnouncements.update(body.id, { title: body.title, content: body.content, displayType: body.displayType, endDate: body.endDate })
       } else {
         await db.superAnnouncements.update(body.id, { active: !ann.active })
       }

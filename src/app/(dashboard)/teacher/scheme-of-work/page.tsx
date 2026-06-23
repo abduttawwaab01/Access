@@ -47,6 +47,7 @@ export default function SchemeOfWorkPage() {
   const [items, setItems] = useState<Scheme[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [sessions, setSessions] = useState<any[]>([])
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Scheme | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -63,12 +64,14 @@ export default function SchemeOfWorkPage() {
   ])
 
   const fetchData = async () => {
-    const [schemesRes, classesRes] = await Promise.all([
+    const [schemesRes, classesRes, sessionsRes] = await Promise.all([
       fetch(`/api/scheme-of-work?teacherId=${teacherId}`),
       fetch("/api/classes"),
+      fetch("/api/sessions"),
     ])
     setItems(await schemesRes.json())
     setClasses(await classesRes.json())
+    setSessions(await sessionsRes.json())
     setLoading(false)
   }
 
@@ -318,9 +321,7 @@ export default function SchemeOfWorkPage() {
               <Select value={form.session} onValueChange={(v) => v && updateForm("session", v)}>
                 <SelectTrigger className="h-12"><SelectValue placeholder="Select session" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="2024/2025">2024/2025</SelectItem>
-                  <SelectItem value="2025/2026">2025/2026</SelectItem>
-                  <SelectItem value="2026/2027">2026/2027</SelectItem>
+                  {sessions.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

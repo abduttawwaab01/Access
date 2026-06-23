@@ -82,19 +82,20 @@ model User {
 }
 
 model Announcement {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  audience  String   @default("all")
-  priority  String   @default("normal")
-  author    String?
-  active    Boolean  @default(true)
-  endDate   DateTime?
-  source    String   @default("regular")
-  schoolId  String?
-  school    School?  @relation(fields: [schoolId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  audience    String   @default("all")
+  priority    String   @default("normal")
+  displayType String   @default("banner")
+  author      String?
+  active      Boolean  @default(true)
+  endDate     DateTime?
+  source      String   @default("regular")
+  schoolId    String?
+  school      School?  @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum Role {
@@ -411,6 +412,7 @@ model Question {
   subjectId  String
   classId    String
   question   String
+  type       String   @default("mcq")
   options    Json?
   answer     String?
   difficulty String   @default("medium")
@@ -490,7 +492,9 @@ model BankDetails {
 model FeeStructure {
   id          String   @id @default(cuid())
   classId     String
+  type        String   @default("Tuition")
   amount      Float
+  dueDate     String?
   description String?
   term        String?
   session     String?
@@ -583,6 +587,8 @@ model AdmissionApplication {
   dateOfBirth     DateTime?
   address         String?
   classApplyingFor String?
+  parentName      String?
+  parentPhone     String?
   status          String   @default("pending")
   entranceExamPassed Boolean @default(false)
   entranceExamScore Float?

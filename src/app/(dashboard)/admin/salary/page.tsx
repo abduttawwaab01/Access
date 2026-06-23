@@ -19,7 +19,7 @@ export default function AdminSalaryPage() {
   const [salaryRecords, setSalaryRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editingStaff, setEditingStaff] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ baseSalary: "", bankName: "", accountNumber: "", accountName: "" })
+  const [editForm, setEditForm] = useState({ amount: "" })
 
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
   const currentMonth = months[new Date().getMonth()]
@@ -41,13 +41,13 @@ export default function AdminSalaryPage() {
   const startEdit = (staffId: string) => {
     const struct = getSalaryStructure(staffId)
     setEditingStaff(staffId)
-    setEditForm({ baseSalary: String(struct?.baseSalary || 1500), bankName: struct?.bankName || "", accountNumber: struct?.accountNumber || "", accountName: struct?.accountName || "" })
+    setEditForm({ amount: String(struct?.amount || 1500) })
   }
 
   const saveSalaryStructure = async (staffId: string) => {
-    const res = await fetch("/api/salary-structures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", staffId, baseSalary: Number(editForm.baseSalary), bankName: editForm.bankName, accountNumber: editForm.accountNumber, accountName: editForm.accountName }) })
+    const res = await fetch("/api/salary-structures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update", staffId, amount: Number(editForm.amount) }) })
     if (res.ok) {
-      setSalaryStructures(salaryStructures.map((s) => s.staffId === staffId ? { ...s, ...editForm, baseSalary: Number(editForm.baseSalary) } : s))
+      setSalaryStructures(salaryStructures.map((s) => s.staffId === staffId ? { ...s, amount: Number(editForm.amount) } : s))
       setEditingStaff(null)
       toast.success("Salary structure updated")
     }
@@ -59,7 +59,7 @@ export default function AdminSalaryPage() {
     for (const s of staff) {
       const struct = getSalaryStructure(s.id)
       if (struct) {
-        await fetch("/api/salary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staffId: s.id, amount: struct.baseSalary, month: currentMonth, year: currentYear, method: "bank_transfer" }) })
+        await fetch("/api/salary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ staffId: s.id, amount: struct.amount, month: currentMonth, year: currentYear }) })
       }
     }
     const res = await fetch("/api/salary")
@@ -125,19 +125,13 @@ export default function AdminSalaryPage() {
                     {isEditing ? (
                       <div className="mt-4 space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div><label className="text-xs text-muted-foreground">Base Salary (₦)</label><Input type="number" value={editForm.baseSalary} onChange={(e) => setEditForm({ ...editForm, baseSalary: e.target.value })} /></div>
-                          <div><label className="text-xs text-muted-foreground">Bank Name</label><Input value={editForm.bankName} onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })} /></div>
-                          <div><label className="text-xs text-muted-foreground">Account Number</label><Input value={editForm.accountNumber} onChange={(e) => setEditForm({ ...editForm, accountNumber: e.target.value })} /></div>
-                          <div><label className="text-xs text-muted-foreground">Account Name</label><Input value={editForm.accountName} onChange={(e) => setEditForm({ ...editForm, accountName: e.target.value })} /></div>
+                          <div><label className="text-xs text-muted-foreground">Salary Amount (₦)</label><Input type="number" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} /></div>
                         </div>
                         <Button size="sm" onClick={() => saveSalaryStructure(s.id)}>Save</Button>
                       </div>
                     ) : struct ? (
                       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Base</span><p className="font-bold">₦{struct.baseSalary}</p></div>
-                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Bank</span><p className="font-bold">{struct.bankName}</p></div>
-                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Account</span><p className="font-bold font-mono">{struct.accountNumber}</p></div>
-                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Name</span><p className="font-bold truncate">{struct.accountName}</p></div>
+                        <div className="rounded-lg bg-muted/30 p-2"><span className="text-muted-foreground">Amount</span><p className="font-bold">₦{struct.amount}</p></div>
                       </div>
                     ) : (
                       <div className="mt-3"><Button size="sm" variant="outline" onClick={() => startEdit(s.id)}>Set Salary</Button></div>
@@ -169,7 +163,7 @@ export default function AdminSalaryPage() {
                     <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 flex-wrap gap-2">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-xs">{s ? `${s.firstName[0]}${s.lastName[0]}` : "?"}</AvatarFallback></Avatar>
-                        <div className="min-w-0"><p className="text-sm font-medium truncate">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p><p className="text-xs text-muted-foreground">{rec.method}</p></div>
+                        <div className="min-w-0"><p className="text-sm font-medium truncate">{s ? `${s.firstName} ${s.lastName}` : rec.staffId}</p></div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <p className="font-mono font-bold">₦{(rec.amount ?? 0).toLocaleString()}</p>

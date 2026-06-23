@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Download, Printer, Send, Share2, FileText, DownloadCloud, Award } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
+import { currentSession } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 
@@ -80,7 +81,7 @@ export default function StudentReportCardPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: "2024/2025",
+    session: currentSession(),
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score,
@@ -181,7 +182,7 @@ export default function StudentReportCardPage() {
       <div className="flex items-center flex-wrap gap-2 justify-between print:hidden">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <h2 className="text-2xl font-bold">Report Card</h2>
-          <p className="text-sm text-muted-foreground">{currentTerm} - Academic Session 2024/2025</p>
+          <p className="text-sm text-muted-foreground">{currentTerm} - Academic Session {currentSession()}</p>
         </motion.div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <Button variant="outline" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" /> Print</Button>

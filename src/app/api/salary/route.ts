@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     if (!item) return NextResponse.json({ error: "not found" }, { status: 404 })
     return NextResponse.json(item)
   }
-  const item = await db.salaryRecords.create(body)
+  const { staffId, amount, month, year } = body
+  const item = await db.salaryRecords.create({ staffId, amount, month, year })
   return NextResponse.json(item, { status: 201 })
 }

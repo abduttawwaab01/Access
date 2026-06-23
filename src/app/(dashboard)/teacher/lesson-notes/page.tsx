@@ -39,16 +39,19 @@ export default function LessonNotesPage() {
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerNote, setViewerNote] = useState<any>(null)
   const [school, setSchool] = useState<any>(null)
+  const [sessions, setSessions] = useState<any[]>([])
 
   const fetchData = async () => {
-    const [notesRes, classesRes, schoolRes] = await Promise.all([
+    const [notesRes, classesRes, schoolRes, sessionsRes] = await Promise.all([
       fetch(`/api/lesson-notes?teacherId=${teacherId}`),
       fetch("/api/classes"),
       fetch("/api/school"),
+      fetch("/api/sessions"),
     ])
     setItems(await notesRes.json())
     setClasses(await classesRes.json())
     setSchool(await schoolRes.json())
+    setSessions(await sessionsRes.json())
     setLoading(false)
   }
 
@@ -320,9 +323,7 @@ export default function LessonNotesPage() {
             <Select value={form.session} onValueChange={(v) => v && update("session", v)}>
               <SelectTrigger className="h-12"><SelectValue placeholder="Select session" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="2024/2025">2024/2025</SelectItem>
-                <SelectItem value="2025/2026">2025/2026</SelectItem>
-                <SelectItem value="2026/2027">2026/2027</SelectItem>
+                {sessions.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

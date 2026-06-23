@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { toast } from "sonner"
 import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, User } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
+import { currentSession } from "@/lib/utils"
 import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
@@ -95,7 +96,7 @@ export default function AdminReportCardsPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: termResults[0]?.session || "2024/2025",
+    session: termResults[0]?.session || currentSession(),
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score || r.total || 0,
