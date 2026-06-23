@@ -107,7 +107,60 @@ export function runSeed(store: any) {
 
   // 10. Timetable
   const timetable = generateTimetable(createdClasses, createdSubjects)
-  timetable.forEach((t) => (store as any).timetable.create(t))
+  // Create a "Regular" timetable set per class
+  const regularSets = createdClasses.map((cls: any) =>
+    (store as any).timetableSets.create({
+      name: `Regular Timetable - ${cls.name}`,
+      type: "regular",
+      classId: cls.id,
+      classLabel: cls.name,
+      term: "First Term",
+      session: "2024/2025",
+    })
+  )
+  // Create an "Exam" timetable set per class
+  const examSets = createdClasses.map((cls: any) =>
+    (store as any).timetableSets.create({
+      name: `Examination Timetable - ${cls.name}`,
+      type: "exam",
+      classId: cls.id,
+      classLabel: cls.name,
+      term: "First Term",
+      session: "2024/2025",
+    })
+  )
+  timetable.forEach((t: any, i: number) => {
+    const clsIdx = createdClasses.findIndex((c: any) => c.id === t.classId)
+    t.setId = regularSets[clsIdx]?.id || ""
+    ;(store as any).timetable.create(t)
+  })
+  // Seed break entries
+  const breakSlots = [
+    { day: "Monday", startTime: "10:00", endTime: "10:30" },
+    { day: "Tuesday", startTime: "10:00", endTime: "10:30" },
+    { day: "Wednesday", startTime: "10:00", endTime: "10:30" },
+    { day: "Thursday", startTime: "10:00", endTime: "10:30" },
+    { day: "Friday", startTime: "10:00", endTime: "10:30" },
+    { day: "Monday", startTime: "12:30", endTime: "13:10", label: "Lunch Break" },
+    { day: "Tuesday", startTime: "12:30", endTime: "13:10", label: "Lunch Break" },
+    { day: "Wednesday", startTime: "12:30", endTime: "13:10", label: "Lunch Break" },
+    { day: "Thursday", startTime: "12:30", endTime: "13:10", label: "Lunch Break" },
+    { day: "Friday", startTime: "12:30", endTime: "13:10", label: "Lunch Break" },
+  ]
+  regularSets.forEach((set: any) => {
+    breakSlots.forEach((bs) => {
+      ;(store as any).timetable.create({
+        setId: set.id,
+        day: bs.day,
+        startTime: bs.startTime,
+        endTime: bs.endTime,
+        time: bs.startTime,
+        subject: bs.label || "Break",
+        isBreak: true,
+        classId: set.classId,
+      })
+    })
+  })
 
   // 11. Topics
   const topics = generateTopics(createdSubjects, createdClasses)
@@ -215,7 +268,8 @@ export function runSeed(store: any) {
   console.log(`  - ${attendanceRecords.length} attendance records`)
   console.log(`  - ${reportCards.length} report cards`)
   console.log(`  - ${weeklyReports.length} weekly reports`)
-  console.log(`  - ${timetable.length} timetable entries`)
+  console.log(`  - ${regularSets.length + examSets.length} timetable sets`)
+  console.log(`  - ${timetable.length + breakSlots.length * regularSets.length} timetable entries`)
   console.log(`  - ${feeStructures.length} fee structures`)
   console.log(`  - ${payments.length} payments`)
 }

@@ -192,7 +192,7 @@ export function generateStudents(classes: { id: string; name: string; section: s
   let studentCounter = 1
 
   for (const cls of classes) {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 2; i++) {
       const studentNum = studentCounter++
       const gender = i % 2 === 0 ? "Male" : "Female"
       const names = generateStudentName(studentNum, gender)
@@ -449,57 +449,58 @@ export function generateSchemeOfWork(
   subjects: { id: string; name: string; classId: string }[]
 ) {
   const result: any[] = []
-  const termName = "First Term"
 
-  for (const cls of classes) {
-    const classSubjects = subjects.filter((s) => s.classId === cls.id)
-    for (const sub of classSubjects) {
-      const tIdx = getTermIndex(termName)
-      const key = sub.name === "Number Work" || sub.name === "Mathematics" ? "Mathematics"
-        : sub.name === "Letter Work" || sub.name === "English Language" ? "English"
-        : sub.name === "General Science" || sub.name === "Basic Science" || sub.name === "Integrated Science" || sub.name === "Biology" || sub.name === "Chemistry" || sub.name === "Physics" || sub.name === "Health & Physical Education" ? "Science"
-        : sub.name === "Social Studies" || sub.name === "Social Habits" || sub.name === "Government" || sub.name === "Economics" || sub.name === "Commerce" ? "Social"
-        : sub.name === "Agricultural Science" || sub.name === "Accounting" ? "Agric"
-        : sub.name === "Literature-in-English" || sub.name === "Christian Religious Studies" ? "English"
-        : null
+  for (const termName of TERM_NAMES) {
+    for (const cls of classes) {
+      const classSubjects = subjects.filter((s) => s.classId === cls.id)
+      for (const sub of classSubjects) {
+        const tIdx = getTermIndex(termName)
+        const key = sub.name === "Number Work" || sub.name === "Mathematics" ? "Mathematics"
+          : sub.name === "Letter Work" || sub.name === "English Language" ? "English"
+          : sub.name === "General Science" || sub.name === "Basic Science" || sub.name === "Integrated Science" || sub.name === "Biology" || sub.name === "Chemistry" || sub.name === "Physics" || sub.name === "Health & Physical Education" ? "Science"
+          : sub.name === "Social Studies" || sub.name === "Social Habits" || sub.name === "Government" || sub.name === "Economics" || sub.name === "Commerce" ? "Social"
+          : sub.name === "Agricultural Science" || sub.name === "Accounting" ? "Agric"
+          : sub.name === "Literature-in-English" || sub.name === "Christian Religious Studies" ? "English"
+          : null
 
-      if (!key || !WEEKLY_TOPICS[key]) continue
+        if (!key || !WEEKLY_TOPICS[key]) continue
 
-      const topics = WEEKLY_TOPICS[key][tIdx] || WEEKLY_TOPICS[key][0]
-      const objectives = WEEKLY_OBJECTIVES[key] || []
-      const weeks = topics.map((topic, wi) => ({
-        id: nextId("swk"),
-        week: wi + 1,
-        topic,
-        objectives: objectives[wi] || objectives[0] || "Understand the topic",
-        content: `Comprehensive coverage of ${topic} suitable for ${cls.name} level. Includes definitions, examples, practice exercises, and real-world applications.`,
-        resources: `${pickRandom(["Textbook", "Worksheet", "Chart", "Video", "Interactive Activity"])}, ${pickRandom(["Group Discussion", "Individual Practice", "Demonstration", "Field Trip"])}`,
-        assessment: `${pickRandom(["Classwork", "Homework", "Quiz", "Group Work", "Oral Assessment"])}`,
-      }))
+        const topics = WEEKLY_TOPICS[key][tIdx] || WEEKLY_TOPICS[key][0]
+        const objectives = WEEKLY_OBJECTIVES[key] || []
+        const weeks = topics.map((topic, wi) => ({
+          id: nextId("swk"),
+          week: wi + 1,
+          topic,
+          objectives: objectives[wi] || objectives[0] || "Understand the topic",
+          content: `Comprehensive coverage of ${topic} suitable for ${cls.name} level. Includes definitions, examples, practice exercises, and real-world applications.`,
+          resources: `${pickRandom(["Textbook", "Worksheet", "Chart", "Video", "Interactive Activity"])}, ${pickRandom(["Group Discussion", "Individual Practice", "Demonstration", "Field Trip"])}`,
+          assessment: `${pickRandom(["Classwork", "Homework", "Quiz", "Group Work", "Oral Assessment"])}`,
+        }))
 
-      result.push({
-        id: nextId("sow"),
-        title: `${cls.name} ${sub.name} Scheme of Work (${termName})`,
-        subjectId: sub.id,
-        subject: sub.name,
-        classId: cls.id,
-        term: termName,
-        session: CURRENT_SESSION,
-        weeks,
-        status: "published",
-        createdBy: "1",
-        approvedBy: "1",
-        approvedAt: now(),
-        createdAt: now(),
-        updatedAt: now(),
-      })
+        result.push({
+          id: nextId("sow"),
+          title: `${cls.name} ${sub.name} Scheme of Work (${termName})`,
+          subjectId: sub.id,
+          subject: sub.name,
+          classId: cls.id,
+          term: termName,
+          session: CURRENT_SESSION,
+          weeks,
+          status: "published",
+          createdBy: "1",
+          approvedBy: "1",
+          approvedAt: now(),
+          createdAt: now(),
+          updatedAt: now(),
+        })
+      }
     }
   }
   return result
 }
 
 // ============================================================
-// LESSON NOTES
+// LESSON NOTES (4 per class — Math, English, Science, Social/Agric)
 // ============================================================
 export function generateLessonNotes(
   classes: { id: string; name: string }[],
@@ -509,46 +510,119 @@ export function generateLessonNotes(
   const result: any[] = []
   const teacher = staff.find((s) => s.id !== "1")
 
-  // Generate 2 lesson notes per class (one Math/Number Work, one English/Letter Work)
+  const noteTemplates: Record<string, { objectives: string[]; intro: string; activities: string[]; conclusion: string }> = {
+    "Mathematics": {
+      objectives: ["Understand the key mathematical concepts presented", "Apply mathematical operations correctly", "Solve problems with confidence and accuracy", "Explain the reasoning behind solutions"],
+      intro: "Begin with a warm-up activity reviewing previous knowledge. Introduce the new concept using concrete examples and manipulatives. Relate the topic to real-life situations students can identify with.",
+      activities: ["Mental mathematics drill and review (5 mins)", "Direct instruction with worked examples on the board (15 mins)", "Guided practice with teacher supervision (10 mins)", "Group work on problem-solving tasks (10 mins)", "Individual practice exercises (10 mins)"],
+      conclusion: "Review key points with the class. Address common errors observed during practice. Assign homework that reinforces the day's learning. Preview the next topic.",
+    },
+    "English Language": {
+      objectives: ["Identify and understand the language concept being taught", "Apply the concept correctly in speech and writing", "Demonstrate comprehension through exercises", "Build vocabulary related to the topic"],
+      intro: "Begin with a short warm-up activity such as a quick review game or vocabulary quiz. Introduce the topic using a story, picture, or real-life scenario. Elicit prior knowledge from students.",
+      activities: ["Warm-up discussion or vocabulary game (5 mins)", "Presentation of new concept with examples (15 mins)", "Reading/writing activity with guided support (15 mins)", "Peer practice and speaking exercise (10 mins)", "Written exercise to reinforce learning (10 mins)"],
+      conclusion: "Recap the main points of the lesson. Check understanding through oral questions. Assign practice work. Provide feedback on common errors.",
+    },
+    "Science": {
+      objectives: ["Understand the scientific concept being introduced", "Make observations and draw conclusions", "Relate the concept to everyday life", "Demonstrate understanding through practical activities"],
+      intro: "Begin with a demonstration or experiment to capture students' interest. Ask probing questions to assess prior knowledge. Explain the learning objectives for the lesson.",
+      activities: ["Engagement activity/demonstration (5 mins)", "Explanation of scientific concepts with diagrams (15 mins)", "Hands-on experiment or observation (15 mins)", "Group discussion and recording of findings (10 mins)", "Review questions and worksheet (10 mins)"],
+      conclusion: "Review what was learned. Connect the lesson to real-world applications. Assign research or observation homework. Prepare students for the next topic.",
+    },
+    "Social Studies": {
+      objectives: ["Understand the social/civic concept being taught", "Appreciate its relevance to everyday life", "Develop critical thinking about the topic", "Apply the knowledge to real-life situations"],
+      intro: "Begin with a discussion question related to the topic. Use pictures, maps, or stories to introduce the concept. Connect the topic to students' own experiences and community.",
+      activities: ["Discussion starter and brainstorming (5 mins)", "Direct instruction with visual aids (15 mins)", "Group discussion or debate (15 mins)", "Map/Chart activity or research task (10 mins)", "Reflection writing or worksheet (10 mins)"],
+      conclusion: "Summarize key facts and concepts. Encourage students to share what they learned with family. Assign a simple research task. Preview the next lesson.",
+    },
+    "Agric": {
+      objectives: ["Understand basic agricultural concepts", "Identify tools, crops, and farming practices", "Appreciate the importance of agriculture", "Develop practical agricultural skills"],
+      intro: "Begin with pictures or samples of farm products. Discuss the importance of agriculture in Nigeria. Connect to students' home experiences with farming or food.",
+      activities: ["Warm-up: What do you know about farming? (5 mins)", "Presentation of new concepts with pictures/realia (15 mins)", "Practical identification of tools/crops (10 mins)", "Group activity: sorting or matching (10 mins)", "Worksheet and review (10 mins)"],
+      conclusion: "Review the key learning points. Discuss how agriculture provides food and jobs. Assign a practical task (e.g., plant a seed at home). Preview the next topic.",
+    },
+  }
+
+  const subjectCategories: Record<string, string> = {
+    "Number Work": "Mathematics",
+    "Mathematics": "Mathematics",
+    "Further Mathematics": "Mathematics",
+    "Letter Work": "English Language",
+    "English Language": "English Language",
+    "Literature-in-English": "English Language",
+    "General Science": "Science",
+    "Basic Science": "Science",
+    "Integrated Science": "Science",
+    "Biology": "Science",
+    "Chemistry": "Science",
+    "Physics": "Science",
+    "Social Habits": "Social Studies",
+    "Social Studies": "Social Studies",
+    "Government": "Social Studies",
+    "Economics": "Social Studies",
+    "History": "Social Studies",
+    "Geography": "Social Studies",
+    "Civic Education": "Social Studies",
+    "Agricultural Science": "Agric",
+    "Home Economics": "Agric",
+    "Business Studies": "Social Studies",
+    "Commerce": "Social Studies",
+    "Accounting": "Mathematics",
+    "Christian Religious Studies": "Social Studies",
+    "Health Habits": "Science",
+    "Health & Physical Education": "Science",
+    "Physical & Health Education": "Science",
+  }
+
   for (const cls of classes) {
     const classSubjects = subjects.filter((s) => s.classId === cls.id)
-    const mathSub = classSubjects.find(
-      (s) => s.name === "Mathematics" || s.name === "Number Work"
-    )
-    const engSub = classSubjects.find(
-      (s) => s.name === "English Language" || s.name === "Letter Work"
-    )
 
-    const subjectsForNotes = [mathSub, engSub].filter(Boolean) as any[]
+    // Pick up to 4 subjects: Math, English, Science, Social/Agric
+    const mathSub = classSubjects.find((s) => s.name === "Mathematics" || s.name === "Number Work" || s.name === "Further Mathematics")
+    const engSub = classSubjects.find((s) => s.name === "English Language" || s.name === "Letter Work" || s.name === "Literature-in-English")
+    const scienceSub = classSubjects.find((s) => ["General Science", "Basic Science", "Integrated Science", "Biology", "Chemistry", "Physics", "Health Habits", "Physical & Health Education", "Health & Physical Education"].includes(s.name))
+    const humanitiesSub = classSubjects.find((s) => ["Social Studies", "Social Habits", "Agricultural Science", "Home Economics", "Civic Education", "Christian Religious Studies", "Government", "Economics", "Commerce", "Geography", "History"].includes(s.name))
 
-    for (let si = 0; si < subjectsForNotes.length; si++) {
-      const sub = subjectsForNotes[si]
-      const weekNum = 3 + si
+    const selected = [mathSub, engSub, scienceSub, humanitiesSub].filter(Boolean) as any[]
+    const seenNames = new Set<string>()
+    const unique = selected.filter((s) => {
+      if (seenNames.has(s.name)) return false
+      seenNames.add(s.name)
+      return true
+    })
+
+    for (let si = 0; si < unique.length; si++) {
+      const sub = unique[si]
+      const weekNum = 2 + si * 3
+      const cat = subjectCategories[sub.name] || "General"
+      const tmpl = noteTemplates[cat] || noteTemplates["Mathematics"]
+      const topicWords = pickRandom(["Basic Concepts", "Core Topics", "Fundamentals", "Key Principles", "Essential Skills", "Important Themes"])
 
       result.push({
         id: nextId("ln"),
-        title: `${sub.name}: Introduction to ${pickRandom(["Basic Concepts", "Fundamentals", "Core Topics", "Key Principles"])} - Week ${weekNum}`,
+        title: `${sub.name}: ${topicWords} - Week ${weekNum} (${cls.name})`,
         subject: sub.name,
+        subjectId: sub.id,
         classId: cls.id,
         week: weekNum,
         term: "First Term",
         session: CURRENT_SESSION,
-        content: `<h2>${sub.name} Lesson - Week ${weekNum}</h2><p>This lesson covers the fundamental concepts of ${sub.name} for ${cls.name} students.</p><h3>Learning Objectives:</h3><ul><li>Understand the core concepts</li><li>Apply knowledge to solve problems</li><li>Demonstrate understanding through exercises</li></ul><h3>Lesson Content:</h3><p>Students will learn through a combination of direct instruction, guided practice, and independent work. Key vocabulary will be introduced and reinforced through various activities.</p><h3>Activities:</h3><ol><li>Warm-up exercise (5 mins)</li><li>Direct instruction with examples (15 mins)</li><li>Guided practice (15 mins)</li><li>Independent work (10 mins)</li><li>Review and reflection (5 mins)</li></ol>`,
-        resources: `<ul><li>Textbook Chapter ${weekNum}</li><li>Worksheet ${weekNum}.1</li><li>Flashcards</li><li>Whiteboard markers</li></ul>`,
+        content: `<h2>${sub.name} Lesson - ${cls.name}</h2><h3>Learning Objectives:</h3><ul>${tmpl.objectives.map(o => `<li>${o}</li>`).join("")}</ul><h3>Introduction:</h3><p>${tmpl.intro}</p><h3>Lesson Procedure / Activities:</h3><ol>${tmpl.activities.map(a => `<li>${a}</li>`).join("")}</ol><h3>Conclusion:</h3><p>${tmpl.conclusion}</p><h3>Evaluation:</h3><p>Students will be assessed through class participation, completed exercises, and a short quiz at the end of the lesson. Marks will be recorded for continuous assessment.</p>`,
+        resources: `<ul><li>${sub.name} Textbook (Chapter ${weekNum})</li><li>Lesson worksheet</li><li>Whiteboard and markers</li><li>Learning aids relevant to the topic</li><li>Reference materials</li></ul>`,
         quiz: [
           {
             id: nextId("qz"),
-            questionText: `What is the first step in solving a ${sub.name === "Mathematics" || sub.name === "Number Work" ? "mathematical" : "comprehension"} problem?`,
-            question: `What is the first step in solving a ${sub.name === "Mathematics" || sub.name === "Number Work" ? "mathematical" : "comprehension"} problem?`,
-            type: "MCQ",
-            options: ["Identify the problem", "Write the answer", "Skip to the end", "Ask a friend"],
-            correctAnswer: "Identify the problem",
+            questionText: `What is the most important thing you learned in today's ${sub.name} lesson?`,
+            question: `What is the most important thing you learned in today's ${sub.name} lesson?`,
+            type: "Theory",
+            options: [],
+            correctAnswer: "Students should mention a key concept from the lesson",
             points: 5,
           },
           {
             id: nextId("qz"),
-            questionText: `${sub.name} helps develop critical thinking skills. (True/False)`,
-            question: `${sub.name} helps develop critical thinking skills. (True/False)`,
+            questionText: `${sub.name} is an important subject that helps develop critical thinking. (True/False)`,
+            question: `${sub.name} is an important subject that helps develop critical thinking. (True/False)`,
             type: "True-False",
             options: ["True", "False"],
             correctAnswer: "True",

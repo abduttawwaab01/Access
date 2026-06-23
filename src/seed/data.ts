@@ -87,13 +87,18 @@ export const CLASS_BROAD_SECTION: Record<string, string> = {
   "SSS 3 - Commerce": "SSS",
 }
 
-// --- SUBJECTS per section ---
+// --- SUBJECTS per section (comprehensive Nigerian curriculum) ---
 export const SUBJECTS_NURSERY = [
   { name: "Number Work", code: "NUM" },
   { name: "Letter Work", code: "LET" },
   { name: "General Science", code: "GSC" },
   { name: "Social Habits", code: "SOH" },
-  { name: "Health & Physical Education", code: "HPE" },
+  { name: "Health Habits", code: "HHB" },
+  { name: "Writing", code: "WRI" },
+  { name: "Rhymes & Phonics", code: "RHY" },
+  { name: "Creative Arts", code: "CAT" },
+  { name: "Physical Development", code: "PED" },
+  { name: "Moral Instruction", code: "MOR" },
 ]
 
 export const SUBJECTS_PRIMARY = [
@@ -102,6 +107,16 @@ export const SUBJECTS_PRIMARY = [
   { name: "Basic Science", code: "BSC" },
   { name: "Social Studies", code: "SST" },
   { name: "Agricultural Science", code: "AGR" },
+  { name: "Home Economics", code: "HEC" },
+  { name: "Civic Education", code: "CVE" },
+  { name: "Physical & Health Education", code: "PHE" },
+  { name: "Computer Studies", code: "COM" },
+  { name: "Christian Religious Studies", code: "CRS" },
+  { name: "Yoruba Language", code: "YOR" },
+  { name: "Creative Arts", code: "CAT" },
+  { name: "Music", code: "MUS" },
+  { name: "Quantitative Reasoning", code: "QUR" },
+  { name: "Verbal Reasoning", code: "VER" },
 ]
 
 export const SUBJECTS_JSS = [
@@ -110,6 +125,18 @@ export const SUBJECTS_JSS = [
   { name: "Integrated Science", code: "ISC" },
   { name: "Social Studies", code: "SST" },
   { name: "Agricultural Science", code: "AGR" },
+  { name: "Civic Education", code: "CVE" },
+  { name: "Physical & Health Education", code: "PHE" },
+  { name: "Computer Studies", code: "COM" },
+  { name: "Christian Religious Studies", code: "CRS" },
+  { name: "Business Studies", code: "BUS" },
+  { name: "Home Economics", code: "HEC" },
+  { name: "Basic Technology", code: "BTE" },
+  { name: "French", code: "FRN" },
+  { name: "Yoruba Language", code: "YOR" },
+  { name: "Creative Arts", code: "CAT" },
+  { name: "Quantitative Reasoning", code: "QUR" },
+  { name: "Verbal Reasoning", code: "VER" },
 ]
 
 export const SUBJECTS_SSS_SCIENCE = [
@@ -118,6 +145,13 @@ export const SUBJECTS_SSS_SCIENCE = [
   { name: "Biology", code: "BIO" },
   { name: "Chemistry", code: "CHM" },
   { name: "Physics", code: "PHY" },
+  { name: "Further Mathematics", code: "FMH" },
+  { name: "Agricultural Science", code: "AGR" },
+  { name: "Computer Studies", code: "COM" },
+  { name: "Christian Religious Studies", code: "CRS" },
+  { name: "Yoruba Language", code: "YOR" },
+  { name: "Physical & Health Education", code: "PHE" },
+  { name: "Data Processing", code: "DAP" },
 ]
 
 export const SUBJECTS_SSS_ARTS = [
@@ -126,6 +160,13 @@ export const SUBJECTS_SSS_ARTS = [
   { name: "Literature-in-English", code: "LIT" },
   { name: "Government", code: "GOV" },
   { name: "Christian Religious Studies", code: "CRS" },
+  { name: "Yoruba Language", code: "YOR" },
+  { name: "Economics", code: "ECO" },
+  { name: "History", code: "HIS" },
+  { name: "Geography", code: "GEO" },
+  { name: "Commerce", code: "COM" },
+  { name: "Physical & Health Education", code: "PHE" },
+  { name: "French", code: "FRN" },
 ]
 
 export const SUBJECTS_SSS_COMMERCE = [
@@ -134,6 +175,13 @@ export const SUBJECTS_SSS_COMMERCE = [
   { name: "Economics", code: "ECO" },
   { name: "Commerce", code: "COM" },
   { name: "Accounting", code: "ACC" },
+  { name: "Business Studies", code: "BUS" },
+  { name: "Christian Religious Studies", code: "CRS" },
+  { name: "Geography", code: "GEO" },
+  { name: "Government", code: "GOV" },
+  { name: "Yoruba Language", code: "YOR" },
+  { name: "Physical & Health Education", code: "PHE" },
+  { name: "Data Processing", code: "DAP" },
 ]
 
 export function getSubjectsForClass(className: string) {

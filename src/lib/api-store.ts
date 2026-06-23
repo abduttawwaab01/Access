@@ -20,6 +20,7 @@ let lessonNotes: any[] = g("lessonNotes", [])
 let schemeOfWorks: any[] = g("schemeOfWorks", [])
 let assignments: any[] = g("assignments", [])
 let timetable: any[] = g("timetable", [])
+let timetableSets: any[] = g("timetableSets", [])
 let announcements: any[] = g("announcements", [])
 let results: any[] = g("results", [])
 let attendanceRecords: any[] = g("attendanceRecords", [])
@@ -137,12 +138,33 @@ export const store = {
     update: (id: string, data: any) => { const idx = assignments.findIndex((a) => a.id === id); if (idx === -1) return null; assignments[idx] = { ...assignments[idx], ...data }; return assignments[idx] },
     delete: (id: string) => { const idx = assignments.findIndex((a) => a.id === id); if (idx === -1) return false; assignments.splice(idx, 1); return true },
   },
+  timetableSets: {
+    getAll: (filters?: { type?: string; classId?: string }) => {
+      let result = [...timetableSets]
+      if (filters?.type) result = result.filter((s) => s.type === filters.type)
+      if (filters?.classId) result = result.filter((s) => s.classId === filters.classId)
+      return result
+    },
+    getById: (id: string) => timetableSets.find((s) => s.id === id),
+    create: (data: any) => { const item = { id: uid(), ...data, createdAt: new Date().toISOString() }; timetableSets.push(item); return item },
+    update: (id: string, data: any) => { const idx = timetableSets.findIndex((s) => s.id === id); if (idx === -1) return null; timetableSets[idx] = { ...timetableSets[idx], ...data }; return timetableSets[idx] },
+    delete: (id: string) => { timetable = timetable.filter((t) => t.setId !== id); const idx = timetableSets.findIndex((s) => s.id === id); if (idx === -1) return false; timetableSets.splice(idx, 1); return true },
+  },
   timetable: {
-    getAll: () => timetable,
+    getAll: (filters?: { setId?: string; day?: string; classId?: string }) => {
+      let result = [...timetable]
+      if (filters?.setId) result = result.filter((t) => t.setId === filters.setId)
+      if (filters?.day) result = result.filter((t) => t.day === filters.day)
+      if (filters?.classId) result = result.filter((t) => t.classId === filters.classId)
+      return result
+    },
+    getById: (id: string) => timetable.find((t) => t.id === id),
     getByDay: (day: string) => timetable.filter((t) => t.day === day),
+    getBySet: (setId: string) => timetable.filter((t) => t.setId === setId),
     create: (data: any) => { const item = { id: uid(), ...data }; timetable.push(item); return item },
     update: (id: string, data: any) => { const idx = timetable.findIndex((t) => t.id === id); if (idx === -1) return null; timetable[idx] = { ...timetable[idx], ...data }; return timetable[idx] },
     delete: (id: string) => { const idx = timetable.findIndex((t) => t.id === id); if (idx === -1) return false; timetable.splice(idx, 1); return true },
+    deleteBySet: (setId: string) => { timetable = timetable.filter((t) => t.setId !== setId) },
   },
   announcements: {
     getAll: () => announcements,

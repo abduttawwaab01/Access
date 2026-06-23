@@ -29,6 +29,7 @@ const adminNav: NavItem[] = [
   { label: "Analytics", href: "/admin/analytics", icon: "BarChart3" },
   { label: "Announcements", href: "/admin/announcements", icon: "Megaphone" },
   { label: "Events", href: "/admin/events", icon: "Calendar" },
+  { label: "Timetable", href: "/admin/timetable", icon: "Calendar" },
   { label: "Reports", href: "/admin/reports", icon: "FileText" },
   { label: "Results", href: "/admin/results", icon: "BarChart3" },
   { label: "Report Cards", href: "/admin/report-cards", icon: "Award" },
