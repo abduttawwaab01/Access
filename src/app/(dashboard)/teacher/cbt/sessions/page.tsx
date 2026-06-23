@@ -6,10 +6,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Clock, User, AlertTriangle, CheckCircle, Eye } from "lucide-react"
+import { Clock, User, AlertTriangle, CheckCircle, Eye, FileSpreadsheet } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
+import { downloadCsv } from "@/lib/capture"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function TeacherSessionsPage() {
   const [sessions, setSessions] = useState<any[]>([])
@@ -45,16 +47,30 @@ export default function TeacherSessionsPage() {
             {exams.map((e) => <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
-          <SelectTrigger className="h-10 w-[140px]"><SelectValue placeholder="All status" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
+            <SelectTrigger className="h-10 w-[140px]"><SelectValue placeholder="All status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="h-10" onClick={() => {
+            const data = filtered.map((s: any) => ({
+              "Student Name": s.studentName || "Unknown",
+              Exam: getExamTitle(s.examId),
+              Status: s.status,
+              Score: s.status === "completed" ? `${s.totalScore ?? "-"} / ${s.maxScore}` : "-",
+              "Tab Switches": s.tabSwitches ?? 0,
+              Flagged: s.flagged ? "Yes" : "No",
+            }))
+            downloadCsv(data, `Exam_Sessions_${new Date().toISOString().split("T")[0]}.csv`)
+            toast.success("Sessions exported as CSV")
+          }}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Export CSV
+          </Button>
+        </div>
 
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>

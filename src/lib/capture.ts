@@ -1,9 +1,15 @@
+function hasUnsupportedColor(value: string): boolean {
+  return /(^|[^-\w])lab\(|lch\(|oklab\(|oklch\(|color\(/.test(value)
+}
+
 function inlineComputedStyles(source: Element, target: Element) {
   const computed = window.getComputedStyle(source)
   for (let i = 0; i < computed.length; i++) {
     const prop = computed[i]
+    const value = computed.getPropertyValue(prop)
+    if (hasUnsupportedColor(value)) continue
     try {
-      ;(target as HTMLElement).style.setProperty(prop, computed.getPropertyValue(prop))
+      ;(target as HTMLElement).style.setProperty(prop, value)
     } catch {}
   }
   const sourceChildren = source.children
@@ -28,6 +34,22 @@ function copyCssVariables(sourceDoc: Document, targetDoc: Document): void {
       getComputedStyle(sourceHtml).getPropertyValue(prop)
     if (val) {
       targetHtml.style.setProperty(prop, val)
+    }
+  }
+}
+
+function sanitizeUnsupportedColors(doc: Document): void {
+  const all = doc.querySelectorAll("*")
+  for (const el of all) {
+    const styleAttr = (el as HTMLElement).getAttribute("style")
+    if (styleAttr && hasUnsupportedColor(styleAttr)) {
+      const safe = styleAttr
+        .replace(/lab\([^)]*\)/gi, "transparent")
+        .replace(/lch\([^)]*\)/gi, "transparent")
+        .replace(/oklab\([^)]*\)/gi, "transparent")
+        .replace(/oklch\([^)]*\)/gi, "transparent")
+        .replace(/color\([^)]*\)/gi, "transparent")
+      ;(el as HTMLElement).setAttribute("style", safe)
     }
   }
 }
@@ -92,6 +114,8 @@ export async function captureElement(
           inlineComputedStyles(element, clonedElement)
         } catch {}
       }
+
+      sanitizeUnsupportedColors(clonedDoc)
     },
   })
 
@@ -166,6 +190,54 @@ export async function downloadPdf(
   const pdf = new JsPdfClass({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] })
   pdf.addImage(dataUrl, "PNG", 0, 0, canvas.width, canvas.height)
   pdf.save(filename)
+}
+
+export function downloadCsv(data: Record<string, any>[], filename: string): void {
+  if (!data.length) return
+  const headers = Object.keys(data[0])
+  const escapeCell = (val: any) => {
+    const s = String(val ?? "")
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const csvContent = [headers.join(","), ...data.map((row) => headers.map((h) => escapeCell(row[h])).join(","))].join("\n")
+  const BOM = "\uFEFF"
+  const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" })
+  const link = document.createElement("a")
+  link.href = URL.createObjectURL(blob)
+  link.download = filename.endsWith(".csv") ? filename : `${filename}.csv`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+export function downloadDoc(element: HTMLElement, filename: string, title?: string): void {
+  const html = element.outerHTML
+  const styles = Array.from(document.styleSheets)
+    .map((ss) => {
+      try { return Array.from(ss.cssRules || []).map((r) => r.cssText).join("") }
+      catch { return ss.href ? `@import url("${ss.href}");` : "" }
+    })
+    .join("")
+
+  const docHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>${title || filename}</title>
+    <style>${styles}
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .animated-gradient { background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important; }
+      .glass-card { background: rgba(255,255,255,0.9) !important; }
+    </style>
+    </head>
+    <body>${html}</body>
+    </html>
+  `
+
+  const blob = new Blob([docHtml], { type: "application/msword;charset=utf-8" })
+  const link = document.createElement("a")
+  link.href = URL.createObjectURL(blob)
+  link.download = filename.endsWith(".doc") ? filename : `${filename}.doc`
+  link.click()
+  URL.revokeObjectURL(link.href)
 }
 
 export function openPrintWindow(element: HTMLElement, title?: string): void {

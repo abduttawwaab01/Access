@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Megaphone, Plus, Bell, AlertTriangle, Info, Trash2, Filter, Send, Eye, EyeOff } from "lucide-react"
+import { Megaphone, Plus, Bell, AlertTriangle, Info, Trash2, Filter, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Audience = "all" | "teachers" | "parents" | "students"
@@ -40,7 +40,7 @@ export default function AdminAnnouncementsPage() {
     ]).then(([regularData, superData]) => {
       const regularItems = Array.isArray(regularData) ? regularData : []
       const superItems = Array.isArray(superData) ? superData : []
-      const allItems = [...regularItems, ...superItems]
+      const allItems = [...regularItems.map((i: any) => ({ ...i, source: "regular" })), ...superItems.map((i: any) => ({ ...i, source: "super" }))]
       setItems(allItems)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -69,29 +69,20 @@ export default function AdminAnnouncementsPage() {
 
   const confirmDeleteItem = async () => {
     if (!confirmDelete) return
-    let success = false
-    let error = "Failed to delete"
-    
-    // Try to delete from regular announcements first
-    const res1 = await fetch(`/api/announcements/${confirmDelete}`, { method: "DELETE" })
-    if (res1.ok) {
-      success = true
-    } else {
-      // If not found in regular announcements, try Super Admin announcements
-      const res2 = await fetch(`/api/superadmin`, {
+    const item = items.find((i) => i.id === confirmDelete)
+    const source = item?.source || "regular"
+    let res
+    if (source === "super") {
+      res = await fetch("/api/superadmin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "deleteAnnouncement", id: confirmDelete })
       })
-      if (res2.ok) {
-        success = true
-      } else {
-        error = "Failed to delete"
-      }
+    } else {
+      res = await fetch(`/api/announcements/${confirmDelete}`, { method: "DELETE" })
     }
-    
-    if (success) { toast.success("Deleted"); load() }
-    else { toast.error(error) }
+    if (res.ok) { toast.success("Deleted"); load() }
+    else { toast.error("Failed to delete") }
     setConfirmDelete(null)
   }
 
@@ -172,7 +163,6 @@ export default function AdminAnnouncementsPage() {
           <SelectTrigger className="w-full sm:w-40 h-9 text-xs"><SelectValue placeholder="All Audiences" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Audiences</SelectItem>
-            <SelectItem value="all">Everyone</SelectItem>
             <SelectItem value="teachers">Teachers</SelectItem>
             <SelectItem value="parents">Parents</SelectItem>
             <SelectItem value="students">Students</SelectItem>
@@ -223,7 +213,7 @@ export default function AdminAnnouncementsPage() {
                             <Badge variant="outline" className={cn("text-[10px]", item.priority === "high" ? "border-danger/30 text-danger" : "")}>
                               {item.priority}
                             </Badge>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => remove(item.id)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove(item.id)}>
                               <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-danger" />
                             </Button>
                           </div>

@@ -1,77 +1,870 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
+import { toast } from "sonner"
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
+import { CheckCircle, XCircle, Clock, Search, User, BookOpen, DownloadCloud, FileSpreadsheet, LayoutDashboard, FileText, BarChart3, Brain, Target, Lightbulb, Award, AlertTriangle, Plus, Edit3, Eye, ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Save, Share2, Trash2 } from "lucide-react"
+import { downloadCsv, downloadPng, downloadPdf, downloadDoc } from "@/lib/capture"
 import { PageHeader } from "@/components/admin/PageHeader"
-import { CheckCircle, XCircle, Clock, Search } from "lucide-react"
 
-const tabs = ["All", "Pending", "Accepted", "Rejected"]
+const tabs = ["Dashboard", "Applications", "Entrance Scores", "Reports"]
+const statusColors: Record<string, string> = { pending: "bg-amber-500/15 text-amber-600", accepted: "bg-emerald-500/15 text-emerald-600", rejected: "bg-red-500/15 text-red-600", transferred: "bg-blue-500/15 text-blue-600" }
+const gradeColors: Record<string, string> = { A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", F: "#ef4444" }
 
 export default function AdminAdmissionsPage() {
+  const [activeTab, setActiveTab] = useState("Dashboard")
   const [applications, setApplications] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState("Pending")
-  const [search, setSearch] = useState("")
+  const [classes, setClasses] = useState<any[]>([])
+  const [exams, setExams] = useState<any[]>([])
+  const [settings, setSettings] = useState<any>({ cutOffs: {}, entranceExamId: null })
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [selectedApp, setSelectedApp] = useState<any>(null)
+  const [showDetail, setShowDetail] = useState(false)
+  const [editScore, setEditScore] = useState("")
+  const [editNotes, setEditNotes] = useState("")
+  const [cutOffInputs, setCutOffInputs] = useState<Record<string, string>>({})
+  const [selectedExamId, setSelectedExamId] = useState("")
+  const [transferClassId, setTransferClassId] = useState("")
+  const [exporting, setExporting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { fetch("/api/admissions").then(r => r.json()).then(d => { setApplications(d); setLoading(false) }) }, [])
-
-  const handleAction = async (id: string, action: "acceptApplication" | "rejectApplication") => {
-    await fetch("/api/superadmin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, id, token: "superadmin-authenticated" }) })
-    const res = await fetch("/api/admissions")
-    setApplications(await res.json())
+  const fetchData = async () => {
+    setLoading(true)
+    const [appsRes, clsRes, examsRes, setRes] = await Promise.all([
+      fetch("/api/admissions"),
+      fetch("/api/classes"),
+      fetch("/api/exams"),
+      fetch("/api/admissions/settings"),
+    ])
+    setApplications(await appsRes.json())
+    setClasses(await clsRes.json())
+    setExams(await examsRes.json())
+    setSettings(await setRes.json())
+    setLoading(false)
   }
 
+  useEffect(() => { fetchData() }, [])
+
+  const entranceExams = exams.filter((e: any) => e.type === "entrance")
   const filtered = applications.filter((a) => {
-    const matchTab = activeTab === "All" || a.status === activeTab.toLowerCase()
+    const matchStatus = statusFilter === "all" || a.status === statusFilter
     const matchSearch = !search || `${a.firstName} ${a.lastName} ${a.email}`.toLowerCase().includes(search.toLowerCase())
-    return matchTab && matchSearch
+    return matchStatus && matchSearch
   })
+
+  // Stats
+  const totalApps = applications.length
+  const pendingCount = applications.filter((a) => a.status === "pending").length
+  const acceptedCount = applications.filter((a) => a.status === "accepted").length
+  const rejectedCount = applications.filter((a) => a.status === "rejected").length
+  const transferredCount = applications.filter((a) => a.status === "transferred").length
+  const scoredCount = applications.filter((a) => a.entranceExamScore != null).length
+
+  const statusChartData = [
+    { name: "Pending", value: pendingCount, color: "#f59e0b" },
+    { name: "Accepted", value: acceptedCount, color: "#22c55e" },
+    { name: "Rejected", value: rejectedCount, color: "#ef4444" },
+    { name: "Transferred", value: transferredCount, color: "#3b82f6" },
+  ].filter((d) => d.value > 0)
+
+  const appsByClass = applications.reduce((acc: Record<string, number>, a: any) => {
+    const key = a.className || a.classApplyingFor || "Unknown"
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+  const classChartData = Object.entries(appsByClass).map(([name, count]) => ({ name: name.length > 12 ? name.substring(0, 12) + "..." : name, count }))
+
+  const handleAction = async (id: string, action: "acceptApplication" | "rejectApplication" | "transferApplication") => {
+    let body: any = { action, id, token: "superadmin-authenticated" }
+    if (action === "transferApplication") {
+      if (!transferClassId) { toast.error("Select a class to transfer to"); return }
+      body.transferToClassId = transferClassId
+    }
+    await fetch("/api/superadmin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    fetchData()
+    toast.success(`Application ${action === "acceptApplication" ? "accepted" : action === "rejectApplication" ? "rejected" : "transferred"}`)
+  }
+
+  const handleUpdateApplication = async () => {
+    if (!selectedApp) return
+    setSaving(true)
+    const res = await fetch(`/api/admissions/${selectedApp.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entranceExamScore: editScore ? Number(editScore) : null,
+        notes: editNotes,
+        entranceExamPassed: editScore && settings.cutOffs[selectedApp.classId] ? Number(editScore) >= (settings.cutOffs[selectedApp.classId] || 0) : undefined,
+      }),
+    })
+    if (res.ok) {
+      toast.success("Application updated")
+      fetchData()
+      setShowDetail(false)
+    } else toast.error("Failed to update")
+    setSaving(false)
+  }
+
+  const handleSaveSettings = async () => {
+    const cutOffs: Record<string, number> = {}
+    Object.entries(cutOffInputs).forEach(([key, val]) => { if (val) cutOffs[key] = Number(val) })
+    const res = await fetch("/api/admissions/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cutOffs, entranceExamId: selectedExamId || settings.entranceExamId }),
+    })
+    if (res.ok) { toast.success("Settings saved"); fetchData() }
+    else toast.error("Failed to save settings")
+  }
+
+  // Report functions
+  const getScoreColor = (pct: number) => pct >= 75 ? "text-green-500" : pct >= 65 ? "text-blue-500" : pct >= 55 ? "text-amber-500" : pct >= 45 ? "text-orange-500" : "text-red-500"
+
+  const handleExportAppsCSV = () => {
+    const data = applications.map((a) => ({
+      "First Name": a.firstName,
+      "Last Name": a.lastName,
+      "Email": a.email,
+      "Phone": a.phone || "",
+      "Class": a.className || a.classApplyingFor || "",
+      "Status": a.status,
+      "Exam Score": a.entranceExamScore ?? "",
+      "Passed": a.entranceExamPassed ? "Yes" : "No",
+      "Applied": new Date(a.appliedAt).toLocaleDateString(),
+      "Notes": a.notes || "",
+    }))
+    downloadCsv(data, `Admissions_${new Date().toISOString().split("T")[0]}.csv`)
+  }
+
+  const handleExportReportPNG = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, `Admission_Report_${new Date().toISOString().split("T")[0]}.png`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Report exported as PNG") } catch { toast.error("Export failed") }
+    setExporting(false)
+  }
+
+  const handleExportReportPDF = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, `Admission_Report_${new Date().toISOString().split("T")[0]}.pdf`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Report exported as PDF") } catch { toast.error("Export failed") }
+    setExporting(false)
+  }
+
+  const getCutOffForClass = (classId: string) => settings.cutOffs?.[classId] || ""
+
+  // Entrance exam analysis state
+  const [detailSubTab, setDetailSubTab] = useState("details")
+  const [examSubjects, setExamSubjects] = useState<{ name: string; score: number; maxScore: number; topics: { name: string; score: number; maxScore: number }[] }[]>([])
+  const [newSubject, setNewSubject] = useState("")
+  const [newSubjectScore, setNewSubjectScore] = useState("")
+  const [newSubjectMax, setNewSubjectMax] = useState("")
+  const [newTopic, setNewTopic] = useState("")
+  const [newTopicScore, setNewTopicScore] = useState("")
+  const [newTopicMax, setNewTopicMax] = useState("")
+  const [addingTopicFor, setAddingTopicFor] = useState<number | null>(null)
+  const analysisRef = useRef<HTMLDivElement>(null)
+
+  const openDetail = (app: any) => {
+    setSelectedApp(app)
+    setEditScore(app.entranceExamScore?.toString() ?? "")
+    setEditNotes(app.notes || "")
+    setTransferClassId("")
+    setShowDetail(true)
+    setDetailSubTab("details")
+    setExamSubjects(app.entranceExamDetails?.subjects || [])
+  }
+
+  const handleSaveEntranceDetails = async () => {
+    if (!selectedApp) return
+    const totalScore = examSubjects.reduce((s, sub) => s + sub.score, 0)
+    const maxScore = examSubjects.reduce((s, sub) => s + sub.maxScore, 0)
+    setSaving(true)
+    await fetch(`/api/admissions/${selectedApp.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entranceExamDetails: { subjects: examSubjects },
+        entranceExamScore: maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0,
+        entranceExamPassed: maxScore > 0 && settings.cutOffs[selectedApp.classId] ? (totalScore / maxScore) * 100 >= (settings.cutOffs[selectedApp.classId] || 0) : undefined,
+      }),
+    })
+    setSaving(false)
+    toast.success("Entrance exam details saved")
+    fetchData()
+  }
+
+  const addSubject = () => {
+    if (!newSubject || !newSubjectScore || !newSubjectMax) return
+    setExamSubjects([...examSubjects, { name: newSubject, score: Number(newSubjectScore), maxScore: Number(newSubjectMax), topics: [] }])
+    setNewSubject(""); setNewSubjectScore(""); setNewSubjectMax("")
+  }
+
+  const removeSubject = (idx: number) => {
+    setExamSubjects(examSubjects.filter((_, i) => i !== idx))
+  }
+
+  const addTopic = (subjectIdx: number) => {
+    if (!newTopic || !newTopicScore || !newTopicMax) return
+    const updated = [...examSubjects]
+    updated[subjectIdx].topics.push({ name: newTopic, score: Number(newTopicScore), maxScore: Number(newTopicMax) })
+    setExamSubjects(updated)
+    setNewTopic(""); setNewTopicScore(""); setNewTopicMax("")
+    setAddingTopicFor(null)
+  }
+
+  const removeTopic = (subjectIdx: number, topicIdx: number) => {
+    const updated = [...examSubjects]
+    updated[subjectIdx].topics = updated[subjectIdx].topics.filter((_, i) => i !== topicIdx)
+    setExamSubjects(updated)
+  }
+
+  const whatsappShare = (app: any) => {
+    const phone = app.phone || app.parentPhone || ""
+    const cleanPhone = phone.replace(/[^0-9]/g, "")
+    const msg = [
+      `*Entrance Exam Results - ${app.firstName} ${app.lastName}*`,
+      ``,
+      `Overall Score: ${app.entranceExamScore ?? "N/A"}/100`,
+      `Status: ${app.entranceExamPassed ? "✅ Passed" : "❌ Failed"}`,
+      app.entranceExamDetails?.subjects?.length > 0 ? `` : null,
+      ...(app.entranceExamDetails?.subjects || []).map((s: any) =>
+        `📚 *${s.name}*: ${s.score}/${s.maxScore}${s.topics?.length > 0 ? `\n  ${s.topics.map((t: any) => `• ${t.name}: ${t.score}/${t.maxScore}`).join("\n  ")}` : ""}`
+      ),
+      ``,
+      `Class Applying For: ${app.className || app.classApplyingFor || "N/A"}`,
+      `Cut-off Score: ${settings.cutOffs?.[app.classId] ?? "N/A"}%`,
+      app.notes ? `\nNotes: ${app.notes}` : null,
+      ``,
+      `Generated by Skoolar School Management System`,
+    ].filter(Boolean).join("\n")
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`
+    window.open(url, "_blank")
+  }
+
+  if (loading) return <div className="p-4 md:p-6 space-y-4">{[1, 2, 3, 4].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <PageHeader title="Admissions Management" description="Review and process admission applications" />
-
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input placeholder="Search applicants..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-lg border border-border bg-background py-2 pl-10 pr-3 text-sm outline-none focus:border-primary" />
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold">Admissions Management</h2>
+          <p className="text-sm text-muted-foreground">Review, score, and manage admission applications</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportAppsCSV}><FileSpreadsheet className="h-4 w-4 mr-1" />Export CSV</Button>
         </div>
       </div>
 
       <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit overflow-x-auto">
         {tabs.map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{t}</button>
+          <button key={t} onClick={() => setActiveTab(t)} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${activeTab === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            {t === "Dashboard" && <LayoutDashboard className="h-3.5 w-3.5 inline mr-1" />}
+            {t === "Applications" && <User className="h-3.5 w-3.5 inline mr-1" />}
+            {t === "Entrance Scores" && <BarChart3 className="h-3.5 w-3.5 inline mr-1" />}
+            {t === "Reports" && <FileText className="h-3.5 w-3.5 inline mr-1" />}
+            {t}
+          </button>
         ))}
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-border py-12 text-center text-sm text-muted-foreground">No applications found</div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((app) => (
-            <div key={app.id} className="glass-card flex flex-col sm:flex-row sm:items-center justify-between rounded-xl p-5 gap-3">
-              <div className="space-y-1">
-                <p className="font-semibold">{app.firstName} {app.lastName}</p>
-                <p className="text-sm text-muted-foreground">{app.email}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>Class: {app.classApplyingFor}{app.department ? ` (${app.department})` : ""}</span>
-                    <span>{new Date(app.appliedAt).toLocaleDateString()}</span>
-                    {app.entranceExamScore != null && <span>Exam: {app.entranceExamScore}/100</span>}
-                  </div>
+      {/* ===================== DASHBOARD TAB ===================== */}
+      {activeTab === "Dashboard" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Card className="border border-border/50"><CardContent className="p-4 text-center"><p className="text-2xl font-bold">{totalApps}</p><p className="text-xs text-muted-foreground">Total</p></CardContent></Card>
+            <Card className="border border-border/50"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-amber-600">{pendingCount}</p><p className="text-xs text-muted-foreground">Pending</p></CardContent></Card>
+            <Card className="border border-border/50"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-emerald-600">{acceptedCount}</p><p className="text-xs text-muted-foreground">Accepted</p></CardContent></Card>
+            <Card className="border border-border/50"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-red-600">{rejectedCount}</p><p className="text-xs text-muted-foreground">Rejected</p></CardContent></Card>
+            <Card className="border border-border/50"><CardContent className="p-4 text-center"><p className="text-2xl font-bold text-blue-600">{transferredCount}</p><p className="text-xs text-muted-foreground">Transferred</p></CardContent></Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border border-border/50">
+              <CardHeader><CardTitle className="text-sm font-semibold">Status Distribution</CardTitle></CardHeader>
+              <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={statusChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value">
+                  {statusChartData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                </Pie><Tooltip /></PieChart>
+              </ResponsiveContainer></div>
+              <div className="flex justify-center gap-4 text-xs mt-2">
+                {statusChartData.map((d) => <div key={d.name} className="flex items-center gap-1"><div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} /><span>{d.name}: {d.value}</span></div>)}
+              </div></CardContent>
+            </Card>
+            <Card className="border border-border/50">
+              <CardHeader><CardTitle className="text-sm font-semibold">Applications by Class</CardTitle></CardHeader>
+              <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%">
+                <BarChart data={classChartData} layout="vertical">
+                  <XAxis type="number" /><YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} />
+                  <Tooltip /><Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer></div></CardContent>
+            </Card>
+          </div>
+
+          <Card className="border border-border/50">
+            <CardHeader><CardTitle className="text-sm font-semibold">Exam Readiness</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex-1"><div className="flex justify-between mb-1"><span>Scored</span><span className="font-bold">{scoredCount}/{totalApps}</span></div>
+                  <Progress value={totalApps > 0 ? (scoredCount / totalApps) * 100 : 0} className="h-2" /></div>
+                <div className="flex-1"><div className="flex justify-between mb-1"><span>Pending Review</span><span className="font-bold">{pendingCount}/{totalApps}</span></div>
+                  <Progress value={totalApps > 0 ? (pendingCount / totalApps) * 100 : 0} className="h-2" /></div>
               </div>
-              <div className="flex items-center gap-2">
-                {app.status === "pending" && (
-                  <>
-                    <button onClick={() => handleAction(app.id, "acceptApplication")} className="flex items-center gap-1 rounded-lg bg-emerald-600/20 px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-600/30"><CheckCircle className="h-3 w-3" /> Accept</button>
-                    <button onClick={() => handleAction(app.id, "rejectApplication")} className="flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-600/30"><XCircle className="h-3 w-3" /> Reject</button>
-                  </>
-                )}
-                {app.status === "accepted" && <span className="flex items-center gap-1 rounded-lg bg-emerald-600/20 px-3 py-1.5 text-xs font-medium text-emerald-600"><CheckCircle className="h-3 w-3" /> Accepted</span>}
-                {app.status === "rejected" && <span className="flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-1.5 text-xs font-medium text-red-600"><XCircle className="h-3 w-3" /> Rejected</span>}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ===================== APPLICATIONS TAB ===================== */}
+      {activeTab === "Applications" && (
+        <>
+          {showDetail && selectedApp ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <Button variant="ghost" size="sm" onClick={() => setShowDetail(false)} className="mb-2"><ArrowLeft className="h-4 w-4 mr-1" /> Back to Applications</Button>
+
+              <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
+                <button onClick={() => setDetailSubTab("details")} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "details" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Details</button>
+                <button onClick={() => setDetailSubTab("analysis")} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "analysis" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Exam Analysis</button>
+              </div>
+
+              {detailSubTab === "details" && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-4">
+                    <Card className="border border-border/50">
+                      <CardHeader><CardTitle className="text-sm font-semibold">Applicant Details</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div><Label className="text-xs text-muted-foreground">Name</Label><p className="font-medium">{selectedApp.firstName} {selectedApp.lastName}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Email</Label><p>{selectedApp.email}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Phone</Label><p>{selectedApp.phone || "N/A"}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Gender</Label><p>{selectedApp.gender || "N/A"}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Date of Birth</Label><p>{selectedApp.dob || selectedApp.dateOfBirth ? new Date(selectedApp.dob || selectedApp.dateOfBirth).toLocaleDateString() : "N/A"}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Applied</Label><p>{new Date(selectedApp.appliedAt).toLocaleDateString()}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Class Applying For</Label><p>{selectedApp.className || selectedApp.classApplyingFor || "N/A"}</p></div>
+                          <div><Label className="text-xs text-muted-foreground">Previous School</Label><p>{selectedApp.previousSchool || "N/A"}</p></div>
+                        </div>
+                        <div><Label className="text-xs text-muted-foreground">Address</Label><p className="text-sm">{selectedApp.address || "N/A"}</p></div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-border/50">
+                      <CardHeader><CardTitle className="text-sm font-semibold">Entrance Exam Score</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <Label className="text-xs">Score (out of 100)</Label>
+                            <Input type="number" min={0} max={100} value={editScore} onChange={(e) => setEditScore(e.target.value)} className="h-10 w-32" placeholder="Enter score" />
+                          </div>
+                          {selectedApp.entranceExamScore != null && (
+                            <div className="text-center">
+                              <p className="text-2xl font-bold">{selectedApp.entranceExamScore}/100</p>
+                              <Badge className={selectedApp.entranceExamPassed ? "bg-green-500/15 text-green-600" : "bg-red-500/15 text-red-600"}>
+                                {selectedApp.entranceExamPassed ? "Passed" : "Failed"}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border border-border/50">
+                      <CardHeader><CardTitle className="text-sm font-semibold">Notes & Actions</CardTitle></CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Admin Notes</Label>
+                          <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="min-h-[80px]" placeholder="Add notes about this applicant..." />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button onClick={handleUpdateApplication} disabled={saving} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+                            {saving ? "Saving..." : "Save Changes"}
+                          </Button>
+                          {selectedApp.status === "pending" && (
+                            <>
+                              <Button variant="outline" className="text-emerald-600 border-emerald-300" onClick={() => handleAction(selectedApp.id, "acceptApplication")}>
+                                <CheckCircle className="h-4 w-4 mr-1" /> Accept
+                              </Button>
+                              <Button variant="outline" className="text-red-600 border-red-300" onClick={() => handleAction(selectedApp.id, "rejectApplication")}>
+                                <XCircle className="h-4 w-4 mr-1" /> Reject
+                              </Button>
+                              <div className="flex items-center gap-2">
+                                <select value={transferClassId} onChange={(e) => setTransferClassId(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
+                                  <option value="">Transfer to...</option>
+                                  {classes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <Button variant="outline" className="text-blue-600 border-blue-300" onClick={() => handleAction(selectedApp.id, "transferApplication")}>
+                                  Transfer
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Card className="border border-border/50">
+                      <CardHeader><CardTitle className="text-sm font-semibold">Status</CardTitle></CardHeader>
+                      <CardContent>
+                        <Badge className={statusColors[selectedApp.status] || "bg-muted"}>{selectedApp.status}</Badge>
+                      </CardContent>
+                    </Card>
+                    {selectedApp.entranceExamScore != null && (
+                      <Card className="border border-border/50">
+                        <CardHeader><CardTitle className="text-sm font-semibold">Score Summary</CardTitle></CardHeader>
+                        <CardContent className="text-center">
+                          <div className={`text-4xl font-bold ${getScoreColor(selectedApp.entranceExamScore)}`}>{selectedApp.entranceExamScore}%</div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {settings.cutOffs[selectedApp.classId] ? `Cut-off: ${settings.cutOffs[selectedApp.classId]}%` : "No cut-off set"}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {detailSubTab === "analysis" && (
+                <div ref={analysisRef} className="space-y-6 bg-white rounded-2xl p-6 border">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">Entrance Exam Analysis — {selectedApp.firstName} {selectedApp.lastName}</h3>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => whatsappShare(selectedApp)} disabled={!selectedApp.phone && !selectedApp.parentPhone}>
+                        <Share2 className="h-4 w-4 mr-1" /> Share via WhatsApp
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPng(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.png`); toast.success("Exported as PNG") } }}>
+                        <DownloadCloud className="h-4 w-4 mr-1" /> PNG
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPdf(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.pdf`); toast.success("Exported as PDF") } }}>
+                        <DownloadCloud className="h-4 w-4 mr-1" /> PDF
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => { if (analysisRef.current) downloadDoc(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.doc`, "Entrance Exam Analysis") }}>
+                        <FileText className="h-4 w-4 mr-1" /> DOC
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Subject Score Entry */}
+                  <Card className="border border-border/50">
+                    <CardHeader><CardTitle className="text-sm font-semibold">Subject Scores</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1"><Label className="text-xs">Subject</Label><Input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} className="h-9" placeholder="e.g. Mathematics" /></div>
+                        <div className="w-20"><Label className="text-xs">Score</Label><Input type="number" min={0} value={newSubjectScore} onChange={(e) => setNewSubjectScore(e.target.value)} className="h-9 text-center" placeholder="0" /></div>
+                        <div className="w-20"><Label className="text-xs">Max</Label><Input type="number" min={0} value={newSubjectMax} onChange={(e) => setNewSubjectMax(e.target.value)} className="h-9 text-center" placeholder="100" /></div>
+                        <Button size="sm" onClick={addSubject} disabled={!newSubject || !newSubjectScore || !newSubjectMax}><Plus className="h-4 w-4" /></Button>
+                      </div>
+
+                      {examSubjects.length > 0 && (
+                        <div className="space-y-2">
+                          {examSubjects.map((sub, si) => {
+                            const subPct = sub.maxScore > 0 ? Math.round((sub.score / sub.maxScore) * 100) : 0
+                            return (
+                              <div key={si} className="rounded-lg border border-border/50 p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-sm">{sub.name}</span>
+                                    <Badge className={subPct >= 75 ? "bg-green-500/15 text-green-600" : subPct >= 50 ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}>{subPct}%</Badge>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold">{sub.score}/{sub.maxScore}</span>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setAddingTopicFor(addingTopicFor === si ? null : si)}><Plus className="h-3 w-3" /></Button>
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500" onClick={() => removeSubject(si)}><Trash2 className="h-3 w-3" /></Button>
+                                  </div>
+                                </div>
+
+                                {/* Topics */}
+                                {sub.topics.length > 0 && (
+                                  <div className="pl-4 space-y-1 border-l-2 border-muted">
+                                    {sub.topics.map((t, ti) => (
+                                      <div key={ti} className="flex items-center justify-between text-xs">
+                                        <span>{t.name}</span>
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-mono">{t.score}/{t.maxScore}</span>
+                                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-400" onClick={() => removeTopic(si, ti)}><Trash2 className="h-2.5 w-2.5" /></Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {addingTopicFor === si && (
+                                  <div className="flex items-end gap-2 pl-4">
+                                    <div className="flex-1"><Label className="text-[10px]">Topic</Label><Input value={newTopic} onChange={(e) => setNewTopic(e.target.value)} className="h-7 text-xs" placeholder="e.g. Algebra" /></div>
+                                    <div className="w-16"><Label className="text-[10px]">Score</Label><Input type="number" min={0} value={newTopicScore} onChange={(e) => setNewTopicScore(e.target.value)} className="h-7 text-xs text-center" placeholder="0" /></div>
+                                    <div className="w-16"><Label className="text-[10px]">Max</Label><Input type="number" min={0} value={newTopicMax} onChange={(e) => setNewTopicMax(e.target.value)} className="h-7 text-xs text-center" placeholder="0" /></div>
+                                    <Button size="sm" className="h-7 text-xs" onClick={() => addTopic(si)} disabled={!newTopic || !newTopicScore || !newTopicMax}>Add</Button>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      <Button onClick={handleSaveEntranceDetails} disabled={saving} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+                        <Save className="h-4 w-4 mr-1" /> {saving ? "Saving..." : "Save Entrance Details"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Charts & Insights */}
+                  {examSubjects.length > 0 && (
+                    <>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <Card className="border border-border/50">
+                          <CardHeader><CardTitle className="text-sm font-semibold"><Brain className="h-4 w-4 inline mr-1" />Subject Performance</CardTitle></CardHeader>
+                          <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%">
+                            <RadarChart data={examSubjects.map((s) => ({ subject: s.name, score: s.maxScore > 0 ? Math.round((s.score / s.maxScore) * 100) : 0 }))}>
+                              <PolarGrid stroke="#e5e7eb" /><PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} /><PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                              <Radar dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
+                            </RadarChart>
+                          </ResponsiveContainer></div></CardContent>
+                        </Card>
+                        <Card className="border border-border/50">
+                          <CardHeader><CardTitle className="text-sm font-semibold"><BarChart3 className="h-4 w-4 inline mr-1" />Scores by Subject</CardTitle></CardHeader>
+                          <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={examSubjects.map((s) => ({ name: s.name, score: s.score, maxScore: s.maxScore }))} layout="vertical">
+                              <XAxis type="number" /><YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} /><Tooltip />
+                              <Bar dataKey="score" name="Score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                              <Bar dataKey="maxScore" name="Max Score" fill="#94a3b8" radius={[0, 4, 4, 0]} opacity={0.3} />
+                            </BarChart>
+                          </ResponsiveContainer></div></CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Topic breakdown */}
+                      {examSubjects.some((s) => s.topics.length > 0) && (
+                        <Card className="border border-border/50">
+                          <CardHeader><CardTitle className="text-sm font-semibold"><Target className="h-4 w-4 inline mr-1" />Topic Breakdown</CardTitle></CardHeader>
+                          <CardContent className="space-y-4">
+                            {examSubjects.filter((s) => s.topics.length > 0).map((sub, si) => (
+                              <div key={si}>
+                                <p className="text-sm font-medium mb-2">{sub.name}</p>
+                                <div className="h-32"><ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={sub.topics.map((t) => ({ name: t.name, score: t.score, maxScore: t.maxScore }))} layout="vertical">
+                                    <XAxis type="number" /><YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} /><Tooltip />
+                                    <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer></div>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Strengths & Weaknesses */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+                          <CardContent className="p-4">
+                            <h4 className="text-xs font-semibold text-green-700 flex items-center gap-1"><Lightbulb className="h-3 w-3" /> Strengths</h4>
+                            <ul className="mt-2 space-y-1">
+                              {examSubjects.filter((s) => s.maxScore > 0 && (s.score / s.maxScore) >= 0.7).length > 0
+                                ? examSubjects.filter((s) => s.maxScore > 0 && (s.score / s.maxScore) >= 0.7).map((s, i) => (
+                                    <li key={i} className="text-xs">+ {s.name} ({Math.round((s.score / s.maxScore) * 100)}%)</li>
+                                  ))
+                                : <li className="text-xs text-muted-foreground">No strong subjects yet</li>}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                        <Card className="border-0 bg-gradient-to-br from-amber-50 to-orange-50">
+                          <CardContent className="p-4">
+                            <h4 className="text-xs font-semibold text-amber-700 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Areas to Improve</h4>
+                            <ul className="mt-2 space-y-1">
+                              {examSubjects.filter((s) => s.maxScore > 0 && (s.score / s.maxScore) < 0.5).length > 0
+                                ? examSubjects.filter((s) => s.maxScore > 0 && (s.score / s.maxScore) < 0.5).map((s, i) => (
+                                    <li key={i} className="text-xs">- {s.name} ({Math.round((s.score / s.maxScore) * 100)}%)</li>
+                                  ))
+                                : <li className="text-xs text-muted-foreground">All subjects at satisfactory level</li>}
+                            </ul>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1 max-w-xs">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input placeholder="Search applicants..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-lg border border-border bg-background py-2 pl-10 pr-3 text-sm outline-none focus:border-primary" />
+                </div>
+                <div className="flex gap-1 rounded-lg bg-muted p-1">
+                  {["all", "pending", "accepted", "rejected", "transferred"].map((s) => (
+                    <button key={s} onClick={() => setStatusFilter(s)} className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{s}</button>
+                  ))}
+                </div>
+              </div>
+
+              {filtered.length === 0 ? (
+                <div className="rounded-xl border border-border py-12 text-center text-sm text-muted-foreground">No applications found</div>
+              ) : (
+                <div className="space-y-3">
+                  <AnimatePresence>
+                    {filtered.map((app, i) => (
+                      <motion.div key={app.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                        <Card className="glass-card border-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => openDetail(app)}>
+                          <CardContent className="p-5">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold">{app.firstName} {app.lastName}</span>
+                                  <Badge className={statusColors[app.status]}>{app.status}</Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{app.email}</p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                  <span>Class: {app.className || app.classApplyingFor || "N/A"}</span>
+                                  <span>{new Date(app.appliedAt).toLocaleDateString()}</span>
+                                  {app.entranceExamScore != null && (
+                                    <span className={`font-medium ${getScoreColor(app.entranceExamScore)}`}>
+                                      Exam: {app.entranceExamScore}/100
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button variant="ghost" size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); openDetail(app) }}>
+                                  <Eye className="h-3.5 w-3.5 mr-1" /> View
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ===================== ENTRANCE SCORES TAB ===================== */}
+      {activeTab === "Entrance Scores" && (
+        <div className="space-y-6">
+          <Card className="border border-border/50">
+            <CardHeader><CardTitle className="text-sm font-semibold">Settings</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Entrance Exam</Label>
+                  <select value={selectedExamId || settings.entranceExamId || ""} onChange={(e) => setSelectedExamId(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
+                    <option value="">Select entrance exam...</option>
+                    {entranceExams.map((e: any) => <option key={e.id} value={e.id}>{e.title}</option>)}
+                    {entranceExams.length === 0 && <option disabled>No entrance exams found (create one in CBT Engine)</option>}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs mb-2 block">Cut-off Scores per Class</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {classes.map((c: any) => (
+                    <div key={c.id} className="flex items-center gap-2">
+                      <Label className="text-xs w-24">{c.name}</Label>
+                      <Input type="number" min={0} max={100} value={cutOffInputs[c.id] ?? getCutOffForClass(c.id)} onChange={(e) => setCutOffInputs((prev) => ({ ...prev, [c.id]: e.target.value }))} className="h-9 w-20 text-center" placeholder="0" />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Button onClick={handleSaveSettings} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+                <Save className="h-4 w-4 mr-1" /> Save Settings
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-border/50">
+            <CardHeader><CardTitle className="text-sm font-semibold">Applicant Scores</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-muted/50">
+                    <th className="text-left px-3 py-2 font-semibold text-xs">#</th>
+                    <th className="text-left px-3 py-2 font-semibold text-xs">Applicant</th>
+                    <th className="text-left px-3 py-2 font-semibold text-xs">Class</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Score</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Cut-off</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Status</th>
+                  </tr></thead>
+                  <tbody>
+                    {applications.map((app, i) => {
+                      const cutOff = settings.cutOffs?.[app.classId]
+                      const hasScore = app.entranceExamScore != null
+                      const passed = hasScore && cutOff ? app.entranceExamScore >= cutOff : null
+                      return (
+                        <tr key={app.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                          <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
+                          <td className="px-3 py-2 font-medium">{app.firstName} {app.lastName}</td>
+                          <td className="px-3 py-2">{app.className || app.classApplyingFor || "N/A"}</td>
+                          <td className="px-3 py-2 text-center">
+                            {hasScore ? (
+                              <span className={`font-mono font-bold ${getScoreColor(app.entranceExamScore)}`}>{app.entranceExamScore}/100</span>
+                            ) : <span className="text-muted-foreground">-</span>}
+                          </td>
+                          <td className="px-3 py-2 text-center font-mono">{cutOff ? `${cutOff}%` : "-"}</td>
+                          <td className="px-3 py-2 text-center">
+                            {passed === true && <Badge className="bg-green-500/15 text-green-600">Pass</Badge>}
+                            {passed === false && <Badge className="bg-red-500/15 text-red-600">Fail</Badge>}
+                            {passed === null && hasScore && <Badge variant="outline" className="text-muted-foreground">No cut-off</Badge>}
+                            {!hasScore && <Badge variant="outline" className="text-muted-foreground">Not scored</Badge>}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ===================== REPORTS TAB ===================== */}
+      {activeTab === "Reports" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Comprehensive admission reports with per-applicant analysis</p>
+              <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportReportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
+              <Button variant="outline" size="sm" onClick={handleExportReportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
+              <Button variant="outline" size="sm" onClick={() => { if (reportRef.current) downloadDoc(reportRef.current, `Admission_Report_${new Date().toISOString().split("T")[0]}.doc`, "Admission Report") }}><FileText className="h-4 w-4 mr-1" />DOC</Button>
+            </div>
+          </div>
+
+          <div ref={reportRef} className="bg-white rounded-2xl shadow-xl overflow-hidden border space-y-6 p-6">
+            {/* Summary */}
+            <div className="bg-gradient-to-r from-primary via-primary/90 to-secondary -mx-6 -mt-6 p-6 text-white mb-6">
+              <h3 className="text-lg font-bold">Admission Report</h3>
+              <p className="text-sm opacity-80">Generated {new Date().toLocaleDateString()}</p>
+              <div className="grid grid-cols-4 gap-4 mt-4">
+                <div className="text-center"><p className="text-2xl font-bold">{totalApps}</p><p className="text-xs opacity-80">Total</p></div>
+                <div className="text-center"><p className="text-2xl font-bold">{pendingCount}</p><p className="text-xs opacity-80">Pending</p></div>
+                <div className="text-center"><p className="text-2xl font-bold">{acceptedCount}</p><p className="text-xs opacity-80">Accepted</p></div>
+                <div className="text-center"><p className="text-2xl font-bold">{rejectedCount}</p><p className="text-xs opacity-80">Rejected</p></div>
               </div>
             </div>
-          ))}
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-sm font-semibold mb-3">Status Distribution</h4>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart><Pie data={statusChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                      {statusChartData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                    </Pie><Tooltip /></PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-3">Applications by Class</h4>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={classChartData} layout="vertical">
+                      <XAxis type="number" /><YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} />
+                      <Tooltip /><Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Per-applicant scores */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Applicant Scores</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-muted/50">
+                    <th className="text-left px-3 py-2 font-semibold text-xs">Applicant</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Score</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Cut-off</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Result</th>
+                    <th className="text-center px-3 py-2 font-semibold text-xs">Status</th>
+                  </tr></thead>
+                  <tbody>
+                    {applications.map((app, i) => {
+                      const cutOff = settings.cutOffs?.[app.classId]
+                      const hasScore = app.entranceExamScore != null
+                      const passed = hasScore && cutOff ? app.entranceExamScore >= cutOff : null
+                      return (
+                        <tr key={app.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                          <td className="px-3 py-2 font-medium">{app.firstName} {app.lastName}</td>
+                          <td className="px-3 py-2 text-center">{hasScore ? `${app.entranceExamScore}/100` : "-"}</td>
+                          <td className="px-3 py-2 text-center">{cutOff ? `${cutOff}%` : "-"}</td>
+                          <td className="px-3 py-2 text-center">
+                            {passed === true && <span className="text-green-600 font-medium">Passed</span>}
+                            {passed === false && <span className="text-red-600 font-medium">Failed</span>}
+                            {passed === null && <span className="text-muted-foreground">-</span>}
+                          </td>
+                          <td className="px-3 py-2 text-center capitalize">{app.status}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Radar chart for scored applicants */}
+            {applications.filter((a) => a.entranceExamScore != null).length > 1 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><Brain className="h-4 w-4" /> Score Comparison</h4>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={applications.filter((a) => a.entranceExamScore != null).map((a) => ({ name: `${a.firstName} ${a.lastName}`, score: a.entranceExamScore }))}>
+                      <PolarGrid /><PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} /><PolarRadiusAxis angle={30} domain={[0, 100]} />
+                      <Radar dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-semibold text-green-700 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Ready to Accept</h4>
+                  <p className="text-lg font-bold text-green-600 mt-1">{applications.filter((a) => a.entranceExamScore != null && settings.cutOffs[a.classId] && a.entranceExamScore >= settings.cutOffs[a.classId] && a.status === "pending").length}</p>
+                  <p className="text-xs text-muted-foreground">applicants scored above cut-off</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-gradient-to-br from-amber-50 to-orange-50">
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-semibold text-amber-700 flex items-center gap-1"><Clock className="h-3 w-3" /> Awaiting Scores</h4>
+                  <p className="text-lg font-bold text-amber-600 mt-1">{applications.filter((a) => a.entranceExamScore == null).length}</p>
+                  <p className="text-xs text-muted-foreground">applicants not yet scored</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-semibold text-blue-700 flex items-center gap-1"><Award className="h-3 w-3" /> Total Accepted</h4>
+                  <p className="text-lg font-bold text-blue-600 mt-1">{acceptedCount}</p>
+                  <p className="text-xs text-muted-foreground">applicants accepted so far</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       )}
     </div>

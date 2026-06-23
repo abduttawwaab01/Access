@@ -1782,7 +1782,7 @@ function AnnouncementsSection() {
           <option value="all">All Types</option><option value="banner">Banner</option><option value="ticker">Ticker</option><option value="overlay">Overlay</option>
         </select>
         <select value={filterAudience} onChange={(e) => setFilterAudience(e.target.value)} className="rounded-lg border border-zinc-800 bg-[#12121a] px-3 py-1.5 text-xs text-zinc-300 outline-none focus:border-red-500">
-          <option value="all">All Audiences</option><option value="all">Everyone</option><option value="admin">Admin</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
+          <option value="all">All Audiences</option><option value="admin">Admin</option><option value="teachers">Teachers</option><option value="parents">Parents</option><option value="students">Students</option>
         </select>
         <span className="ml-auto text-xs text-zinc-500">{filtered.length} of {items.length}</span>
       </div>

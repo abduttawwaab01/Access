@@ -10,6 +10,7 @@ import { getInitials, cn } from "@/lib/utils"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import Link from "next/link"
 import { useParentChildren } from "@/hooks/useParentChildren"
+import { DashboardAnnouncements } from "@/components/DashboardAnnouncements"
 
 const containerVariants = {
   hidden: {},
@@ -113,6 +114,8 @@ export default function ParentDashboard() {
           </motion.button>
         ))}
       </motion.div>
+
+      <DashboardAnnouncements role="parent" />
 
       <AnimatePresence mode="wait">
         <motion.div

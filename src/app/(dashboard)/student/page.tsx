@@ -10,6 +10,7 @@ import { BookOpen, CalendarCheck, TrendingUp, Award, ArrowRight } from "lucide-r
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { useSession } from "next-auth/react"
+import { DashboardAnnouncements } from "@/components/DashboardAnnouncements"
 
 const gradientMap: Record<string, string> = {
   "Avg Score": "from-blue-600 via-blue-500 to-cyan-400",
@@ -104,6 +105,8 @@ export default function StudentDashboard() {
         </h2>
         <p className="text-sm text-muted-foreground">{student?.className || ""}</p>
       </motion.div>
+
+      <DashboardAnnouncements role="student" />
 
       <motion.div
         variants={containerVariants}

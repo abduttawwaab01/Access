@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Clock, User, AlertTriangle, CheckCircle, Eye } from "lucide-react"
+import { Clock, User, AlertTriangle, CheckCircle, Eye, FileSpreadsheet } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { useRouter } from "next/navigation"
+import { downloadCsv } from "@/lib/capture"
 
 export default function ExamSessionsPage() {
   const [sessions, setSessions] = useState<any[]>([])
@@ -45,7 +46,7 @@ export default function ExamSessionsPage() {
     <div className="p-4 md:p-6">
       <PageHeader title="Exam Sessions" description="Monitor and grade exam attempts" />
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Select value={filterExam} onValueChange={(v) => { if (v) setFilterExam(v) }}>
           <SelectTrigger className="h-10 w-[180px]"><SelectValue placeholder="All exams" /></SelectTrigger>
           <SelectContent>
@@ -63,6 +64,22 @@ export default function ExamSessionsPage() {
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" className="h-10" onClick={() => {
+          const data = filtered.map((s) => ({
+            "Student Name": s.studentName || "Unknown",
+            Exam: getExamTitle(s.examId),
+            Status: s.status,
+            Score: s.status === "completed" ? `${s.totalScore ?? "-"} / ${s.maxScore}` : "-",
+            "Score %": s.status === "completed" ? `${getScorePercent(s)}%` : "-",
+            "Tab Switches": s.tabSwitches ?? 0,
+            Flagged: s.flagged ? "Yes" : "No",
+            Started: s.startTime ? new Date(s.startTime).toLocaleDateString() : "N/A",
+          }))
+          downloadCsv(data, `Exam_Sessions_${new Date().toISOString().split("T")[0]}.csv`)
+          toast.success("Sessions exported as CSV")
+        }}>
+          <FileSpreadsheet className="h-4 w-4 mr-1" /> Export CSV
+        </Button>
       </div>
 
       {loading ? (

@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { DashboardAnnouncements } from "@/components/DashboardAnnouncements"
 
 const containerVariants = {
   hidden: {},
@@ -99,6 +100,8 @@ export default function AdminDashboard() {
           </motion.button>
         </Link>
       </motion.div>
+
+      <DashboardAnnouncements role="admin" />
 
       {/* Pending Tasks */}
       <motion.div

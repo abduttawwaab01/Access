@@ -99,6 +99,14 @@ export async function POST(request: NextRequest) {
       const pendingApplications = store.admissionApplications.getByStatus("pending")
       return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application rejected" })
     }
+    case "transferApplication": {
+      const app = store.admissionApplications.getById(body.id)
+      if (!app) return NextResponse.json({ success: false, error: "Application not found" })
+      const targetClass = store.classes.getById(body.transferToClassId)
+      store.admissionApplications.update(body.id, { status: "transferred", classId: body.transferToClassId, className: targetClass?.name || "Unknown", transferToClassId: body.transferToClassId })
+      const pendingApplications = store.admissionApplications.getByStatus("pending")
+      return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application transferred" })
+    }
     // Announcements
     case "createAnnouncement": {
       store.superAnnouncements.create({
