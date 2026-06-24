@@ -51,6 +51,7 @@ export default function AdminAdmissionsPage() {
   const [analysisLoading, setAnalysisLoading] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<any>(null)
   const reportRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLDivElement>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -291,7 +292,7 @@ export default function AdminAdmissionsPage() {
                   {statusChartData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
                 </Pie><Tooltip /></PieChart>
               </ResponsiveContainer></div>
-              <div className="flex justify-center gap-4 text-xs mt-2">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs mt-2">
                 {statusChartData.map((d) => <div key={d.name} className="flex items-center gap-1"><div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} /><span>{d.name}: {d.value}</span></div>)}
               </div></CardContent>
             </Card>
@@ -327,9 +328,10 @@ export default function AdminAdmissionsPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
               <Button variant="ghost" size="sm" onClick={() => setShowDetail(false)} className="mb-2"><ArrowLeft className="h-4 w-4 mr-1" /> Back to Applications</Button>
 
-              <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
-                <button onClick={() => setDetailSubTab("details")} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "details" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Details</button>
-                <button onClick={() => setDetailSubTab("analysis")} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "analysis" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Exam Analysis</button>
+              <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit overflow-x-auto">
+                <button onClick={() => setDetailSubTab("details")} className={`whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "details" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Details</button>
+                <button onClick={() => setDetailSubTab("analysis")} className={`whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "analysis" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Exam Analysis</button>
+                <button onClick={() => setDetailSubTab("form")} className={`whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${detailSubTab === "form" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Admission Form</button>
               </div>
 
               {detailSubTab === "details" && (
@@ -379,7 +381,7 @@ export default function AdminAdmissionsPage() {
                           <Label className="text-xs">Admin Notes</Label>
                           <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} className="min-h-[80px]" placeholder="Add notes about this applicant..." />
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Button onClick={handleUpdateApplication} disabled={saving} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
                             {saving ? "Saving..." : "Save Changes"}
                           </Button>
@@ -391,11 +393,11 @@ export default function AdminAdmissionsPage() {
                               <Button variant="outline" className="text-red-600 border-red-300" onClick={() => handleAction(selectedApp.id, "rejectApplication")}>
                                 <XCircle className="h-4 w-4 mr-1" /> Reject
                               </Button>
-                              <Button variant="outline" className="text-red-600 border-red-300 ml-auto" onClick={() => setConfirmDelete(selectedApp)}>
+                              <Button variant="outline" className="text-red-600 border-red-300" onClick={() => setConfirmDelete(selectedApp)}>
                                 <Trash2 className="h-4 w-4 mr-1" /> Delete
                               </Button>
-                        <div className="overflow-hidden flex items-center gap-2 max-w-[calc(100vw-24rem)]" style={{ maxWidth: '100%' }}>
-                                <select value={transferClassId} onChange={(e) => setTransferClassId(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <select value={transferClassId} onChange={(e) => setTransferClassId(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10 w-full sm:w-auto">
                                   <option value="">Defer to...</option>
                                   {classes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
@@ -434,9 +436,9 @@ export default function AdminAdmissionsPage() {
 
               {detailSubTab === "analysis" && (
                 <div ref={analysisRef} className="space-y-6 bg-white rounded-2xl p-6 border">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <h3 className="font-semibold text-lg">Entrance Exam Analysis — {selectedApp.firstName} {selectedApp.lastName}</h3>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" onClick={() => whatsappShare(selectedApp, analysisData)} disabled={!selectedApp.phone && !selectedApp.parentPhone}>
                         <Share2 className="h-4 w-4 mr-1" /> Share via WhatsApp
                       </Button>
@@ -598,7 +600,7 @@ export default function AdminAdmissionsPage() {
                         )}
 
                         {/* Session Info */}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           <span>Exam: {analysisData.examTitle}</span>
                           {analysisData.examDuration && <span>Duration: {analysisData.examDuration} min</span>}
                           {analysisData.tabSwitches > 0 && <span className="text-amber-500">Tab switches: {analysisData.tabSwitches}</span>}
@@ -627,17 +629,143 @@ export default function AdminAdmissionsPage() {
                   )}
                 </div>
               )}
+
+              {detailSubTab === "form" && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">Professional admission form for printing or download</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={async () => { if (formRef.current) { await downloadPdf(formRef.current, `Admission_Form_${selectedApp.firstName}_${selectedApp.lastName}.pdf`); toast.success("Downloaded as PDF") } }}>
+                        <DownloadCloud className="h-4 w-4 mr-1" /> PDF
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => { if (formRef.current) downloadDoc(formRef.current, `Admission_Form_${selectedApp.firstName}_${selectedApp.lastName}.doc`, "Admission Application Form") }}>
+                        <FileText className="h-4 w-4 mr-1" /> DOC
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => window.print()}>
+                        <FileSpreadsheet className="h-4 w-4 mr-1" /> Print
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div ref={formRef} className="bg-white rounded-2xl shadow-xl overflow-hidden border print:shadow-none print:border-0">
+                    {/* School Header */}
+                    <div className="bg-gradient-to-r from-primary via-primary/90 to-secondary p-6 text-white text-center print:bg-black print:text-white">
+                      <h1 className="text-xl font-bold tracking-tight">SKOOLAR INTERNATIONAL SCHOOL</h1>
+                      <p className="text-sm opacity-80">Excellence in Education</p>
+                      <div className="mt-1 h-px bg-white/20 mx-auto max-w-96" />
+                      <p className="text-xs opacity-70 mt-1">123 Education Avenue, Learning City, Nigeria | info@skoolar.edu.ng | +234 800 000 0000</p>
+                    </div>
+
+                    <div className="p-6 space-y-6">
+                      <div className="text-center">
+                        <h2 className="text-lg font-bold text-gray-900 uppercase tracking-wide">Admission Application Form</h2>
+                        <p className="text-xs text-gray-500 mt-0.5">Application ID: {selectedApp.id?.slice(0, 8).toUpperCase() || "N/A"}</p>
+                      </div>
+
+                      {/* Passport & Basic Info */}
+                      <div className="flex flex-col sm:flex-row gap-6">
+                        <div className="flex-shrink-0 flex items-start justify-center sm:justify-start">
+                          <div className="w-28 h-28 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 text-gray-400 text-center p-2">
+                            <div><User className="h-8 w-8 mx-auto mb-1" /><span className="text-[10px]">Passport</span></div>
+                          </div>
+                        </div>
+                        <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Full Name</span><p className="font-semibold text-gray-900">{selectedApp.firstName} {selectedApp.lastName}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Gender</span><p className="text-gray-900">{selectedApp.gender || "N/A"}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Date of Birth</span><p className="text-gray-900">{selectedApp.dob || selectedApp.dateOfBirth ? new Date(selectedApp.dob || selectedApp.dateOfBirth).toLocaleDateString() : "N/A"}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Applied Date</span><p className="text-gray-900">{selectedApp.appliedAt ? new Date(selectedApp.appliedAt).toLocaleDateString() : "N/A"}</p></div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-200" />
+
+                      {/* Contact Information */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2"><div className="w-1 h-4 bg-primary rounded-full" />Contact Information</h3>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Email Address</span><p className="text-gray-900">{selectedApp.email || "N/A"}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Phone Number</span><p className="text-gray-900">{selectedApp.phone || "N/A"}</p></div>
+                          <div className="col-span-2"><span className="text-[10px] uppercase tracking-wider text-gray-500">Residential Address</span><p className="text-gray-900">{selectedApp.address || "N/A"}</p></div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-200" />
+
+                      {/* Academic Information */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2"><div className="w-1 h-4 bg-primary rounded-full" />Academic Information</h3>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Class Applying For</span><p className="font-medium text-gray-900">{selectedApp.className || selectedApp.classApplyingFor || "N/A"}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Previous School</span><p className="text-gray-900">{selectedApp.previousSchool || "N/A"}</p></div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-200" />
+
+                      {/* Parent / Guardian */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2"><div className="w-1 h-4 bg-primary rounded-full" />Parent / Guardian</h3>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Parent Phone</span><p className="text-gray-900">{selectedApp.parentPhone || "N/A"}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Parent Email</span><p className="text-gray-900">{selectedApp.parentEmail || "N/A"}</p></div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-200" />
+
+                      {/* Entrance Exam */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2"><div className="w-1 h-4 bg-primary rounded-full" />Entrance Examination</h3>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Exam Score</span><p className={`font-bold ${selectedApp.entranceExamScore != null ? "text-gray-900" : "text-gray-400"}`}>{selectedApp.entranceExamScore != null ? `${selectedApp.entranceExamScore}/100` : "Not taken"}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Result</span><p className={`font-semibold ${selectedApp.entranceExamPassed ? "text-green-600" : selectedApp.entranceExamScore != null ? "text-red-600" : "text-gray-400"}`}>{selectedApp.entranceExamPassed ? "Passed" : selectedApp.entranceExamScore != null ? "Failed" : "-"}</p></div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-200" />
+
+                      {/* For Office Use Only */}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 text-center uppercase tracking-wider">For Office Use Only</h3>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Application Status</span><p className={`font-semibold capitalize ${selectedApp.status === "accepted" ? "text-green-600" : selectedApp.status === "rejected" ? "text-red-600" : "text-amber-600"}`}>{selectedApp.status}</p></div>
+                          <div><span className="text-[10px] uppercase tracking-wider text-gray-500">Cut-off Score</span><p className="text-gray-900">{getCutOffForApp(selectedApp) ? `${getCutOffForApp(selectedApp)}%` : "N/A"}</p></div>
+                          <div className="col-span-2"><span className="text-[10px] uppercase tracking-wider text-gray-500">Admin Notes</span><p className="text-gray-900">{selectedApp.notes || selectedApp.adminNotes || "None"}</p></div>
+                          <div className="col-span-2 grid grid-cols-2 gap-6 mt-2">
+                            <div>
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500">Principal's Signature</span>
+                              <div className="mt-4 h-px bg-gray-300 w-40" />
+                              <p className="text-[10px] text-gray-400 mt-1">Date: _______________</p>
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase tracking-wider text-gray-500">Applicant's Parent Signature</span>
+                              <div className="mt-4 h-px bg-gray-300 w-40" />
+                              <p className="text-[10px] text-gray-400 mt-1">Date: _______________</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="text-center text-[10px] text-gray-400 pt-2 border-t border-gray-200">
+                        <p>Generated on {new Date().toLocaleDateString()} | Skoolar School Management System</p>
+                        <p className="mt-0.5">This is a computer-generated document.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : (
             <>
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="relative w-full sm:max-w-xs">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <input placeholder="Search applicants..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-lg border border-border bg-background py-2 pl-10 pr-3 text-sm outline-none focus:border-primary" />
                 </div>
-                <div className="flex gap-1 rounded-lg bg-muted p-1">
+                <div className="flex gap-1 rounded-lg bg-muted p-1 overflow-x-auto">
                   {["all", "pending", "accepted", "rejected", "transferred"].map((s) => (
-                    <button key={s} onClick={() => setStatusFilter(s)} className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{s === "transferred" ? "Deferred" : s}</button>
+                    <button key={s} onClick={() => setStatusFilter(s)} className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{s === "transferred" ? "Deferred" : s}</button>
                   ))}
                 </div>
               </div>
@@ -922,9 +1050,9 @@ export default function AdminAdmissionsPage() {
       {/* ===================== REPORTS TAB ===================== */}
       {activeTab === "Reports" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-sm text-muted-foreground">Comprehensive admission reports with per-applicant analysis</p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={handleExportReportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
               <Button variant="outline" size="sm" onClick={handleExportReportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
               <Button variant="outline" size="sm" onClick={() => { if (reportRef.current) downloadDoc(reportRef.current, `Admission_Report_${new Date().toISOString().split("T")[0]}.doc`, "Admission Report") }}><FileText className="h-4 w-4 mr-1" />DOC</Button>

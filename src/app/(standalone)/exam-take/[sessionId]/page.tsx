@@ -12,7 +12,8 @@ import { useAntiCheat } from "@/hooks/useAntiCheat"
 import { ExamCalculator } from "@/components/ExamCalculator"
 
 export default function ExamTakePage() {
-  const params = useParams()
+  const params = useParams<{ sessionId: string }>()
+  const sessionId = params?.sessionId || ""
   const router = useRouter()
   const [exam, setExam] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
@@ -61,7 +62,7 @@ export default function ExamTakePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const sRes = await fetch(`/api/exam-sessions/${params.id}`)
+        const sRes = await fetch(`/api/exam-sessions/${sessionId}`)
         if (!sRes.ok) {
           throw new Error(`Failed to fetch exam session: ${sRes.status}`)
         }
@@ -104,7 +105,7 @@ export default function ExamTakePage() {
       setLoading(false)
     }
     fetchData()
-  }, [params.id, router])
+  }, [sessionId, router])
 
   useEffect(() => {
     if (submitted || !exam || timeLeft <= 0) return
@@ -142,7 +143,7 @@ export default function ExamTakePage() {
     })
 
     try {
-      const response = await fetch(`/api/exam-sessions/${params.id}`, {
+      const response = await fetch(`/api/exam-sessions/${sessionId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
