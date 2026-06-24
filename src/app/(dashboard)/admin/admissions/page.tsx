@@ -391,7 +391,7 @@ export default function AdminAdmissionsPage() {
                               <Button variant="outline" className="text-red-600 border-red-300 ml-auto" onClick={() => setConfirmDelete(selectedApp)}>
                                 <Trash2 className="h-4 w-4 mr-1" /> Delete
                               </Button>
-                              <div className="flex items-center gap-2">
+                        <div className="overflow-hidden flex items-center gap-2 max-w-[calc(100vw-24rem)]" style={{ maxWidth: '100%' }}}
                                 <select value={transferClassId} onChange={(e) => setTransferClassId(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
                                   <option value="">Defer to...</option>
                                   {classes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}

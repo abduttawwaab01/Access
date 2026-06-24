@@ -78,7 +78,8 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
 
   const radarData = data.subjects.map((r) => {
     const pct = Math.round((r.score / r.total) * 100)
-    return { subject: r.subject.length > 8 ? r.subject.substring(0, 7) + "..." : r.subject, score: pct, fullMark: 100 }
+    const gradeColor = GRADE_COLORS[r.grade] || "#6b7280"
+    return { subject: r.subject.length > 8 ? r.subject.substring(0, 7) + "..." : r.subject, score: pct, fullMark: 100, gradeColor }
   })
 
   const barData = data.subjects.map((r) => {
@@ -171,13 +172,14 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
                     <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.examScore ?? "-"}</td>
                     <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.score}</td>
                     <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{pct}%</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center">
-                      <span className="inline-block font-bold px-1.5 py-0.5 rounded" style={{
-                        color: GRADE_COLORS[r.grade] || "#6b7280",
-                        backgroundColor: `${GRADE_COLORS[r.grade] || "#6b7280"}15`,
-                        fontSize: compact ? "5pt" : "6pt",
-                      }}>{r.grade}</span>
-                    </td>
+    <td className="border border-gray-200 px-1.5 py-1 text-center">
+      <span className="inline-block font-bold px-1.5 py-0.5 rounded" style={{
+        color: (GRADE_COLORS[r.grade] || "#6b7280"),
+        backgroundColor: `${(GRADE_COLORS[r.grade] || "#6b7280")}15`,
+        fontSize: compact ? "5pt" : "6pt",
+        color: (GRADE_COLORS[r.grade] || "#6b7280")
+      }}>{r.grade}</span>
+    </td>
                     <td className="border border-gray-200 px-1.5 py-1 text-muted-foreground" style={{ fontSize: compact ? "5pt" : "6pt" }}>{r.remark}</td>
                   </tr>
                 )
@@ -215,15 +217,15 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
             {data.domains.map((d) => {
               const pct = Math.round((d.score / d.max) * 100)
               return (
-                <div key={d.name} className="rounded bg-gray-50 border border-gray-100" style={{ padding: compact ? "3pt 5pt" : "4pt 8pt" }}>
-                  <p className="font-medium text-gray-700" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{d.name}</p>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex-1 bg-gray-200 rounded-full overflow-hidden" style={{ height: compact ? "4pt" : "6pt" }}>
-                      <div className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-500" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="font-mono text-gray-500" style={{ fontSize: compact ? "5pt" : "6pt" }}>{d.score}/{d.max}</span>
-                  </div>
-                </div>
+                      <div key={d.name} className="rounded bg-gray-50 border border-gray-100" style={{ padding: compact ? "3pt 5pt" : "4pt 8pt" }}>
+                        <p className="font-medium text-gray-700" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{d.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex-1 bg-gray-200 rounded-full overflow-hidden" style={{ height: compact ? "4pt" : "6pt" }}>
+                            <div className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-purple-700" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="font-mono text-gray-500" style={{ fontSize: compact ? "5pt" : "6pt" }}>{d.score}/{d.max}</span>
+                        </div>
+                      </div>
               )
             })}
           </div>
@@ -266,16 +268,16 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
 
         {/* === COMMENTS === */}
         <div className="grid grid-cols-2 gap-3 print:gap-2" style={{ marginBottom: "4pt" }}>
-          <div className="rounded bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100" style={{ padding: compact ? "4pt 8pt" : "6pt 10pt" }}>
-            <p className="font-semibold text-indigo-700 uppercase tracking-wider" style={{ fontSize: "6pt", marginBottom: "2pt" }}>Teacher&apos;s Comment</p>
-            <p className="italic text-gray-700" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{data.teacherComment}</p>
-            {data.teacherName && <p className="text-indigo-600 font-medium mt-1" style={{ fontSize: "6pt" }}>&mdash; {data.teacherName}</p>}
-          </div>
-          <div className="rounded bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100" style={{ padding: compact ? "4pt 8pt" : "6pt 10pt" }}>
-            <p className="font-semibold text-amber-700 uppercase tracking-wider" style={{ fontSize: "6pt", marginBottom: "2pt" }}>Principal&apos;s Comment</p>
-            <p className="italic text-gray-700" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{data.principalComment}</p>
-            <p className="text-amber-600 font-medium mt-1" style={{ fontSize: "6pt" }}>&mdash; Principal</p>
-          </div>
+              <div className="rounded bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100" style={{ padding: compact ? "4pt 8pt" : "6pt 10pt" }}>
+                <p className="font-semibold text-indigo-700 uppercase tracking-wider" style={{ fontSize: "6pt", marginBottom: "2pt" }}>Teacher&apos;s Comment</p>
+                <p className="italic text-indigo-900" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{data.teacherComment}</p>
+                {data.teacherName && <p className="text-indigo-600 font-medium mt-1" style={{ fontSize: "6pt" }}>&mdash; {data.teacherName}</p>}
+              </div>
+              <div className="rounded bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100" style={{ padding: compact ? "4pt 8pt" : "6pt 10pt" }}>
+                <p className="font-semibold text-amber-700 uppercase tracking-wider" style={{ fontSize: "6pt", marginBottom: "2pt" }}>Principal&apos;s Comment</p>
+                <p className="italic text-amber-900" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{data.principalComment}</p>
+                <p className="text-amber-600 font-medium mt-1" style={{ fontSize: "6pt" }}>&mdash; Principal</p>
+              </div>
         </div>
 
         {/* === KEY (Position / Total) === */}
