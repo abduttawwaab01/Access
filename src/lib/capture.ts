@@ -116,6 +116,53 @@ function sanitizeUnsupportedColors(doc: Document): void {
       .replace(/oklch\([^)]*\)/gi, "transparent")
       .replace(/color-mix\([^)]*\)/gi, "transparent")
   }
+  const links = doc.querySelectorAll('link[rel="stylesheet"]')
+  for (const link of links) {
+    const href = link.getAttribute("href")
+    if (href) {
+      fetch(href).then((r) => r.text()).then((css) => {
+        const cleaned = css
+          .replace(/oklab\([^)]*\)/gi, "transparent")
+          .replace(/oklch\([^)]*\)/gi, "transparent")
+          .replace(/color-mix\([^)]*\)/gi, "transparent")
+        const style = doc.createElement("style")
+        style.textContent = cleaned
+        link.parentNode?.replaceChild(style, link)
+      }).catch(() => {})
+    }
+  }
+}
+
+// Parse hex overrides from TAILWIND_HEX_OVERRIDES into a variable map
+function getTailwindColorMap(): Record<string, string> {
+  const map: Record<string, string> = {}
+  const regex = /(--[\w-]+):\s*(#[^;]+)/g
+  let match
+  while ((match = regex.exec(TAILWIND_HEX_OVERRIDES)) !== null) {
+    map[match[1]] = match[2]
+  }
+  return map
+}
+
+const TAILWIND_COLOR_MAP = getTailwindColorMap()
+
+function overrideColorVarsOnElement(el: HTMLElement): () => void {
+  const restored: Record<string, string | null> = {}
+  for (const [varName, hexValue] of Object.entries(TAILWIND_COLOR_MAP)) {
+    const current = el.style.getPropertyValue(varName)
+    if (current) restored[varName] = current
+    el.style.setProperty(varName, hexValue)
+  }
+  return () => {
+    for (const [varName, saved] of Object.entries(restored)) {
+      el.style.setProperty(varName, saved!)
+    }
+    for (const varName of Object.keys(TAILWIND_COLOR_MAP)) {
+      if (!(varName in restored)) {
+        el.style.removeProperty(varName)
+      }
+    }
+  }
 }
 
 export async function captureElement(
@@ -144,50 +191,55 @@ export async function captureElement(
     throw new Error("html2canvas is not available")
   }
 
-  const canvas = await html2canvasFn(element, {
-    scale,
-    useCORS: true,
-    backgroundColor,
-    logging: false,
-    allowTaint: true,
-    onclone: (clonedDoc: Document) => {
-      const fontLinkEl = clonedDoc.createElement("head")
-      fontLinkEl.innerHTML = getFontLinks()
-      for (const child of Array.from(fontLinkEl.children)) {
-        clonedDoc.head.appendChild(child)
-      }
-
-      const tailwindOverride = clonedDoc.createElement("style")
-      tailwindOverride.textContent = TAILWIND_HEX_OVERRIDES
-      clonedDoc.head.appendChild(tailwindOverride)
-
-      const style = clonedDoc.createElement("style")
-      style.textContent = `
-        .animated-gradient {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important;
+  const restore = overrideColorVarsOnElement(element)
+  try {
+    const canvas = await html2canvasFn(element, {
+      scale,
+      useCORS: true,
+      backgroundColor,
+      logging: false,
+      allowTaint: true,
+      onclone: (clonedDoc: Document) => {
+        const fontLinkEl = clonedDoc.createElement("head")
+        fontLinkEl.innerHTML = getFontLinks()
+        for (const child of Array.from(fontLinkEl.children)) {
+          clonedDoc.head.appendChild(child)
         }
-        .glass-card {
-          background: rgba(255,255,255,0.9) !important;
+
+        const tailwindOverride = clonedDoc.createElement("style")
+        tailwindOverride.textContent = TAILWIND_HEX_OVERRIDES
+        clonedDoc.head.appendChild(tailwindOverride)
+
+        const style = clonedDoc.createElement("style")
+        style.textContent = `
+          .animated-gradient {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important;
+          }
+          .glass-card {
+            background: rgba(255,255,255,0.9) !important;
+          }
+          [class*="bg-gradient-"] {
+            background-image: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important;
+          }
+        `
+        clonedDoc.head.appendChild(style)
+
+        copyCssVariables(document, clonedDoc)
+
+        if (shouldInlineStyles) {
+          try {
+            inlineComputedStyles(element, clonedDoc.body.firstElementChild as HTMLElement)
+          } catch {}
         }
-        [class*="bg-gradient-"] {
-          background-image: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7) !important;
-        }
-      `
-      clonedDoc.head.appendChild(style)
 
-      copyCssVariables(document, clonedDoc)
+        sanitizeUnsupportedColors(clonedDoc)
+      },
+    })
 
-      if (shouldInlineStyles) {
-        try {
-          inlineComputedStyles(element, clonedDoc.body.firstElementChild as HTMLElement)
-        } catch {}
-      }
-
-      sanitizeUnsupportedColors(clonedDoc)
-    },
-  })
-
-  return canvas
+    return canvas
+  } finally {
+    restore()
+  }
 }
 
 export async function elementToPngBlob(
