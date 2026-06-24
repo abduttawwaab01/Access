@@ -755,6 +755,7 @@ export const db = {
       return prisma.exam.create({
         data: {
           title: data.title,
+          description: data.description || null,
           subjectId: data.subjectId,
           classId: data.classId,
           type: data.type || null,
@@ -767,7 +768,12 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      return prisma.exam.update({ where: { id }, data })
+      const allowed = ["title","description","subjectId","classId","type","duration","questions","status","approvedBy","approvedAt","createdBy"]
+      const clean: any = {}
+      for (const key of allowed) {
+        if (data[key] !== undefined) clean[key] = data[key]
+      }
+      return prisma.exam.update({ where: { id }, data: clean })
     },
     delete: async (id: string) => {
       await prisma.exam.delete({ where: { id } })
@@ -843,7 +849,13 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      return prisma.examSession.update({ where: { id }, data })
+      const validFields = ["status", "answers", "score", "tabSwitches", "flagged", "examType", "endTime"]
+      const clean: any = {}
+      for (const key of validFields) {
+        if (data[key] !== undefined) clean[key] = data[key]
+      }
+      if (Object.keys(clean).length === 0) return prisma.examSession.findUnique({ where: { id } })
+      return prisma.examSession.update({ where: { id }, data: clean })
     },
     delete: async (id: string) => {
       await prisma.examSession.delete({ where: { id } })

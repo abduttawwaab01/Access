@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -78,19 +78,18 @@ export default function ExamTakePage() {
           }
           const eData = await eRes.json()
           setExam(eData)
-          setTimeLeft(eData.duration * 60)
+          setTimeLeft((eData.duration || 30) * 60)
 
-          if (eData.questions) {
-            const qRes = await fetch("/api/questions")
-            if (!qRes.ok) {
-              throw new Error(`Failed to fetch questions: ${qRes.status}`)
-            }
-            const allQ = await qRes.json()
-            const qIds = eData.questions.map((q: any) => q.questionId)
-            let qs = allQ.filter((q: any) => qIds.includes(q.id))
-            if (eData.shuffleQuestions) qs = qs.sort(() => Math.random() - 0.5)
-            setQuestions(qs)
+          const examQuestions = Array.isArray(eData.questions) ? eData.questions : []
+          const qRes = await fetch("/api/questions")
+          if (!qRes.ok) {
+            throw new Error(`Failed to fetch questions: ${qRes.status}`)
           }
+          const allQ = await qRes.json()
+          const qIds = examQuestions.map((q: any) => q.questionId).filter(Boolean)
+          let qs = allQ.filter((q: any) => q.id && qIds.includes(q.id))
+          if (eData.shuffleQuestions) qs = qs.sort(() => Math.random() - 0.5)
+          setQuestions(qs)
 
           const ansMap: Record<string, string> = {}
           sData.answers?.forEach((a: any) => { ansMap[a.questionId] = a.answer })
@@ -100,8 +99,7 @@ export default function ExamTakePage() {
         }
       } catch (error) {
         console.error("Error fetching exam data:", error)
-        toast.error("Failed to load exam data. Please try again.")
-        router.push("/exam-take")
+        toast.error("Failed to load exam data. Please check your connection and try again.")
       }
       setLoading(false)
     }
@@ -109,7 +107,7 @@ export default function ExamTakePage() {
   }, [params.id, router])
 
   useEffect(() => {
-    if (submitted || timeLeft <= 0) return
+    if (submitted || !exam || timeLeft <= 0) return
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) { clearInterval(timerRef.current!); handleSubmit(false); return 0 }
@@ -117,7 +115,7 @@ export default function ExamTakePage() {
       })
     }, 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [submitted])
+  }, [submitted, exam])
 
   const handleSubmit = async (flagged: boolean = false) => {
     if (submitting || submitted) return
@@ -249,9 +247,20 @@ export default function ExamTakePage() {
     )
   }
 
-  if (!exam || !currentQ) return (
+  if (!exam) return (
     <div className="min-h-dvh flex items-center justify-center p-4">
-      <p className="text-muted-foreground">Exam not found or has no questions.</p>
+      <div className="text-center space-y-3">
+        <p className="text-muted-foreground">This exam could not be found. It may have been removed.</p>
+        <Button variant="outline" onClick={() => router.push(session?.examType === "entrance" ? "/" : "/exam-take")}>Go Back</Button>
+      </div>
+    </div>
+  )
+  if (questions.length === 0 && !loading) return (
+    <div className="min-h-dvh flex items-center justify-center p-4">
+      <div className="text-center space-y-3">
+        <p className="text-muted-foreground">No questions are available for this exam. Please contact the school administrator.</p>
+        <Button variant="outline" onClick={() => router.push(session?.examType === "entrance" ? "/" : "/exam-take")}>Go Back</Button>
+      </div>
     </div>
   )
 
