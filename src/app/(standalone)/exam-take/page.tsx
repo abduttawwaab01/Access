@@ -64,6 +64,7 @@ export default function ExamTakeLanding() {
           startTime: new Date().toISOString(),
           status: "active",
           answers: [],
+          examType: "entrance",
         }),
       })
       const session = await res.json()
