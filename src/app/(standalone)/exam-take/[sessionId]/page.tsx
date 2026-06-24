@@ -133,9 +133,10 @@ export default function ExamTakePage() {
     let totalScore = 0
     const gradedAnswers = answerArray.map((a) => {
       const q = questions.find((qq) => qq.id === a.questionId)
-      if (q && (q.type === "mcq" || q.type === "true_false") && q.correctAnswer) {
-        const correct = a.answer?.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
-        const pts = correct ? (exam.questions.find((eq: any) => eq.questionId === q.id)?.points || q.points) : 0
+      const eq = q ? getEffectiveQ(q) : q
+      if (eq && (eq.type === "mcq" || eq.type === "true_false") && eq.correctAnswer) {
+        const correct = a.answer?.trim().toLowerCase() === eq.correctAnswer.trim().toLowerCase()
+        const pts = correct ? (exam.questions.find((exq: any) => exq.questionId === eq.id)?.points || eq.points) : 0
         if (correct) totalScore += pts
         return { ...a, score: pts }
       }
@@ -177,6 +178,22 @@ export default function ExamTakePage() {
   }
 
   const currentQ = questions[currentIdx]
+  const getEffectiveQ = (q: any) => {
+    if (!q) return q
+    const eq = (exam?.questions || []).find((eq: any) => eq.questionId === q.id)
+    if (!eq?.override) return { ...q, points: eq?.points ?? q.points }
+    return {
+      ...q,
+      text: eq.override.text ?? q.text,
+      type: eq.override.type ?? q.type,
+      options: eq.override.options ?? q.options,
+      correctAnswer: eq.override.answer ?? q.correctAnswer,
+      difficulty: eq.override.difficulty ?? q.difficulty,
+      topic: eq.override.topic ?? q.topic,
+      points: eq.points ?? q.points,
+    }
+  }
+  const effectiveQ = currentQ ? getEffectiveQ(currentQ) : currentQ
   const answeredCount = Object.values(answers).filter((a) => a !== null && a !== "").length
 
   if (loading) return (
@@ -271,18 +288,18 @@ export default function ExamTakePage() {
             <div className="rounded-2xl bg-card border shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Badge variant="outline" className="text-[10px]">
-                  {currentQ.type === "mcq" ? "Multiple Choice" : currentQ.type === "true_false" ? "True / False" : currentQ.type === "coding" ? "Coding" : "Theory"}
+                  {effectiveQ.type === "mcq" ? "Multiple Choice" : effectiveQ.type === "true_false" ? "True / False" : effectiveQ.type === "coding" ? "Coding" : "Theory"}
                 </Badge>
-                <span className="text-xs text-muted-foreground">{exam.questions.find((eq: any) => eq.questionId === currentQ.id)?.points || currentQ.points} pts</span>
+                <span className="text-xs text-muted-foreground">{effectiveQ.points} pts</span>
               </div>
-              <p className="text-base font-medium leading-relaxed">{currentQ.text}</p>
+              <p className="text-base font-medium leading-relaxed">{effectiveQ.text}</p>
             </div>
 
             {/* Answer Area */}
             <div className="rounded-2xl bg-card border shadow-sm p-5">
-              {currentQ.type === "mcq" && currentQ.options && (
+              {effectiveQ.type === "mcq" && effectiveQ.options && (
                 <div className="space-y-2">
-                  {currentQ.options.map((opt: string, oi: number) => (
+                  {effectiveQ.options.map((opt: string, oi: number) => (
                     <button
                       key={oi}
                       onClick={() => setAnswers((prev) => ({ ...prev, [currentQ.id]: opt }))}
@@ -300,7 +317,7 @@ export default function ExamTakePage() {
                   ))}
                 </div>
               )}
-              {currentQ.type === "true_false" && (
+              {effectiveQ.type === "true_false" && (
                 <div className="grid grid-cols-2 gap-3">
                   {["True", "False"].map((opt) => (
                     <button
@@ -317,11 +334,11 @@ export default function ExamTakePage() {
                   ))}
                 </div>
               )}
-              {(currentQ.type === "theory" || currentQ.type === "coding") && (
+              {(effectiveQ.type === "theory" || effectiveQ.type === "coding") && (
                 <textarea
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [currentQ.id]: e.target.value }))}
-                  placeholder={currentQ.type === "coding" ? "Write your code here..." : "Write your answer here..."}
+                  placeholder={effectiveQ.type === "coding" ? "Write your code here..." : "Write your answer here..."}
                   className="w-full min-h-[200px] rounded-xl border border-input bg-background p-4 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               )}

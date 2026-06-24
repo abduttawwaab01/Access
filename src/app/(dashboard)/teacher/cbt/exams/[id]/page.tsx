@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Plus, Trash2, HelpCircle, Code, AlignLeft, CheckCircle, Shuffle, Filter, Search, X } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, HelpCircle, Code, AlignLeft, CheckCircle, Shuffle, Filter, Search, X, Pencil } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { ExamDownload } from "@/components/ExamDownload"
 import Link from "next/link"
@@ -45,6 +45,10 @@ export default function TeacherExamDetailPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bankPoints, setBankPoints] = useState<Record<string, number>>({})
   const [browsePage, setBrowsePage] = useState(1)
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [editQuestion, setEditQuestion] = useState<any>(null)
+  const [editForm, setEditForm] = useState({ text: "", type: "mcq", options: ["", "", "", ""], answer: "", difficulty: "medium", topic: "", points: 5 })
 
   const fetchData = async () => {
     const [examRes, allQRes, sRes] = await Promise.all([
@@ -81,7 +85,7 @@ export default function TeacherExamDetailPage() {
 
   const loadBankQuestions = async () => {
     try {
-      const res = await fetch(`/api/question-bank?classId=${exam.classId}&subjectId=${exam.subjectId}&approved=true`)
+      const res = await fetch(`/api/question-bank?subjectId=${exam.subjectId}&approved=true`)
       const data = await res.json()
       const existingIds = new Set((exam.questions || []).map((q: any) => q.questionId))
       const filtered = data.filter((q: any) => !existingIds.has(q.id))
@@ -171,6 +175,40 @@ export default function TeacherExamDetailPage() {
       body: JSON.stringify({ questions: [...currentQs, ...newQs] }),
     })
     if (res.ok) { toast.success(`${newQs.length} questions added`); setBrowseOpen(false); fetchData() }
+  }
+
+  const openEdit = (q: any) => {
+    const eq = (exam.questions || []).find((eq: any) => eq.questionId === q.id)
+    const override = eq?.override || {}
+    setEditQuestion(q)
+    setEditForm({
+      text: override.text ?? q.text,
+      type: override.type ?? q.type || "mcq",
+      options: override.options ?? q.options ?? ["", "", "", ""],
+      answer: override.answer ?? q.correctAnswer ?? "",
+      difficulty: override.difficulty ?? q.difficulty ?? "medium",
+      topic: override.topic ?? q.topic ?? "",
+      points: eq?.points ?? q.points ?? 5,
+    })
+    setEditOpen(true)
+  }
+
+  const saveEdit = async () => {
+    if (!editQuestion) return
+    const { text, type, options, answer, difficulty, topic, points } = editForm
+    const currentQs = [...(exam.questions || [])]
+    const idx = currentQs.findIndex((eq: any) => eq.questionId === editQuestion.id)
+    if (idx === -1) return
+    currentQs[idx] = {
+      ...currentQs[idx],
+      points,
+      override: { text, type, options, answer, difficulty, topic },
+    }
+    const res = await fetch(`/api/exams/${params.id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questions: currentQs }),
+    })
+    if (res.ok) { toast.success("Question updated"); setEditOpen(false); fetchData() }
   }
 
   const autoMatchCount = bankQuestions.filter((q: any) => {
@@ -269,23 +307,28 @@ export default function TeacherExamDetailPage() {
       ) : (
         <div className="space-y-2">
           {questions.map((q, i) => {
-            const pts = (exam.questions || []).find((eq: any) => eq.questionId === q.id)?.points || q.points
+            const eq = (exam.questions || []).find((eq: any) => eq.questionId === q.id)
+            const override = eq?.override || {}
+            const displayQ = { ...q, ...override, points: eq?.points ?? q.points }
             return (
               <motion.div key={q.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
-                <Card className="glass-card border-0">
+                <Card className="glass-card border-0 cursor-pointer" onClick={() => openEdit(q)}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <span className="text-xs font-mono text-muted-foreground">{i + 1}.</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium line-clamp-1">{q.text}</p>
+                          <p className="text-sm font-medium line-clamp-1">{displayQ.text}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <Badge variant="outline" className="text-[10px]">{(q.type || "mcq") === "true_false" ? "T/F" : (q.type || "mcq").toUpperCase()}</Badge>
-                            <span className="text-xs text-muted-foreground">{pts} pts</span>
+                            <Badge variant="outline" className="text-[10px]">{(displayQ.type || "mcq") === "true_false" ? "T/F" : (displayQ.type || "mcq").toUpperCase()}</Badge>
+                            <span className="text-xs text-muted-foreground">{displayQ.points} pts</span>
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => removeQuestion(q.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(q)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => removeQuestion(q.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -479,6 +522,100 @@ export default function TeacherExamDetailPage() {
             <Button onClick={addSelectedFromBrowse} disabled={selectedIds.size === 0} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
               Add Selected ({selectedIds.size})
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) setEditOpen(false) }}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Question for This Exam</DialogTitle>
+            <DialogDescription>Changes only apply to this exam and won't affect the question bank.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Question</Label>
+              <textarea className="w-full min-h-[80px] rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" value={editForm.text} onChange={(e) => setEditForm((p) => ({ ...p, text: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <Select value={editForm.type} onValueChange={(v) => { if (v) setEditForm((p) => ({ ...p, type: v })) }}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mcq">MCQ</SelectItem>
+                    <SelectItem value="true_false">True / False</SelectItem>
+                    <SelectItem value="theory">Theory</SelectItem>
+                    <SelectItem value="coding">Coding</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Difficulty</Label>
+                <Select value={editForm.difficulty} onValueChange={(v) => { if (v) setEditForm((p) => ({ ...p, difficulty: v })) }}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">Easy</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="hard">Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {editForm.type === "mcq" && (
+              <div className="space-y-2">
+                <Label>Options</Label>
+                {editForm.options?.map((opt: string, oi: number) => (
+                  <div key={oi} className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground w-5">{String.fromCharCode(65 + oi)}.</span>
+                    <Input value={opt} onChange={(e) => setEditForm((p) => { const opts = [...(p.options || [])]; opts[oi] = e.target.value; return { ...p, options: opts } })} className="flex-1 h-9" placeholder={`Option ${String.fromCharCode(65 + oi)}`} />
+                  </div>
+                ))}
+                <div className="space-y-1.5 pt-1">
+                  <Label>Correct Answer</Label>
+                  <Select value={editForm.answer} onValueChange={(v) => { if (v) setEditForm((p) => ({ ...p, answer: v })) }}>
+                    <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {editForm.options?.filter(Boolean).map((opt: string, oi: number) => (
+                        <SelectItem key={oi} value={opt}>{String.fromCharCode(65 + oi)}. {opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            {editForm.type === "true_false" && (
+              <div className="space-y-1.5">
+                <Label>Correct Answer</Label>
+                <Select value={editForm.answer} onValueChange={(v) => { if (v) setEditForm((p) => ({ ...p, answer: v })) }}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="True">True</SelectItem>
+                    <SelectItem value="False">False</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {(editForm.type === "theory" || editForm.type === "coding") && (
+              <div className="space-y-1.5">
+                <Label>Model Answer</Label>
+                <textarea className="w-full min-h-[100px] rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" value={editForm.answer} onChange={(e) => setEditForm((p) => ({ ...p, answer: e.target.value }))} />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Points</Label>
+                <Input type="number" min={1} value={editForm.points} onChange={(e) => setEditForm((p) => ({ ...p, points: parseInt(e.target.value) || 1 }))} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Topic</Label>
+                <Input value={editForm.topic} onChange={(e) => setEditForm((p) => ({ ...p, topic: e.target.value }))} className="h-10" placeholder="e.g. Algebra" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={saveEdit} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

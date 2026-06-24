@@ -294,7 +294,14 @@ export const db = {
     },
     update: async (id: string, data: any) => {
       const { staffId, createdAt, password, status, ...rest } = data
-      return prisma.staff.update({ where: { id }, data: rest })
+      const clean: any = { ...rest }
+      if (clean.dateOfBirth === "" || clean.dateOfBirth === null) clean.dateOfBirth = null
+      else if (typeof clean.dateOfBirth === "string") clean.dateOfBirth = new Date(clean.dateOfBirth)
+      if (clean.employmentDate === "" || clean.employmentDate === null) clean.employmentDate = null
+      else if (typeof clean.employmentDate === "string") clean.employmentDate = new Date(clean.employmentDate)
+      if (clean.salary === "" || clean.salary === null) clean.salary = null
+      else if (typeof clean.salary === "string") clean.salary = Number(clean.salary)
+      return prisma.staff.update({ where: { id }, data: clean })
     },
     delete: async (id: string) => {
       await prisma.staff.delete({ where: { id } })
