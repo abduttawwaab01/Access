@@ -18,6 +18,9 @@ async function buildAdminContext(): Promise<ContextResult> {
   const results = await db.results.getAll()
   const schoolSettings = await db.school.get()
   const lessonNotes = await db.lessonNotes.getAll()
+  const users = await db.users.getAll()
+  const parentLinks = await db.parentLinks.getAll()
+  const teacherAssignments = await db.teacherAssignments.getAll()
 
   const teachers = staff.filter((s: any) => s.role === "teacher")
   const classEnrollments = classes.map((c: any) => ({
@@ -60,6 +63,47 @@ async function buildAdminContext(): Promise<ContextResult> {
     classAverages,
   }
 
+  const classMap = new Map(classes.map((c: any) => [c.id, c.name]))
+
+  const studentsByClass: Record<string, any[]> = {}
+  students.forEach((s: any) => {
+    const cn = classMap.get(s.classId) || "Unknown"
+    if (!studentsByClass[cn]) studentsByClass[cn] = []
+    studentsByClass[cn].push(s)
+  })
+  const studentRoster = Object.entries(studentsByClass)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([className, clsStudents]) =>
+      `${className} (${clsStudents.length}): ${clsStudents.map((s: any) => `${s.firstName} ${s.lastName} (${s.studentId})`).join(", ")}`
+    ).join("\n")
+
+  const assignmentMap: Record<string, any> = {}
+  teacherAssignments.forEach((ta: any) => { if (ta.teacherId) assignmentMap[ta.teacherId] = ta })
+  const staffRoster = ["Teachers & Staff:"].concat(
+    staff.map((s: any) => {
+      const ta = assignmentMap[s.id]
+      if (s.role === "teacher" && ta) {
+        const cns = (ta.classIds || []).map((id: string) => classMap.get(id) || id).join(", ")
+        const sns = (ta.subjectIds || []).map((id: string) => {
+          const sub = subjects.find((sb: any) => sb.id === id)
+          return sub ? sub.name : id
+        }).join(", ")
+        return `  ${s.firstName} ${s.lastName} | Teacher | ${s.email || "—"} | Classes: ${cns || "—"} | Subjects: ${sns || "—"}`
+      }
+      return `  ${s.firstName} ${s.lastName} | ${s.role} | ${s.department || "—"} | ${s.email || "—"}`
+    })
+  ).join("\n")
+
+  const studentNameMap = new Map(students.map((s: any) => [s.id, `${s.firstName} ${s.lastName}`]))
+  const parentUsers = users.filter((u: any) => u.role === "parent")
+  const parentRoster = ["Parents & Guardians:"].concat(
+    parentUsers.length > 0 ? parentUsers.map((p: any) => {
+      const links = parentLinks.filter((pl: any) => pl.parentId === p.id)
+      const children = links.map((pl: any) => studentNameMap.get(pl.studentId) || "Unknown").join(", ")
+      return `  ${p.name} | ${p.email || "—"} | Phone: ${p.phone || "—"} → ${children || "no linked children"}`
+    }) : ["  No parent accounts registered"]
+  ).join("\n")
+
   const systemPrompt = `You are an AI assistant for the school admin at "${snapshot.schoolName}".
 You have FULL access to all school data. Answer helpfully and concisely — use bullet points, bold text, and short paragraphs.
 
@@ -75,8 +119,19 @@ ${snapshot.classEnrollments.map((c: any) => `- ${c.name}: ${c.students} students
 Per-class averages:
 ${snapshot.classAverages.map((c: any) => `- ${c.className}: ${c.avgScore}% avg (${c.studentCount} students)`).join("\n")}
 
+-- PEOPLE ROSTER --
+
+STUDENTS (by class):
+${studentRoster || "No students enrolled"}
+
+STAFF:
+${staffRoster || "No staff records"}
+
+${parentRoster}
+
 You help with: lesson notes, student insights, analytics, drafting announcements, teacher management, admin tasks.
-Always format responses with clear structure. If the answer requires specific data not in this snapshot, note what data you'd need.`
+Always format responses with clear structure. You know every student, teacher, and parent by name — use that knowledge when answering.
+If the answer requires specific data not listed here, note what data you'd need.`
 
   const contextSummary = `School: ${snapshot.schoolName} | ${snapshot.totalStudents} students, ${snapshot.totalTeachers} teachers, ${snapshot.totalClasses} classes | Avg: ${snapshot.overallAvgScore}% | Pass: ${snapshot.passRate}%`
 
@@ -245,6 +300,42 @@ async function buildSuperAdminContext(): Promise<ContextResult> {
     classEnrollments,
   }
 
+  const schoolRosters = schools.map((school) => {
+    const schoolStudents = students.filter((s) => s.schoolId === school.id)
+    const schoolStaff = staff.filter((s) => s.schoolId === school.id)
+    const schoolClasses = classes.filter((c) => c.schoolId === school.id)
+    const schoolStudentMap = new Map(schoolStudents.map((s) => [s.id, `${s.firstName} ${s.lastName}`]))
+
+    const studentLines = schoolClasses.map((c) => {
+      const clsStudents = schoolStudents.filter((s) => s.classId === c.id)
+      if (clsStudents.length === 0) return ""
+      return `  ${c.name} (${clsStudents.length}): ${clsStudents.map((s: any) => `${s.firstName} ${s.lastName} (${s.studentId})`).join(", ")}`
+    }).filter(Boolean).join("\n")
+
+    const teachers = schoolStaff.filter((s) => s.role === "teacher")
+    const nonTeachers = schoolStaff.filter((s) => s.role !== "teacher" && s.role === "admin")
+    const staffLines = [
+      ...teachers.map((s: any) => `  ${s.firstName} ${s.lastName} | Teacher | ${s.email || "—"}`),
+      ...nonTeachers.map((s: any) => `  ${s.firstName} ${s.lastName} | ${s.role} | ${s.department || "—"} | ${s.email || "—"}`),
+    ].join("\n")
+
+    const schoolParentLinks = parentLinks.filter((pl) => {
+      const stud = schoolStudentMap.has(pl.studentId)
+      return stud
+    })
+    const schoolParentIds = [...new Set(schoolParentLinks.map((pl) => pl.parentId))]
+    const schoolParents = users.filter((u) => schoolParentIds.includes(u.id))
+    const parentLines = schoolParents.length > 0
+      ? schoolParents.map((p) => {
+          const links = schoolParentLinks.filter((pl) => pl.parentId === p.id)
+          const children = links.map((pl) => schoolStudentMap.get(pl.studentId) || "Unknown").join(", ")
+          return `  ${p.name} | ${p.email || "—"} → ${children}`
+        }).join("\n")
+      : "  None"
+
+    return `=== ${school.name} ===\nStudents:\n${studentLines || "  No students"}\nStaff:\n${staffLines || "  No staff"}\nParents:\n${parentLines}`
+  }).join("\n\n")
+
   const systemPrompt = `You are an AI assistant for the Super Admin of the entire school management system.
 You have FULL access to ALL data across ALL schools. Answer helpfully and concisely — use bullet points, bold text, and short paragraphs.
 
@@ -275,8 +366,13 @@ OPERATIONS:
 - Open feedback/support tickets: ${snapshot.openFeedbackTickets}
 - Active announcements: ${snapshot.totalAnnouncements}
 
+-- PEOPLE ROSTER BY SCHOOL --
+
+${schoolRosters}
+
 You help with: system-wide analytics, financial insights, school management, data summaries, operational overview, user management insights.
-Always format responses with clear structure. If the answer requires specific data not in this snapshot, note what data you'd need.`
+Always format responses with clear structure. You know every student, teacher, and parent across all schools by name — use that knowledge when answering.
+If the answer requires specific data not listed here, note what data you'd need.`
 
   const contextSummary = `System: ${snapshot.totalSchools} schools | ${snapshot.totalStudents} students, ${snapshot.totalTeachers} teachers | Avg: ${snapshot.overallAvgScore}% | Revenue: $${snapshot.totalRevenue.toLocaleString()}`
 

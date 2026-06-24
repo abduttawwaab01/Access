@@ -24,6 +24,7 @@ export default function AdminAdmissionsPage() {
   const [activeTab, setActiveTab] = useState("Dashboard")
   const [applications, setApplications] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
   const [exams, setExams] = useState<any[]>([])
   const [settings, setSettings] = useState<any>({ cutOffs: {}, entranceExamId: null })
   const [loading, setLoading] = useState(true)
@@ -51,18 +52,20 @@ export default function AdminAdmissionsPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    const [appsRes, clsRes, examsRes, setRes, codesRes] = await Promise.all([
+    const [appsRes, clsRes, examsRes, setRes, codesRes, subsRes] = await Promise.all([
       fetch("/api/admissions"),
       fetch("/api/classes"),
       fetch("/api/exams"),
       fetch("/api/admissions/settings"),
       fetch("/api/entrance-codes"),
+      fetch("/api/subjects"),
     ])
     setApplications(await appsRes.json())
     setClasses(await clsRes.json())
     setExams(await examsRes.json())
     setSettings(await setRes.json())
     setEntranceCodes(await codesRes.json())
+    setSubjects(await subsRes.json())
     setLoading(false)
   }
 
@@ -667,6 +670,52 @@ export default function AdminAdmissionsPage() {
       {/* ===================== ENTRANCE SCORES TAB ===================== */}
       {activeTab === "Entrance Scores" && (
         <div className="space-y-6">
+          {/* Entrance Exams Overview */}
+          <Card className="border border-border/50">
+            <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><BookOpen className="h-4 w-4" />Entrance Exams</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              {entranceExams.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No entrance exams found. Create one in{" "}
+                  <a href="/admin/cbt/exams" className="text-primary underline">CBT Engine</a>.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-muted/50">
+                      <th className="text-left px-3 py-2 font-semibold text-xs">#</th>
+                      <th className="text-left px-3 py-2 font-semibold text-xs">Title</th>
+                      <th className="text-left px-3 py-2 font-semibold text-xs hidden md:table-cell">Subject</th>
+                      <th className="text-center px-3 py-2 font-semibold text-xs hidden sm:table-cell">Duration</th>
+                      <th className="text-center px-3 py-2 font-semibold text-xs hidden sm:table-cell">Questions</th>
+                      <th className="text-center px-3 py-2 font-semibold text-xs">Status</th>
+                      <th className="text-center px-3 py-2 font-semibold text-xs">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                      {entranceExams.map((e: any, i: number) => (
+                        <tr key={e.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                          <td className="px-3 py-2 text-muted-foreground text-xs">{i + 1}</td>
+                          <td className="px-3 py-2 font-medium text-xs">{e.title}</td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground hidden md:table-cell">{subjects.find((s: any) => s.id === e.subjectId)?.name || "N/A"}</td>
+                          <td className="px-3 py-2 text-center text-xs hidden sm:table-cell">{e.duration || "—"}m</td>
+                          <td className="px-3 py-2 text-center text-xs hidden sm:table-cell">{e.questions?.length || 0}</td>
+                          <td className="px-3 py-2 text-center">
+                            <Badge className={e.status === "published" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{e.status}</Badge>
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1" onClick={() => { setCodeGenExamId(e.id); document.getElementById("code-gen-section")?.scrollIntoView({ behavior: "smooth" }) }}>
+                              <KeyRound className="h-3 w-3" /> Codes
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="border border-border/50">
             <CardHeader><CardTitle className="text-sm font-semibold">Settings</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -701,7 +750,7 @@ export default function AdminAdmissionsPage() {
           </Card>
 
           {/* Code Generation */}
-          <Card className="border border-border/50">
+          <Card id="code-gen-section" className="border border-border/50">
             <CardHeader><CardTitle className="text-sm font-semibold flex items-center gap-2"><KeyRound className="h-4 w-4" />Generate Entrance Codes</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
