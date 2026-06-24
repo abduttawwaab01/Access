@@ -755,10 +755,17 @@ export const db = {
       return prisma.exam.create({
         data: {
           title: data.title,
+          description: data.description || null,
           subjectId: data.subjectId,
           classId: data.classId,
           type: data.type || null,
           duration: data.duration || null,
+          shuffleQuestions: data.shuffleQuestions ?? false,
+          showResults: data.showResults ?? true,
+          requireFullscreen: data.requireFullscreen ?? true,
+          tabSwitchLimit: data.tabSwitchLimit ?? 3,
+          allowCopyPaste: data.allowCopyPaste ?? false,
+          maxAttempts: data.maxAttempts ?? 0,
           questions: data.questions || [],
           status: data.status || "draft",
           createdBy: data.createdBy || null,
@@ -767,7 +774,7 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      const allowed = ["title","subjectId","classId","type","duration","questions","status","approvedBy","approvedAt","createdBy"]
+      const allowed = ["title","description","subjectId","classId","type","duration","shuffleQuestions","showResults","requireFullscreen","tabSwitchLimit","allowCopyPaste","maxAttempts","questions","status","approvedBy","approvedAt","createdBy"]
       const clean: any = {}
       for (const key of allowed) {
         if (data[key] !== undefined) clean[key] = data[key]

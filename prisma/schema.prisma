@@ -434,23 +434,30 @@ model Question {
 }
 
 model Exam {
-  id         String   @id @default(cuid())
-  title      String
-  subjectId  String
-  classId    String
-  type       String?
-  duration   Int?
-  questions  Json     @default("[]")
-  status     String   @default("draft")
-  approvedBy String?
-  approvedAt DateTime?
-  createdBy  String?
-  schoolId   String
-  school     School   @relation(fields: [schoolId], references: [id])
-  class      Class    @relation(fields: [classId], references: [id])
-  subject    Subject  @relation(fields: [subjectId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  subjectId        String
+  classId          String
+  type             String?
+  duration         Int?
+  shuffleQuestions Boolean  @default(false)
+  showResults      Boolean  @default(true)
+  requireFullscreen Boolean @default(true)
+  tabSwitchLimit   Int      @default(3)
+  allowCopyPaste   Boolean  @default(false)
+  maxAttempts      Int      @default(0)
+  questions        Json     @default("[]")
+  status           String   @default("draft")
+  approvedBy       String?
+  approvedAt       DateTime?
+  createdBy        String?
+  schoolId         String
+  school           School   @relation(fields: [schoolId], references: [id])
+  class            Class    @relation(fields: [classId], references: [id])
+  subject          Subject  @relation(fields: [subjectId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model ExamSession {
