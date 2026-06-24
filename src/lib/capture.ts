@@ -1,5 +1,5 @@
 function hasUnsupportedColor(value: string): boolean {
-  return /(^|[^-\w])lab\(|lch\(|oklab\(|oklch\(|color\(/.test(value)
+  return /(^|[^-\w])lab\(|lch\(|oklab\(|oklch\(|color\(|color-mix\(/.test(value)
 }
 
 function isColorProperty(prop: string): boolean {
