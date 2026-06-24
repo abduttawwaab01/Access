@@ -176,8 +176,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
       <span className="inline-block font-bold px-1.5 py-0.5 rounded" style={{
         color: (GRADE_COLORS[r.grade] || "#6b7280"),
         backgroundColor: `${(GRADE_COLORS[r.grade] || "#6b7280")}15`,
-        fontSize: compact ? "5pt" : "6pt",
-        color: (GRADE_COLORS[r.grade] || "#6b7280")
+        fontSize: compact ? "5pt" : "6pt"
       }}>{r.grade}</span>
     </td>
                     <td className="border border-gray-200 px-1.5 py-1 text-muted-foreground" style={{ fontSize: compact ? "5pt" : "6pt" }}>{r.remark}</td>

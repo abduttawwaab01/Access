@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 
+function findUserByEmail(email: string, allStaff: any[]) {
+  return allStaff.find((s: any) => s.email?.toLowerCase() === email.toLowerCase()) || null
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId") || "1"
-    let user = await db.staff.getById(userId)
-    
-    if (!user) {
-      const allStaff = await db.staff.getAll()
-      user = allStaff.find((s: any) => s.role === "admin") || null
-    }
-    
+    const allStaff = await db.staff.getAll()
+    const queryEmail = request.nextUrl.searchParams.get("email")
+    let user = queryEmail ? findUserByEmail(queryEmail, allStaff) : null
+
+    if (!user) user = allStaff.find((s: any) => s.role === "admin") || allStaff[0] || null
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
-    
+
     return NextResponse.json({
       id: user.id,
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
@@ -31,26 +33,23 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const userId = body.id || "1"
-    
-    let current = await db.staff.getById(userId)
-    if (!current) {
-      const allStaff = await db.staff.getAll()
-      current = allStaff.find((s: any) => s.role === "admin") || null
-    }
-    const targetId = current?.id || userId
-    
+    const allStaff = await db.staff.getAll()
+    const queryEmail = request.nextUrl.searchParams.get("email")
+    let current = queryEmail ? findUserByEmail(queryEmail, allStaff) : null
+    if (!current && body.email) current = findUserByEmail(body.email, allStaff)
+    const targetId = current?.id || body.id
+
     const updated = await db.staff.update(targetId, {
       firstName: body.name?.split(" ")[0] || "",
       lastName: body.name?.split(" ").slice(1).join(" ") || "",
       email: body.email,
       phone: body.phone
     })
-    
+
     if (!updated) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
-    
+
     return NextResponse.json({
       id: updated.id,
       name: `${updated.firstName || ""} ${updated.lastName || ""}`.trim(),

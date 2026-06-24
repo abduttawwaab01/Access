@@ -1,14 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import ProfilePage from "@/components/profile/ProfilePage"
 
 export default function AdminProfilePage() {
+  const { data: session } = useSession()
   const [userData, setUserData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/admin/profile")
+    const email = session?.user?.email
+    const params = email ? `?email=${encodeURIComponent(email)}` : ""
+    fetch(`/api/admin/profile${params}`)
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || "Failed to fetch profile")
@@ -19,10 +23,12 @@ export default function AdminProfilePage() {
         console.error("Failed to fetch admin profile:", error)
         setLoading(false)
       })
-  }, [])
+  }, [session])
 
   const handleSave = async (data: any) => {
-    const response = await fetch("/api/admin/profile", {
+    const email = session?.user?.email
+    const params = email ? `?email=${encodeURIComponent(email)}` : ""
+    const response = await fetch(`/api/admin/profile${params}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...data, id: userData?.id })

@@ -139,9 +139,12 @@ export default function AdminAdmissionsPage() {
 
   const confirmDeleteItem = async () => {
     if (!confirmDelete) return
-    const res = await fetch(`/api/admissions/${confirmDelete.id}`, { method: "DELETE" })
+    const endpoint = confirmDelete.type === 'entranceCode' 
+      ? `/api/entrance-codes/${confirmDelete.id}` 
+      : `/api/admissions/${confirmDelete.id}`
+    const res = await fetch(endpoint, { method: "DELETE" })
     if (res.ok) {
-      toast.success("Application deleted")
+      toast.success(confirmDelete.type === 'entranceCode' ? "Code deleted" : "Application deleted")
       fetchData()
       setShowDetail(false)
       setConfirmDelete(null)
@@ -391,7 +394,7 @@ export default function AdminAdmissionsPage() {
                               <Button variant="outline" className="text-red-600 border-red-300 ml-auto" onClick={() => setConfirmDelete(selectedApp)}>
                                 <Trash2 className="h-4 w-4 mr-1" /> Delete
                               </Button>
-                        <div className="overflow-hidden flex items-center gap-2 max-w-[calc(100vw-24rem)]" style={{ maxWidth: '100%' }}}
+                        <div className="overflow-hidden flex items-center gap-2 max-w-[calc(100vw-24rem)]" style={{ maxWidth: '100%' }}>
                                 <select value={transferClassId} onChange={(e) => setTransferClassId(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
                                   <option value="">Defer to...</option>
                                   {classes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -846,6 +849,7 @@ export default function AdminAdmissionsPage() {
                       <th className="text-left px-3 py-2 font-semibold text-xs">Class</th>
                       <th className="text-center px-3 py-2 font-semibold text-xs">Usage</th>
                       <th className="text-center px-3 py-2 font-semibold text-xs">Expires</th>
+                      <th className="text-center px-3 py-2 font-semibold text-xs">Actions</th>
                     </tr></thead>
                     <tbody>
                       {entranceCodes.map((c: any, i: number) => (
@@ -855,6 +859,11 @@ export default function AdminAdmissionsPage() {
                           <td className="px-3 py-2 text-xs">{c.classId ? classes.find((cl: any) => cl.id === c.classId)?.name || "N/A" : "N/A"}</td>
                           <td className="px-3 py-2 text-center text-xs">{c.currentUses}/{c.maxUses}</td>
                           <td className="px-3 py-2 text-center text-xs">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}</td>
+                          <td className="px-3 py-2 text-center">
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => setConfirmDelete({ id: c.id, code: c.code, type: 'entranceCode' })}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

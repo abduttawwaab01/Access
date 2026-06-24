@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -27,6 +27,14 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
   const router = useRouter()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [notifCount, setNotifCount] = useState(0)
+
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((res) => res.json())
+      .then((data) => setNotifCount(data.count ?? 0))
+      .catch(() => setNotifCount(0))
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,9 +80,11 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
 
           <Button variant="ghost" size="icon" className="text-muted-foreground relative" onClick={() => router.push(`/${user?.role}/notifications`)}>
             <Bell className="h-5 w-5" />
-            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
-              3
-            </span>
+            {notifCount > 0 && (
+              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+                {notifCount > 99 ? "99+" : notifCount}
+              </span>
+            )}
           </Button>
 
           <Avatar className="h-8 w-8 cursor-pointer ml-1" onClick={() => router.push(`/${user?.role}/profile`)}>
