@@ -93,7 +93,7 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>((
   return (
     <div
       ref={ref}
-      className="bg-white shadow-xl overflow-hidden border font-[family-name:var(--font-geist-sans),var(--font-arabic)]"
+      className="bg-white shadow-xl overflow-hidden border font-[family-name:var(--font-geist-sans),var(--font-arabic)] text-gray-800"
       style={{ width: "210mm", minHeight: "297mm", fontSize: compact ? "6.5pt" : "7.5pt" }}
     >
       {/* ── Header Strip ── */}
@@ -311,7 +311,7 @@ function StaticRadarChart({ data, height, compact }: { data: { subject: string; 
   const rings = [0.25, 0.5, 0.75, 1]
 
   return (
-    <svg viewBox={`0 0 300 ${height}`} width="100%" height="100%" style={{ fontFamily: "sans-serif" }}>
+    <svg viewBox={`0 0 300 ${height}`} width="100%" height="100%" style={{ fontFamily: "sans-serif" }} preserveAspectRatio="xMidYMid meet">
       {rings.map((r) => {
         const points = angles.map((a) => `${cx + maxR * r * Math.cos(a)},${cy + maxR * r * Math.sin(a)}`).join(" ")
         return <polygon key={r} points={points} fill="none" stroke="#e5e7eb" strokeWidth="0.5" />
@@ -345,7 +345,7 @@ function StaticBarChart({ data, height, compact }: { data: { subject: string; sc
   const gap = (chartW - barW * n) / (n + 1)
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="100%" style={{ fontFamily: "sans-serif" }}>
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="100%" style={{ fontFamily: "sans-serif" }} preserveAspectRatio="xMidYMid meet">
       {[0, 25, 50, 75, 100].map((v) => {
         const y = margin.top + chartH - (v / 100) * chartH
         return (
