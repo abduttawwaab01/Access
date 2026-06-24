@@ -199,7 +199,7 @@ export async function captureElement(
       backgroundColor,
       logging: false,
       allowTaint: true,
-      onclone: (clonedDoc: Document) => {
+      onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
         const fontLinkEl = clonedDoc.createElement("head")
         fontLinkEl.innerHTML = getFontLinks()
         for (const child of Array.from(fontLinkEl.children)) {
@@ -228,7 +228,7 @@ export async function captureElement(
 
         if (shouldInlineStyles) {
           try {
-            inlineComputedStyles(element, clonedDoc.body.firstElementChild as HTMLElement)
+            inlineComputedStyles(element, clonedElement)
           } catch {}
         }
 
