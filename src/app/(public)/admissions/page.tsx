@@ -135,12 +135,19 @@ export default function AdmissionsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3"
           >
             <Link
-              href="/admissions/apply"
-              className="animated-gradient inline-flex animate-pulse items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:scale-105"
+              href="/admissions/entrance"
+              className="animated-gradient inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:scale-105"
             >
-              Apply Now <ArrowRight className="h-4 w-4" />
+              I Have an Entrance Code <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/admissions/apply"
+              className="inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold border border-border text-foreground hover:bg-muted/50 transition-all"
+            >
+              Traditional Application
             </Link>
           </motion.div>
         </motion.section>

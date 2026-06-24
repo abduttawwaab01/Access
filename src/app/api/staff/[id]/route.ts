@@ -16,22 +16,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const item = await db.staff.update(id, body)
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  if (body.password && item.email) {
+  if (body.password) {
     const hashed = await bcrypt.hash(body.password, 10)
-    const existing = await db.users.getByEmail(item.email)
-    if (existing) {
-      await prisma.user.update({ where: { id: existing.id }, data: { password: hashed } })
-    } else {
-      const schoolId = item.schoolId
-      await prisma.user.create({
-        data: {
-          name: `${item.firstName} ${item.lastName}`,
-          email: item.email,
-          password: hashed,
-          role: item.role === "admin" ? "admin" : "teacher",
-          schoolId,
-        },
-      })
+    const staffUserId = (item as any).userId
+    if (staffUserId) {
+      await prisma.user.update({ where: { id: staffUserId }, data: { password: hashed } })
+    } else if (item.email) {
+      const existing = await db.users.getByEmail(item.email)
+      if (existing) {
+        await prisma.user.update({ where: { id: existing.id }, data: { password: hashed } })
+        await db.staff.update(id, { userId: existing.id })
+      } else {
+        const schoolId = item.schoolId
+        const user = await prisma.user.create({
+          data: {
+            name: `${item.firstName} ${item.lastName}`,
+            email: item.email,
+            password: hashed,
+            role: item.role === "admin" ? "admin" : "teacher",
+            schoolId,
+          },
+        })
+        await db.staff.update(id, { userId: user.id })
+      }
     }
   }
 

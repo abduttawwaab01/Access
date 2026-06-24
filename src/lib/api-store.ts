@@ -294,6 +294,7 @@ export const store = {
   schoolSettings: { get: () => schoolSettingsData, update: (data: any) => { Object.assign(schoolSettingsData, data); return schoolSettingsData } },
   admissionSettings: { get: () => admissionSettingsData, update: (data: any) => { Object.assign(admissionSettingsData, data, { updatedAt: new Date().toISOString() }); return admissionSettingsData } },
   admissionApplications: { getAll: () => admissionApplications, getById: (id: string) => admissionApplications.find((a) => a.id === id), getByStatus: (status: string) => admissionApplications.filter((a) => a.status === status), create: (data: any) => { const item = { id: uid(), ...data, status: "pending", appliedAt: new Date().toISOString() }; admissionApplications.push(item); return item }, update: (id: string, data: any) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return null; admissionApplications[idx] = { ...admissionApplications[idx], ...data }; return admissionApplications[idx] }, delete: (id: string) => { const idx = admissionApplications.findIndex((a) => a.id === id); if (idx === -1) return false; admissionApplications.splice(idx, 1); return true } },
+  entranceExamCodes: { getAll: () => [], getByCode: () => null, getById: () => null, create: (data: any) => data, update: () => null, delete: () => true },
   events: {
     getAll: (filters?: { type?: string; upcoming?: boolean }) => {
       let result = [...events]

@@ -87,30 +87,77 @@ export async function POST(request: NextRequest) {
     case "acceptApplication": {
       const app = await db.admissionApplications.getById(body.id)
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
-      await db.admissionApplications.update(body.id, { status: "accepted", entranceExamPassed: true, entranceExamScore: body.score || null })
-      const student = await db.students.create({
-        firstName: app.firstName, lastName: app.lastName, email: app.email, gender: app.gender, classId: app.classApplyingFor, phone: app.phone, status: "active",
-      })
-      if (app.parentName || app.parentPhone) {
-        const { prisma } = await import("@/lib/prisma")
-        const bcrypt = (await import("bcryptjs")).default
-        const schoolId = student.schoolId
-        const parentEmail = app.email ? `parent.${app.email}` : null
-        const hashed = await bcrypt.hash("parent123", 10)
-        const parentUser = await prisma.user.create({
+      if (app.status === "accepted") return NextResponse.json({ success: false, error: "Already accepted" })
+
+      const { prisma } = await import("@/lib/prisma")
+      const bcrypt = (await import("bcryptjs")).default
+      const schoolId = app.schoolId
+
+      // Create User for student with default password
+      const studentPassword = "student123"
+      const hashedStudentPassword = await bcrypt.hash(studentPassword, 10)
+      const studentEmail = app.email || `${app.firstName.toLowerCase()}.${app.lastName.toLowerCase()}@school.com`
+
+      let user = await prisma.user.findFirst({ where: { email: studentEmail } })
+      if (!user) {
+        user = await prisma.user.create({
           data: {
-            name: app.parentName || `${app.firstName}'s Parent`,
-            email: parentEmail || `${app.firstName.toLowerCase()}.parent@school.com`,
-            phone: app.parentPhone || null,
-            password: hashed,
-            role: "parent",
+            name: `${app.firstName} ${app.lastName}`,
+            email: studentEmail,
+            password: hashedStudentPassword,
+            role: "student",
             schoolId,
           },
         })
-        await db.parentLinks.create({ parentId: parentUser.id, studentId: student.id })
       }
+
+      // Create Student record
+      const targetClassId = body.transferToClassId || app.classApplyingFor || ""
+      const student = await db.students.create({
+        firstName: app.firstName,
+        lastName: app.lastName,
+        email: studentEmail,
+        gender: app.gender || null,
+        classId: targetClassId,
+        phone: app.phone || null,
+        status: "active",
+        userId: user.id,
+      })
+
+      // Create Parent account if parent info provided
+      if (app.parentName || app.parentPhone) {
+        const parentEmail = app.email ? `parent.${app.email}` : `${app.firstName.toLowerCase()}.parent@school.com`
+        let parentUser = await prisma.user.findFirst({ where: { email: parentEmail } })
+        if (!parentUser) {
+          const hashedParent = await bcrypt.hash("parent123", 10)
+          parentUser = await prisma.user.create({
+            data: {
+              name: app.parentName || `${app.firstName}'s Parent`,
+              email: parentEmail,
+              phone: app.parentPhone || null,
+              password: hashedParent,
+              role: "parent",
+              schoolId,
+            },
+          })
+        }
+        await db.parentLinks.create({ parentId: parentUser.id, studentId: student.id }).catch(() => {})
+      }
+
+      // Update application
+      await db.admissionApplications.update(body.id, {
+        status: "accepted",
+        entranceExamPassed: true,
+        userId: user.id,
+      })
+
       const pendingApplications = await db.admissionApplications.getByStatus("pending")
-      return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application accepted. Parent account created and linked." })
+      return NextResponse.json({
+        success: true,
+        data: { pendingApplications },
+        message: `Application accepted. Student credentials: ${studentEmail} / ${studentPassword}`,
+        credentials: { email: studentEmail, password: studentPassword },
+      })
     }
     case "rejectApplication": {
       const app = await db.admissionApplications.getById(body.id)
@@ -123,9 +170,10 @@ export async function POST(request: NextRequest) {
       const app = await db.admissionApplications.getById(body.id)
       if (!app) return NextResponse.json({ success: false, error: "Application not found" })
       const targetClass = await db.classes.getById(body.transferToClassId)
-      await db.admissionApplications.update(body.id, { status: "transferred", classId: body.transferToClassId, className: targetClass?.name || "Unknown", transferToClassId: body.transferToClassId })
+      if (!targetClass) return NextResponse.json({ success: false, error: "Target class not found" })
+      await db.admissionApplications.update(body.id, { status: "transferred", classApplyingFor: targetClass.name })
       const pendingApplications = await db.admissionApplications.getByStatus("pending")
-      return NextResponse.json({ success: true, data: { pendingApplications }, message: "Application transferred" })
+      return NextResponse.json({ success: true, data: { pendingApplications }, message: `Application deferred to ${targetClass.name}` })
     }
     // Announcements
     case "createAnnouncement": {

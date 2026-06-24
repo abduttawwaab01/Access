@@ -24,10 +24,16 @@ export async function POST(request: Request) {
   const body = await request.json()
   const item = await db.students.create(body)
 
-  if (body.email && body.password) {
+  if (body.email) {
     const existingUser = await db.users.getByEmail(body.email)
-    if (!existingUser) {
-      const schoolId = item.schoolId
+    const schoolId = item.schoolId
+    if (existingUser) {
+      if (body.password) {
+        const hashed = await bcrypt.hash(body.password, 10)
+        await prisma.user.update({ where: { id: existingUser.id }, data: { password: hashed } })
+      }
+      await prisma.student.update({ where: { id: item.id }, data: { userId: existingUser.id } })
+    } else if (body.password) {
       const hashed = await bcrypt.hash(body.password, 10)
       const user = await prisma.user.create({
         data: {

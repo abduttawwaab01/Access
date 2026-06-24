@@ -798,6 +798,19 @@ export const db = {
         throw new Error("Exam not found")
       }
       
+      // For entrance exams, allow creating session without a student account
+      if (data.examType === "entrance" && !data.studentId) {
+        return prisma.examSession.create({
+          data: {
+            examId: data.examId,
+            examType: "entrance",
+            studentId: data.studentName || "entrance-applicant",
+            schoolId,
+            status: "active",
+          },
+        })
+      }
+      
       const student = await prisma.student.findUnique({
         where: { id: data.studentId },
         include: {
@@ -1158,6 +1171,9 @@ export const db = {
           classApplyingFor: data.classApplyingFor || null,
           parentName: data.parentName || null,
           parentPhone: data.parentPhone || null,
+          previousSchool: data.previousSchool || null,
+          entranceCodeId: data.entranceCodeId || null,
+          examSessionId: data.examSessionId || null,
           schoolId,
         },
       })
@@ -1167,6 +1183,42 @@ export const db = {
     },
     delete: async (id: string) => {
       await prisma.admissionApplication.delete({ where: { id } })
+      return true
+    },
+  },
+
+  entranceExamCodes: {
+    getAll: async () => {
+      const schoolId = await ensureSchoolId()
+      return prisma.entranceExamCode.findMany({
+        where: { schoolId },
+        orderBy: { createdAt: "desc" },
+      })
+    },
+    getByCode: async (code: string) => {
+      return prisma.entranceExamCode.findUnique({ where: { code } })
+    },
+    getById: async (id: string) => {
+      return prisma.entranceExamCode.findUnique({ where: { id } })
+    },
+    create: async (data: any) => {
+      const schoolId = await ensureSchoolId()
+      return prisma.entranceExamCode.create({
+        data: {
+          code: data.code,
+          examId: data.examId,
+          classId: data.classId,
+          maxUses: data.maxUses || 1,
+          schoolId,
+          expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+        },
+      })
+    },
+    update: async (id: string, data: any) => {
+      return prisma.entranceExamCode.update({ where: { id }, data })
+    },
+    delete: async (id: string) => {
+      await prisma.entranceExamCode.delete({ where: { id } })
       return true
     },
   },

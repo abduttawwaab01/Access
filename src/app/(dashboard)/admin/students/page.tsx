@@ -450,7 +450,7 @@ export default function StudentsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-[11px] text-muted-foreground/70">Blood Group</Label>
-                    <Select value={detailForm.bloodGroup} onValueChange={(v) => setDetailForm((p) => ({ ...p, bloodGroup: v }))}>
+                    <Select value={detailForm.bloodGroup} onValueChange={(v) => setDetailForm((p) => ({ ...p, bloodGroup: v || "" }))}>
                       <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
                         {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}

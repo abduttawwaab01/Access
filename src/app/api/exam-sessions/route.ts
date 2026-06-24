@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    if (!body.examId || !body.studentId) {
+    if (!body.examId || (!body.studentId && body.examType !== "entrance")) {
       return NextResponse.json(
         { error: "examId and studentId are required" },
         { status: 400 }

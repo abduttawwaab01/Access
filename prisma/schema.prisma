@@ -60,6 +60,7 @@ model School {
   gradingConfigs     GradingConfig?
   admissionSettings  AdmissionSettings?
   admissionApplications AdmissionApplication[]
+  entranceExamCodes     EntranceExamCode[]
   events             Event[]
   feedbackTickets    FeedbackTicket[]
   weeklyReports      WeeklyReport[]
@@ -77,6 +78,7 @@ model User {
   school    School    @relation(fields: [schoolId], references: [id])
   students  Student[] @relation("ParentStudent")
   student   Student?  @relation("StudentUser")
+  staff     Staff?    @relation("StaffUser")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -216,6 +218,9 @@ model Staff {
   barcode         String?
   schoolId        String
   school          School   @relation(fields: [schoolId], references: [id])
+
+  userId String? @unique
+  user   User?   @relation("StaffUser", fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -568,6 +573,20 @@ model GradingConfig {
   updatedAt      DateTime @updatedAt
 }
 
+model EntranceExamCode {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  examId      String
+  classId     String
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id])
+  maxUses     Int      @default(1)
+  currentUses Int      @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model AdmissionSettings {
   id            String   @id @default(cuid())
   schoolId      String   @unique
@@ -589,9 +608,13 @@ model AdmissionApplication {
   classApplyingFor String?
   parentName      String?
   parentPhone     String?
+  previousSchool  String?
   status          String   @default("pending")
   entranceExamPassed Boolean @default(false)
   entranceExamScore Float?
+  entranceCodeId  String?
+  examSessionId   String?
+  userId          String?
   schoolId        String
   school          School   @relation(fields: [schoolId], references: [id])
   appliedAt       DateTime @default(now())
