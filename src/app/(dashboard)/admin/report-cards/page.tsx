@@ -100,7 +100,7 @@ export default function AdminReportCardsPage() {
     session: termResults[0]?.session || currentSession(),
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
-      score: r.score || r.total || 0,
+      score: r.score ?? 0,
       total: r.totalMax || r.total || 100,
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",

@@ -1,7 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useSession } from "next-auth/react"
+import { useChat } from "@/components/chat/useChat"
+import { ChatLayout } from "@/components/chat/ChatLayout"
+import { ConversationList } from "@/components/chat/ConversationList"
+import { ChatWindow } from "@/components/chat/ChatWindow"
+import { NewChatDialog } from "@/components/chat/NewChatDialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,20 +14,33 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { motion, AnimatePresence } from "framer-motion"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Plus, Bell, Megaphone, AlertTriangle, Info } from "lucide-react"
+import { Plus, Bell, Megaphone, AlertTriangle, Info, MessageSquare, X } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { cn } from "@/lib/utils"
 
-export default function CommunicationPage() {
+export default function TeacherCommunicationPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [tab, setTab] = useState("chat")
+  const [showNewChat, setShowNewChat] = useState(false)
+  const [announceTab, setAnnounceTab] = useState("all")
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [tab, setTab] = useState("all")
   const [form, setForm] = useState({ title: "", content: "", audience: "teachers", priority: "normal" })
+
+  const {
+    conversations, convLoading, activeConvId, setActiveConvId,
+    messages, msgLoading, sendMessage, createConversation,
+  } = useChat("teacher")
+
+  const activeConv = conversations.find((c) => c.id === activeConvId)
+  const otherName = activeConv?.others?.[0]?.name || ""
 
   const fetchItems = async () => {
     const res = await fetch("/api/announcements")
@@ -41,7 +59,7 @@ export default function CommunicationPage() {
     else toast.error("Failed to send")
   }
 
-  const filtered = items.filter((a) => tab === "all" || a.audience === tab)
+  const filtered = items.filter((a) => announceTab === "all" || a.audience === announceTab)
 
   const priorityIcon: Record<string, any> = { high: AlertTriangle, normal: Bell, low: Info }
   const priorityColor: Record<string, string> = {
@@ -51,53 +69,97 @@ export default function CommunicationPage() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <PageHeader title="Communication" description="Announcements and messages" actionLabel="New Announcement" onAction={() => { setForm({ title: "", content: "", audience: "teachers", priority: "normal" }); setSheetOpen(true) }} />
+    <div className="p-4 md:p-6 space-y-6">
+      <PageHeader title="Communication" description="Announcements and direct messaging" actionLabel="New Announcement" onAction={() => { setForm({ title: "", content: "", audience: "teachers", priority: "normal" }); setSheetOpen(true) }} />
 
       <Tabs value={tab} onValueChange={setTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
-          <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">All</TabsTrigger>
-          <TabsTrigger value="teachers" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Teachers</TabsTrigger>
-          <TabsTrigger value="parents" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Parents</TabsTrigger>
+          <TabsTrigger value="chat" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
+            <MessageSquare className="h-4 w-4 mr-1.5" /> Chat
+          </TabsTrigger>
+          <TabsTrigger value="announcements" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">
+            <Megaphone className="h-4 w-4 mr-1.5" /> Announcements
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {loading ? (
-        <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>
-      ) : filtered.length === 0 ? (
-        <EmptyState title="No announcements" description="Create your first announcement" />
-      ) : (
-        <div className="space-y-3">
-          <AnimatePresence>
-            {filtered.map((item, i) => {
-              const Icon = priorityIcon[item.priority] || Bell
-              return (
-                <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                  <Card className="glass-card border-0">
-                    <CardContent className="p-4">
-                      <div className="flex gap-3">
-                        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", priorityColor[item.priority])}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-sm font-semibold">{item.title}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{item.author} · {new Date(item.createdAt).toLocaleDateString()}</p>
-                            </div>
-                            <Badge variant="outline" className="shrink-0 text-[10px] capitalize">{item.audience}</Badge>
-                          </div>
-                          <p className="mt-2 text-sm text-muted-foreground">{item.content}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
-        </div>
+      {tab === "chat" && (
+        <ChatLayout
+          sidebar={
+            <ConversationList
+              conversations={conversations}
+              activeId={activeConvId}
+              onSelect={setActiveConvId}
+              onNewChat={() => setShowNewChat(true)}
+              currentUserId={userId}
+              loading={convLoading}
+            />
+          }
+        >
+          <ChatWindow
+            messages={messages}
+            currentUserId={userId}
+            conversationId={activeConvId}
+            onSend={async (content) => { if (activeConvId) await sendMessage(activeConvId, content) }}
+            loading={msgLoading}
+            otherUserName={otherName}
+          />
+        </ChatLayout>
       )}
+
+      {tab === "announcements" && (
+        <>
+          <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit overflow-x-auto">
+            {["all", "teachers", "parents"].map((t) => (
+              <button key={t} onClick={() => setAnnounceTab(t)} className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${announceTab === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{t}</button>
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}</div>
+          ) : filtered.length === 0 ? (
+            <EmptyState title="No announcements" description="Create your first announcement" />
+          ) : (
+            <div className="space-y-3">
+              <AnimatePresence>
+                {filtered.map((item, i) => {
+                  const Icon = priorityIcon[item.priority] || Bell
+                  return (
+                    <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                      <Card className="glass-card border-0">
+                        <CardContent className="p-4">
+                          <div className="flex gap-3">
+                            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", priorityColor[item.priority])}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold">{item.title}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{item.author} · {new Date(item.createdAt).toLocaleDateString()}</p>
+                                </div>
+                                <Badge variant="outline" className="shrink-0 text-[10px] capitalize">{item.audience}</Badge>
+                              </div>
+                              <p className="mt-2 text-sm text-muted-foreground">{item.content}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+        </>
+      )}
+
+      <NewChatDialog
+        open={showNewChat}
+        onClose={() => setShowNewChat(false)}
+        onSelect={(contactId) => createConversation([contactId])}
+        role="teacher"
+      />
 
       <FormSheet open={sheetOpen} onOpenChange={setSheetOpen} title="New Announcement">
         <form onSubmit={handleSubmit} className="space-y-4">

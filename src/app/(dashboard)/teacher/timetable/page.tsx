@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { downloadCsv, downloadPng, downloadPdf } from "@/lib/capture"
 import { FileSpreadsheet, DownloadCloud } from "lucide-react"
@@ -23,6 +24,9 @@ const subjectColors: Record<string, string> = {
 }
 
 export default function TimetablePage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [teacher, setTeacher] = useState<any>(null)
   const [sets, setSets] = useState<any[]>([])
   const [entries, setEntries] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -34,20 +38,36 @@ export default function TimetablePage() {
   const exportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/timetable/sets").then((r) => r.json()),
-      fetch("/api/classes").then((r) => r.json()),
-      fetch("/api/school").then((r) => r.json()).catch(() => null),
-    ]).then(([s, c, sch]) => {
-      const allSets = Array.isArray(s) ? s : []
-      setSets(allSets)
-      setClasses(Array.isArray(c) ? c : [])
-      setSchool(sch)
-      const defaultSet = allSets.find((set: any) => set.type === typeFilter) || allSets[0]
-      if (defaultSet) setSelectedSetId(defaultSet.id)
-      setLoading(false)
-    })
-  }, [])
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        setTeacher(staffData)
+        const staffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        const classIds: string[] = ta?.classIds || []
+        const classParam = classIds.length > 0 ? `?classId=${classIds[0]}` : ""
+        return Promise.all([
+          fetch("/api/timetable/sets").then((r) => r.json()),
+          fetch("/api/classes").then((r) => r.json()),
+          fetch("/api/school").then((r) => r.json()).catch(() => null),
+          classIds.length > 0 ? fetch("/api/timetable" + classParam).then((r) => r.json()) : Promise.resolve([]),
+        ])
+      })
+      .then(([s, c, sch, ttEntries]) => {
+        const allSets = Array.isArray(s) ? s : []
+        setSets(allSets)
+        setClasses(Array.isArray(c) ? c : [])
+        setSchool(sch)
+        setEntries(Array.isArray(ttEntries) ? ttEntries : [])
+        const defaultSet = allSets.find((set: any) => set.type === typeFilter) || allSets[0]
+        if (defaultSet) setSelectedSetId(defaultSet.id)
+        setLoading(false)
+      }).catch(() => setLoading(false))
+  }, [userId])
 
   useEffect(() => {
     if (!selectedSetId) return

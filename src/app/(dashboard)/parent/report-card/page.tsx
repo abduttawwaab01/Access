@@ -57,6 +57,11 @@ export default function ParentReportCardPage() {
 
   const studentClass = classes.find((c) => c.id === activeChild.classId)
   const childAttendance = attendance.filter((a: any) => a.userId === activeChildId)
+  const allLogs = childAttendance.filter((l: any) => l.userType === "student" || !l.userType)
+
+  const totalStudents = children.reduce((sum: number, child: any) => {
+    return child.classId === activeChild.classId ? sum + 1 : sum
+  }, 0)
 
   const reportData = {
     schoolName: school?.name || "Access School",
@@ -73,13 +78,17 @@ export default function ParentReportCardPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: currentSession(),
+    session: termResults[0]?.session || currentSession(),
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score,
-      total: r.total,
+      total: r.totalMax || r.total || 100,
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",
+      caScore: r.caScore,
+      examScore: r.examScore,
+      caTotal: r.caTotal,
+      examTotal: r.examTotal,
     })),
     domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
       ? [
@@ -100,17 +109,17 @@ export default function ParentReportCardPage() {
         ]
     ),
     attendance: {
-      present: childAttendance.filter((l: any) => l.status === "present").length || 38,
-      absent: childAttendance.filter((l: any) => l.status === "absent").length || 2,
-      late: childAttendance.filter((l: any) => l.status === "late").length || 5,
-      total: childAttendance.length || 45,
+      present: allLogs.filter((l: any) => l.status === "present").length || 38,
+      absent: allLogs.filter((l: any) => l.status === "absent").length || 2,
+      late: allLogs.filter((l: any) => l.status === "late").length || 5,
+      total: allLogs.length || 45,
     },
-    teacherComment: `${activeChild.firstName} ${activeChild.lastName} has shown good progress this term. Consistent effort in core subjects is commendable.`,
+    teacherComment: `${activeChild.firstName} ${activeChild.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`,
     teacherName: "Class Teacher",
-    principalComment: "A student with great potential. Encouraged to participate more in extracurricular activities.",
+    principalComment: "A well-rounded student who demonstrates good character and academic promise. Encouraged to maintain focus and participate in school activities.",
     nextTerm: "6th January 2025",
     position: "—",
-    totalStudents: 0,
+    totalStudents: totalStudents,
     generatedAt: new Date().toISOString(),
   }
 

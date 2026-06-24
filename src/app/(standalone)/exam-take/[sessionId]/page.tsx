@@ -29,6 +29,7 @@ export default function ExamTakePage() {
   const [fullscreenWarned, setFullscreenWarned] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const enterFsRef = useRef<(() => Promise<void>) | null>(null)
+  const handleSubmitRef = useRef<((flagged?: boolean) => Promise<void>) | null>(null)
 
   const handleTabSwitch = useCallback((count: number) => {
     setTabWarnings(count)
@@ -38,7 +39,7 @@ export default function ExamTakePage() {
     if (count === 1) toast.warning("Please do not switch tabs during the exam", { duration: 3000 })
     if (count >= limit) {
       toast.error("Multiple tab switches detected! Exam will be submitted.", { duration: 5000 })
-      handleSubmit(true)
+      handleSubmitRef.current?.(true)
     }
   }, [exam])
 
@@ -111,7 +112,7 @@ export default function ExamTakePage() {
     if (submitted || !exam || timeLeft <= 0) return
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) { clearInterval(timerRef.current!); handleSubmit(false); return 0 }
+        if (prev <= 1) { clearInterval(timerRef.current!); handleSubmitRef.current?.(false); return 0 }
         return prev - 1
       })
     }, 1000)
@@ -169,6 +170,7 @@ export default function ExamTakePage() {
       setSubmitting(false)
     }
   }
+  handleSubmitRef.current = handleSubmit
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60)

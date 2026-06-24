@@ -24,30 +24,39 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#ef4
 export default function StudentAnalyticsPage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id || ""
+  const [studentId, setStudentId] = useState("")
   const [results, setResults] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any[]>([])
-  const [students, setStudents] = useState<any[]>([])
+  const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("performance")
 
-  const student = students.find((s: any) => s.id === userId)
   const studentName = student ? `${student.firstName} ${student.lastName}` : "Student"
 
   useEffect(() => {
+    if (!userId) return
+    fetch(`/api/students?userId=${userId}`).then((r) => r.json()).then((s) => {
+      if (s?.id) {
+        setStudentId(s.id)
+        setStudent(s)
+      }
+    })
+  }, [userId])
+
+  useEffect(() => {
+    if (!studentId) return
     const fetchAll = async () => {
-      const [r, a, sRes] = await Promise.all([
-        fetch(`/api/results?studentId=${userId}`),
-        fetch("/api/attendance-records"),
-        fetch("/api/students"),
+      const [r, a] = await Promise.all([
+        fetch(`/api/results?studentId=${studentId}`),
+        fetch(`/api/attendance-records?studentId=${studentId}`),
       ])
-      setResults(await r.json())
+      setResults(Array.isArray(await r.json()) ? await r.json() : [])
       const attData = await a.json()
-      setAttendance(attData.filter((x: any) => x.studentId === userId))
-      setStudents(await sRes.json())
+      setAttendance(Array.isArray(attData) ? attData : [])
       setLoading(false)
     }
-    if (userId) fetchAll()
-  }, [userId])
+    fetchAll()
+  }, [studentId])
 
   const avgScore = results.length > 0
     ? Math.round(results.reduce((s, r) => s + (r.score / r.total) * 100, 0) / results.length)

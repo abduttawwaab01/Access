@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { useSession } from "next-auth/react"
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
@@ -20,6 +21,8 @@ import {
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"]
 
 export default function TeacherAnalyticsPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [students, setStudents] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
@@ -31,19 +34,34 @@ export default function TeacherAnalyticsPage() {
   const [activeTab, setActiveTab] = useState("trends")
 
   useEffect(() => {
-    const fetchAll = async () => {
-      const [stu, cls, sub, res, att, asn, les] = await Promise.all([
-        fetch("/api/students"), fetch("/api/classes"), fetch("/api/subjects"),
-        fetch("/api/results"), fetch("/api/attendance-records"),
-        fetch("/api/assignments"), fetch("/api/lesson-notes"),
-      ])
-      setStudents(await stu.json()); setClasses(await cls.json()); setSubjects(await sub.json())
-      setResults(await res.json()); setAttendance(await att.json())
-      setAssignments(await asn.json()); setLessonNotes(await les.json())
-      setLoading(false)
-    }
-    fetchAll()
-  }, [])
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        const staffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        const classIds: string[] = ta?.classIds || []
+        const subjectIds: string[] = ta?.subjectIds || []
+        return Promise.all([
+          classIds.length > 0 ? fetch(`/api/students?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/students").then((r) => r.json()),
+          classIds.length > 0 ? fetch(`/api/classes`).then((r) => r.json()).then((all) => all.filter((c: any) => classIds.includes(c.id))) : fetch("/api/classes").then((r) => r.json()),
+          subjectIds.length > 0 ? fetch(`/api/subjects`).then((r) => r.json()).then((all) => all.filter((s: any) => subjectIds.includes(s.id))) : fetch("/api/subjects").then((r) => r.json()),
+          classIds.length > 0 ? fetch(`/api/results?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/results").then((r) => r.json()),
+          fetch("/api/attendance-records").then((r) => r.json()),
+          classIds.length > 0 ? fetch(`/api/assignments?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/assignments").then((r) => r.json()),
+          classIds.length > 0 ? fetch(`/api/lesson-notes?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/lesson-notes").then((r) => r.json()),
+        ])
+      })
+      .then(([stu, cls, sub, res, att, asn, les]) => {
+        setStudents(stu); setClasses(cls); setSubjects(sub)
+        setResults(res); setAttendance(att)
+        setAssignments(asn); setLessonNotes(les)
+        setLoading(false)
+      }).catch(() => setLoading(false))
+  }, [userId])
 
   const totalStudents = students.length
   const totalClasses = classes.length

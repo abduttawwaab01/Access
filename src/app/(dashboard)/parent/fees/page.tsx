@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,7 +21,7 @@ export default function ParentFeesPage() {
   const [feeStructures, setFeeStructures] = useState<any[]>([])
   const [bankDetails, setBankDetails] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const linkedStudentIds = children.map((c) => c.id)
+  const linkedStudentIds = useMemo(() => children.map((c) => c.id), [children])
 
   useEffect(() => {
     if (childrenLoading || linkedStudentIds.length === 0) return
@@ -32,6 +32,7 @@ export default function ParentFeesPage() {
       fetch("/api/fee-structures").then((r) => r.json()),
       fetch("/api/school/bank").then((r) => r.json()),
     ]).then(([p, s, fs, b]) => { setPayments(p); setStudents(s); setFeeStructures(fs); setBankDetails(b); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [linkedStudentIds, childrenLoading])
 
   const myPayments = payments.filter((p) => linkedStudentIds.includes(p.studentId))

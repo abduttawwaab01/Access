@@ -27,16 +27,24 @@ export default function StudentResultsPage() {
 
   useEffect(() => {
     if (!userId) return
-    Promise.all([
-      fetch(`/api/results?studentId=${userId}`).then((r) => r.json()),
-      fetch(`/api/exam-sessions`).then((r) => r.json()),
-    ]).then(([res, sessions]) => {
+    const fetchData = async () => {
+      const studRes = await fetch(`/api/students?userId=${userId}`)
+      let sid = userId
+      if (studRes.ok) {
+        const student = await studRes.json()
+        sid = student?.id || userId
+      }
+      const [res, sessions] = await Promise.all([
+        fetch(`/api/results?studentId=${sid}`).then((r) => r.json()),
+        fetch(`/api/exam-sessions`).then((r) => r.json()),
+      ])
       setResults(res)
-      const mySessions = sessions.filter((s: any) => s.studentId === userId || s.studentName === (session?.user as any)?.name)
+      const mySessions = sessions.filter((s: any) => s.studentId === sid)
       setExamSessions(mySessions)
       setLoading(false)
-    })
-  }, [userId, session])
+    }
+    fetchData()
+  }, [userId])
 
   const terms = [...new Set(results.map((r) => r.term))]
   const termResults = results.filter((r) => r.term === activeTerm)
@@ -189,7 +197,8 @@ export default function StudentResultsPage() {
             <Card className="border border-border/50"><CardContent className="p-8 text-center text-muted-foreground">No completed exam sessions</CardContent></Card>
           ) : (
             completedExams.map((s, i) => {
-              const pct = s.maxScore > 0 ? Math.round((s.totalScore / s.maxScore) * 100) : 0
+              const pct = s.maxScore > 0 ? Math.round(((s.score || s.totalScore || 0) / s.maxScore) * 100) : 0
+              const displayScore = s.score ?? s.totalScore ?? 0
               return (
                 <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                   <Card className="border border-border/50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => window.location.href = `/student/cbt/analysis/${s.id}`}>
@@ -200,7 +209,7 @@ export default function StudentResultsPage() {
                           <p className="text-xs text-muted-foreground">{new Date(s.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold">{s.totalScore}/{s.maxScore} ({pct}%)</p>
+                          <p className="text-sm font-bold">{displayScore}/{s.maxScore} ({pct}%)</p>
                           <Badge className={pct >= 75 ? "bg-green-500/15 text-green-600" : pct >= 50 ? "bg-amber-500/15 text-amber-600" : "bg-red-500/15 text-red-600"}>{pct >= 75 ? "A" : pct >= 65 ? "B" : pct >= 55 ? "C" : pct >= 45 ? "D" : "F"}</Badge>
                         </div>
                       </div>

@@ -64,6 +64,7 @@ model School {
   events             Event[]
   feedbackTickets    FeedbackTicket[]
   weeklyReports      WeeklyReport[]
+  conversations      Conversation[]
 }
 
 model User {
@@ -461,19 +462,21 @@ model Exam {
 }
 
 model ExamSession {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   examId      String
   examType    String?
   studentId   String
-  status      String   @default("pending")
-  tabSwitches Int      @default(0)
-  flagged     Boolean  @default(false)
+  status      String    @default("pending")
+  tabSwitches Int       @default(0)
+  flagged     Boolean   @default(false)
   answers     Json?
   score       Float?
+  maxScore    Float?
+  endTime     DateTime?
   schoolId    String
-  school      School   @relation(fields: [schoolId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  school      School    @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Submission {
@@ -673,4 +676,34 @@ model WeeklyReport {
   school      School   @relation(fields: [schoolId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  type       String   @default("direct")
+  schoolId   String
+  school     School   @relation(fields: [schoolId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  participants ConversationParticipant[]
+  messages    Message[]
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+  lastReadAt     DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }

@@ -41,7 +41,7 @@ export default function ParentAnalyticsPage() {
       setAttendance(att)
       setFees(fee)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [activeChildId])
 
   const avgScore = results.length > 0
@@ -109,7 +109,7 @@ export default function ParentAnalyticsPage() {
   if (attendanceRate >= 95) insights.push("Excellent attendance record! Consistent attendance is a key factor in academic success.")
   else if (attendanceRate < 85) insights.push("Attendance could be improved. Missing classes can significantly impact grades.")
 
-  if (fees.outstanding > 0) insights.push(`There is an outstanding fee balance of $${fees.outstanding}. Consider clearing this to avoid any disruption.`)
+  if (fees.outstanding > 0) insights.push(`There is an outstanding fee balance of ₦${fees.outstanding.toLocaleString()}. Consider clearing this to avoid any disruption.`)
 
   const containerVariants = {
     hidden: { opacity: 0 },

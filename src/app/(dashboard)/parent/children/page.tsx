@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -16,6 +16,8 @@ export default function ParentChildrenPage() {
   const [resultsMap, setResultsMap] = useState<Record<string, any[]>>({})
   const [loadingResults, setLoadingResults] = useState(false)
 
+  const childIds = useMemo(() => children.map((c) => c.id).join(","), [children])
+
   useEffect(() => {
     if (children.length === 0) return
     setLoadingResults(true)
@@ -30,8 +32,8 @@ export default function ParentChildrenPage() {
       all.forEach(({ id, data }) => { map[id] = data })
       setResultsMap(map)
       setLoadingResults(false)
-    })
-  }, [children])
+    }).catch(() => setLoadingResults(false))
+  }, [childIds])
 
   const getAverageScore = (childId: string): number | null => {
     const results = resultsMap[childId]

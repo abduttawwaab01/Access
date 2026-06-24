@@ -10,15 +10,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, BookOpen, ChevronDown, ChevronUp, Layers, X, GripVertical } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { cn } from "@/lib/utils"
-
-const teacherId = "1"
-const teacherName = "Grace Hopper"
 
 interface WeekEntry {
   id: string
@@ -44,6 +42,9 @@ interface Scheme {
 }
 
 export default function SchemeOfWorkPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [teacherId, setTeacherId] = useState("")
   const [items, setItems] = useState<Scheme[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,7 +76,18 @@ export default function SchemeOfWorkPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => setTeacherId(staffData?.id || ""))
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    if (!teacherId) return
+    fetchData().catch(() => setLoading(false))
+  }, [teacherId])
 
   const updateForm = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 

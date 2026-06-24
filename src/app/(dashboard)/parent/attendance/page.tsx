@@ -26,7 +26,7 @@ export default function ParentAttendancePage() {
       setRecords(recs)
       setSummary(sum)
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [activeChildId])
 
   const pieData = [

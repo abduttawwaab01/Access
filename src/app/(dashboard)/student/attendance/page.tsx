@@ -6,19 +6,32 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { CalendarCheck, AlertTriangle, Clock } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 const COLORS = ["#22c55e", "#ef4444", "#f59e0b"]
 
 export default function StudentAttendancePage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/attendance-records").then((r) => r.json()).then((d) => {
-      setRecords(d.filter((x: any) => x.studentId === "1"))
+    if (!userId) return
+    const load = async () => {
+      const studRes = await fetch(`/api/students?userId=${userId}`)
+      let sid = userId
+      if (studRes.ok) {
+        const s = await studRes.json()
+        if (s?.id) sid = s.id
+      }
+      const res = await fetch(`/api/attendance-records?studentId=${sid}`)
+      const data = await res.json()
+      setRecords(Array.isArray(data) ? data : [])
       setLoading(false)
-    })
-  }, [])
+    }
+    load()
+  }, [userId])
 
   const present = records.filter((r) => r.status === "present").length
   const absent = records.filter((r) => r.status === "absent").length

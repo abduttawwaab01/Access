@@ -19,6 +19,7 @@ const gradeColors: Record<string, string> = { A: "#22c55e", B: "#3b82f6", C: "#f
 
 export default function TeacherResultsPage() {
   const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [activeTab, setActiveTab] = useState("Score Entry")
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
@@ -38,26 +39,31 @@ export default function TeacherResultsPage() {
   const [exporting, setExporting] = useState(false)
   const dashboardRef = useRef<HTMLDivElement>(null)
 
-  const teacherId = (session?.user as any)?.id
-
   useEffect(() => {
-    if (!teacherId) return
-    Promise.all([
-      fetch("/api/teacher-assignments").then((r) => r.json()),
-      fetch("/api/classes").then((r) => r.json()),
-      fetch("/api/subjects").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
-      fetch("/api/terms").then((r) => r.json()),
-      fetch("/api/grading-config").then((r) => r.json()),
-      fetch("/api/exams?type=regular").then((r) => r.json()),
-    ]).then(([assignments, cls, sub, stu, trm, gc, examsData]) => {
-      const assigns = Array.isArray(assignments) ? assignments : []
-      const myAssignment = assigns.find((a: any) => a.teacherId === teacherId)
-      setAssignment(myAssignment)
-      const allClasses = Array.isArray(cls) ? cls : []
-      const allSubjects = Array.isArray(sub) ? sub : []
-      const allStudents = Array.isArray(stu) ? stu : []
-      const allExams = Array.isArray(examsData) ? examsData : []
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        const staffId = staffData?.id || ""
+        return Promise.all([
+          fetch("/api/teacher-assignments").then((r) => r.json()),
+          fetch("/api/classes").then((r) => r.json()),
+          fetch("/api/subjects").then((r) => r.json()),
+          fetch("/api/students").then((r) => r.json()),
+          fetch("/api/terms").then((r) => r.json()),
+          fetch("/api/grading-config").then((r) => r.json()),
+          fetch("/api/exams?type=regular").then((r) => r.json()),
+          staffId,
+        ])
+      })
+      .then(([assignments, cls, sub, stu, trm, gc, examsData, staffId]) => {
+        const assigns = Array.isArray(assignments) ? assignments : []
+        const myAssignment = assigns.find((a: any) => a.teacherId === staffId)
+        setAssignment(myAssignment)
+        const allClasses = Array.isArray(cls) ? cls : []
+        const allSubjects = Array.isArray(sub) ? sub : []
+        const allStudents = Array.isArray(stu) ? stu : []
+        const allExams = Array.isArray(examsData) ? examsData : []
       if (myAssignment) {
         setClasses(allClasses.filter((c: any) => myAssignment.classIds?.includes(c.id)))
         setSubjects(allSubjects.filter((s: any) => myAssignment.subjectIds?.includes(s.id)))
@@ -69,8 +75,8 @@ export default function TeacherResultsPage() {
       setTerms(Array.isArray(trm) ? trm : [])
       setGradingConfig(gc)
       setLoading(false)
-    })
-  }, [teacherId])
+    }).catch(() => setLoading(false))
+  }, [userId])
 
   useEffect(() => {
     if (!selectedClassId || !selectedSubjectId || !selectedTerm) return
@@ -81,7 +87,7 @@ export default function TeacherResultsPage() {
       const initial: Record<string, { caScore: string; examScore: string }> = {}
       ;(Array.isArray(data) ? data : []).forEach((r: any) => { initial[r.studentId] = { caScore: r.caScore?.toString() ?? "", examScore: r.examScore?.toString() ?? "" } })
       setScores(initial)
-    })
+    }).catch(() => {})
   }, [selectedClassId, selectedSubjectId, selectedTerm, selectedExamId])
 
   const classSubjects = subjects.filter((s) => s.classId === selectedClassId)

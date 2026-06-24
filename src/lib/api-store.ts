@@ -99,6 +99,7 @@ export const store = {
     getAll: () => staff,
     getByEmail: (email: string) => staff.find((s) => s.email === email),
     getById: (id: string) => staff.find((s) => s.id === id),
+    getByUserId: (userId: string) => staff.find((s) => s.userId === userId),
     create: (data: any) => { const item = { id: uid(), staffId: `STF${Date.now()}`, ...data, status: "active" }; staff.push(item); return item },
     update: (id: string, data: any) => { const idx = staff.findIndex((s) => s.id === id); if (idx === -1) return null; staff[idx] = { ...staff[idx], ...data }; return staff[idx] },
     delete: (id: string) => { const idx = staff.findIndex((s) => s.id === id); if (idx === -1) return false; staff.splice(idx, 1); return true },

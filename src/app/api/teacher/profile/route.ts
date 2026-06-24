@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 
+async function resolveStaff(userId: string) {
+  let staff = await db.staff.getByUserId(userId)
+  if (!staff) staff = await db.staff.getById(userId)
+  return staff
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get("userId") || "stf_1001"
-    let user = await db.staff.getById(userId)
-    
-    if (!user) {
-      const allStaff = await db.staff.getAll()
-      user = allStaff.find((s: any) => s.role === "teacher") || null
-    }
-    
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-    
+    const userId = request.nextUrl.searchParams.get("userId") || ""
+    if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 })
+    const user = await resolveStaff(userId)
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
     return NextResponse.json({
       id: user.id,
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
@@ -31,26 +29,18 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const userId = body.id || "stf_1001"
-    
-    let current = await db.staff.getById(userId)
-    if (!current) {
-      const allStaff = await db.staff.getAll()
-      current = allStaff.find((s: any) => s.role === "teacher") || null
-    }
-    const targetId = current?.id || userId
-    
+    const id = body.id || ""
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+    const current = await resolveStaff(id)
+    const targetId = current?.id
+    if (!targetId) return NextResponse.json({ error: "User not found" }, { status: 404 })
     const updated = await db.staff.update(targetId, {
       firstName: body.name?.split(" ")[0] || "",
       lastName: body.name?.split(" ").slice(1).join(" ") || "",
       email: body.email,
       phone: body.phone
     })
-    
-    if (!updated) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-    
+    if (!updated) return NextResponse.json({ error: "Update failed" }, { status: 500 })
     return NextResponse.json({
       id: updated.id,
       name: `${updated.firstName || ""} ${updated.lastName || ""}`.trim(),

@@ -281,6 +281,9 @@ export const db = {
     getById: async (id: string) => {
       return prisma.staff.findUnique({ where: { id } })
     },
+    getByUserId: async (userId: string) => {
+      return prisma.staff.findFirst({ where: { userId } })
+    },
     getByEmail: async (email: string) => {
       return prisma.staff.findFirst({ where: { email } })
     },
@@ -855,11 +858,14 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      const validFields = ["status", "answers", "score", "tabSwitches", "flagged", "examType", "endTime"]
+      const validFields = ["status", "answers", "tabSwitches", "flagged", "examType"]
       const clean: any = {}
       for (const key of validFields) {
         if (data[key] !== undefined) clean[key] = data[key]
       }
+      if (data.totalScore !== undefined) clean.score = data.totalScore
+      if (data.maxScore !== undefined) clean.maxScore = data.maxScore
+      if (data.endTime !== undefined) clean.endTime = new Date(data.endTime)
       if (Object.keys(clean).length === 0) return prisma.examSession.findUnique({ where: { id } })
       return prisma.examSession.update({ where: { id }, data: clean })
     },

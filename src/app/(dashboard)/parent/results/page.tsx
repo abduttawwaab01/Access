@@ -33,7 +33,7 @@ export default function ParentResultsPage() {
       setResults(res)
       setExamSessions(sessions.filter((s: any) => s.studentId === activeChildId))
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [activeChildId])
 
   const terms = [...new Set(results.map((r) => r.term))]

@@ -12,23 +12,36 @@ import { useSession } from "next-auth/react"
 export default function StudentFeesPage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id || ""
+  const [studentId, setStudentId] = useState("")
+  const [studentClassId, setStudentClassId] = useState("")
   const [payments, setPayments] = useState<any[]>([])
   const [feeStructures, setFeeStructures] = useState<any[]>([])
-  const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!userId) return
-    Promise.all([
-      fetch("/api/payments").then((r) => r.json()),
-      fetch("/api/fee-structures").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
-    ]).then(([p, fs, s]) => { setPayments(p); setFeeStructures(fs); setStudents(s); setLoading(false) })
+    const load = async () => {
+      const studRes = await fetch(`/api/students?userId=${userId}`)
+      let sid = userId, cid = ""
+      if (studRes.ok) {
+        const s = await studRes.json()
+        if (s?.id) { sid = s.id; cid = s.classId || "" }
+      }
+      setStudentId(sid)
+      setStudentClassId(cid)
+      const [p, fs] = await Promise.all([
+        fetch("/api/payments").then((r) => r.json()),
+        fetch("/api/fee-structures").then((r) => r.json()),
+      ])
+      setPayments(p)
+      setFeeStructures(fs)
+      setLoading(false)
+    }
+    load()
   }, [userId])
 
-  const myPayments = payments.filter((p) => p.studentId === userId)
-  const student = students.find((s) => s.id === userId)
-  const classFees = feeStructures.filter((fs) => fs.classId === student?.classId)
+  const myPayments = payments.filter((p) => p.studentId === studentId)
+  const classFees = feeStructures.filter((fs) => fs.classId === studentClassId)
 
   const totalDue = classFees.reduce((s, f) => s + f.amount, 0)
   const totalPaid = myPayments.filter((p) => p.status === "confirmed").reduce((s, p) => s + p.amount, 0)

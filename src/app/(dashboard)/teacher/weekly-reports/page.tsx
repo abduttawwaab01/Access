@@ -24,8 +24,9 @@ const RATING_LABELS: Record<number, string> = { 1: "Poor", 2: "Below Avg", 3: "A
 
 export default function TeacherWeeklyReportsPage() {
   const { data: session } = useSession()
-  const teacherId = (session?.user as any)?.id || ""
+  const userId = (session?.user as any)?.id || ""
   const teacherName = (session?.user as any)?.name || ""
+  const [teacherId, setTeacherId] = useState("")
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -60,6 +61,15 @@ export default function TeacherWeeklyReportsPage() {
   })
 
   useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => setTeacherId(staffData?.id || ""))
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    if (!teacherId) return
     Promise.all([
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/staff").then((r) => r.json()),
@@ -79,7 +89,7 @@ export default function TeacherWeeklyReportsPage() {
         if (ta.classIds?.length > 0) setSelectedClassId(ta.classIds[0])
       }
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [teacherId])
 
   useEffect(() => {

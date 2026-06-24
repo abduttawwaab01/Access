@@ -18,19 +18,27 @@ export default function StudentCbtPage() {
   const [exams, setExams] = useState<any[]>([])
   const [sessions, setSessions] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
+  const [studentId, setStudentId] = useState<string>("")
   const [loading, setLoading] = useState(true)
+  const [startingId, setStartingId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const fetchData = async () => {
       if (!userId) return
+      const [studRes] = await Promise.all([fetch(`/api/students?userId=${userId}`)])
+      if (!studRes.ok) { setLoading(false); return }
+      const student = await studRes.json()
+      const sid = student?.id || ""
+      setStudentId(sid)
+
       const [eRes, sRes, subRes] = await Promise.all([
-        fetch("/api/exams"),
+        fetch(`/api/exams${sid ? `?studentId=${sid}` : ""}`),
         fetch("/api/exam-sessions"),
         fetch("/api/subjects"),
       ])
       const allExams = await eRes.json()
-      setExams(allExams.filter((e: any) => e.status === "published"))
+      setExams(allExams.filter((e: any) => e.status === "published" && e.type !== "entrance"))
       setSessions(await sRes.json())
       setSubjects(await subRes.json())
       setLoading(false)
@@ -39,11 +47,35 @@ export default function StudentCbtPage() {
   }, [userId])
 
   const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || "Unknown"
-  const mySessions = sessions.filter((s) => s.studentId === userId)
+  const mySessions = sessions.filter((s) => s.studentId === studentId)
   const completedIds = mySessions.filter((s) => s.status === "completed").map((s) => s.examId)
 
-  const startExam = (examId: string) => {
-    router.push(`/exam-take?examId=${examId}`)
+  const startExam = async (examId: string) => {
+    setStartingId(examId)
+    try {
+      const res = await fetch("/api/exam-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          examId,
+          studentId,
+          startTime: new Date().toISOString(),
+          status: "active",
+          answers: [],
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || "Failed to start exam")
+        setStartingId(null)
+        return
+      }
+      const session = await res.json()
+      router.push(`/exam-take/${session.id}`)
+    } catch {
+      toast.error("Failed to start exam")
+      setStartingId(null)
+    }
   }
 
   if (loading || !userId) return <div className="p-4 md:p-6 space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
@@ -70,7 +102,7 @@ export default function StudentCbtPage() {
                       <div>
                         <p className="text-sm font-medium">Exam Session</p>
                         <p className="text-xs text-muted-foreground">{new Date(s.createdAt).toLocaleDateString()} - {s.status}</p>
-                        {s.totalScore !== undefined && <p className="text-xs font-bold mt-0.5">Score: {s.totalScore}/{s.maxScore}</p>}
+                        {s.score !== undefined && <p className="text-xs font-bold mt-0.5">Score: {s.score}/{s.maxScore}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -115,8 +147,8 @@ export default function StudentCbtPage() {
                           </div>
                         </div>
                         {!done && (
-                          <Button className="animated-gradient border-0 text-white shrink-0 min-h-[44px]" onClick={() => startExam(exam.id)}>
-                            <Play className="h-4 w-4 mr-1" /> Start
+                          <Button className="animated-gradient border-0 text-white shrink-0 min-h-[44px]" onClick={() => startExam(exam.id)} disabled={startingId === exam.id}>
+                            {startingId === exam.id ? "Starting..." : <><Play className="h-4 w-4 mr-1" /> Start</>}
                           </Button>
                         )}
                       </div>

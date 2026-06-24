@@ -5,24 +5,32 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useSession } from "next-auth/react"
 import { Wallet, CheckCircle2, Clock, DollarSign, CalendarDays } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function TeacherSalaryPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [teacherId, setTeacherId] = useState("")
   const [salaryStructures, setSalaryStructures] = useState<any[]>([])
   const [salaryRecords, setSalaryRecords] = useState<any[]>([])
   const [staff, setStaff] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const teacherId = "1"
-
   useEffect(() => {
+    if (!userId) return
     Promise.all([
+      fetch("/api/staff?userId=" + userId).then((r) => r.json()),
       fetch("/api/salary-structures").then((r) => r.json()),
       fetch("/api/salary").then((r) => r.json()),
       fetch("/api/staff").then((r) => r.json()),
-    ]).then(([ss, sr, st]) => { setSalaryStructures(ss); setSalaryRecords(sr); setStaff(st); setLoading(false) })
-  }, [])
+    ]).then(([staffData, ss, sr, st]) => {
+      setTeacherId(staffData?.id || "")
+      setSalaryStructures(ss); setSalaryRecords(sr); setStaff(st)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [userId])
 
   const myStructure = salaryStructures.find((s) => s.staffId === teacherId)
   const myRecords = salaryRecords.filter((r) => r.staffId === teacherId)

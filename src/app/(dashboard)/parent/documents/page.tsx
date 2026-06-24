@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,13 +16,14 @@ export default function ParentDocumentsPage() {
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const linkedStudentIds = children.map((c) => c.id)
+  const linkedStudentIds = useMemo(() => children.map((c) => c.id), [children])
 
   useEffect(() => {
     if (childrenLoading || linkedStudentIds.length === 0) return
     setLoading(true)
     Promise.all([fetch("/api/documents").then((r) => r.json()), fetch("/api/students").then((r) => r.json())])
       .then(([d, s]) => { setDocuments(d.filter((doc: any) => linkedStudentIds.includes(doc.studentId))); setStudents(s); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [linkedStudentIds, childrenLoading])
 
   const getStudentName = (id: string) => { const s = students.find((s) => s.id === id); return s ? `${s.firstName} ${s.lastName}` : id }

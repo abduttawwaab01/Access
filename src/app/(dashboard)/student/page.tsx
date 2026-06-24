@@ -31,34 +31,48 @@ const cardVariants = {
 export default function StudentDashboard() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id || ""
+  const [studentId, setStudentId] = useState("")
   const [results, setResults] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any[]>([])
   const [exams, setExams] = useState<any[]>([])
-  const [students, setStudents] = useState<any[]>([])
+  const [student, setStudent] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [activeSession, setActiveSession] = useState("")
   const [loading, setLoading] = useState(true)
 
-  const student = students.find((s: any) => s.id === userId)
   const studentName = student ? `${student.firstName} ${student.lastName}` : "Student"
 
   useEffect(() => {
+    if (!userId) return
+    fetch(`/api/students?userId=${userId}`).then((r) => r.json()).then((data) => {
+      const s = Array.isArray(data) ? data[0] : data
+      if (s?.id) {
+        setStudentId(s.id)
+        setStudent(s)
+      }
+    })
+  }, [userId])
+
+  useEffect(() => {
+    if (!studentId) return
     const fetchAll = async () => {
-      const [r, a, e, sRes, evts, sessions] = await Promise.all([
-        fetch(`/api/results?studentId=${userId}`),
-        fetch(`/api/attendance-records`),
+      const [r, a, e, evts, sessions] = await Promise.all([
+        fetch(`/api/results?studentId=${studentId}`),
+        fetch(`/api/attendance-records?studentId=${studentId}`),
         fetch(`/api/exam-sessions`),
-        fetch("/api/students"),
-        fetch("/api/events?upcoming=true"),
+        fetch("/api/events?upcoming=true").catch(() => null),
         fetch("/api/sessions").catch(() => null),
       ])
-      setResults(await r.json())
+      const resData = await r.json()
+      setResults(Array.isArray(resData) ? resData : [])
       const attData = await a.json()
-      setAttendance(attData.filter((x: any) => x.studentId === userId))
-      setExams(await e.json())
-      setStudents(await sRes.json())
-      const evtsData = await evts.json()
-      setEvents(Array.isArray(evtsData) ? evtsData.slice(0, 5) : [])
+      setAttendance(Array.isArray(attData) ? attData : [])
+      const examData = await e.json()
+      setExams(Array.isArray(examData) ? examData.filter((x: any) => x.studentId === studentId) : [])
+      if (evts) {
+        const evtsData = await evts.json()
+        setEvents(Array.isArray(evtsData) ? evtsData.slice(0, 5) : [])
+      }
       if (sessions) {
         const sData = await sessions.json()
         const active = Array.isArray(sData) ? sData.find((s: any) => s.isActive || s.status === "active") : sData
@@ -66,14 +80,14 @@ export default function StudentDashboard() {
       }
       setLoading(false)
     }
-    if (userId) fetchAll()
-  }, [userId])
+    fetchAll()
+  }, [studentId])
 
   const avgScore = results.length > 0 ? Math.round(results.reduce((s, r) => s + (r.score / r.total) * 100, 0) / results.length) : 0
   const present = attendance.filter((a) => a.status === "present").length
   const total = attendance.length || 1
   const attPct = Math.round(present / total * 100)
-  const myExams = exams.filter((e) => e.studentId === userId || e.studentName === studentName)
+  const myExams = exams.filter((e) => e.studentId === studentId)
   const completedExams = myExams.filter((e) => e.status === "completed").length
 
   const sessionFilter = activeSession || results[0]?.session || ""
@@ -219,6 +233,7 @@ export default function StudentDashboard() {
               <div className="space-y-2">
                 {[
                   { label: "View Results", href: "/student/results", color: "from-blue-600 to-blue-500" },
+                  { label: "Assignments", href: "/student/assignments", color: "from-cyan-600 to-cyan-500" },
                   { label: "Check Attendance", href: "/student/attendance", color: "from-emerald-600 to-emerald-500" },
                   { label: "My Timetable", href: "/student/timetable", color: "from-violet-600 to-violet-500" },
                   { label: "Take Exam", href: "/student/cbt", color: "from-amber-600 to-amber-500" },

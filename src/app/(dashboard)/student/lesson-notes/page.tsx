@@ -29,7 +29,9 @@ export default function StudentLessonNotesPage() {
   const [existingResult, setExistingResult] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const student = students.find((s) => s.id === userId)
+  const [studentId, setStudentId] = useState("")
+
+  const student = students.find((s) => s.id === studentId)
   const studentClassId = student?.classId || ""
 
   useEffect(() => {
@@ -58,9 +60,15 @@ export default function StudentLessonNotesPage() {
       setStudents(stuRes)
       setClasses(clsRes)
       const found = stuRes.find((s: any) => s.id === userId)
-      if (found?.classId) {
-        setSelectedClassId(found.classId)
+      if (found?.id) {
+        setStudentId(found.id)
+        if (found.classId) setSelectedClassId(found.classId)
       } else {
+        const resolved = await fetch(`/api/students?userId=${userId}`).then((r) => r.json())
+        if (resolved?.id) {
+          setStudentId(resolved.id)
+          if (resolved.classId) setSelectedClassId(resolved.classId)
+        }
         setLoading(false)
       }
     }
@@ -92,7 +100,7 @@ export default function StudentLessonNotesPage() {
     setAnswers({})
     setQuizResult(null)
 
-    const res = await fetch(`/api/lesson-quiz-results?studentId=${userId}&lessonNoteId=${note.id}`)
+    const res = await fetch(`/api/lesson-quiz-results?studentId=${studentId}&lessonNoteId=${note.id}`)
     if (res.ok) {
       const data = await res.json()
       if (data) {
@@ -130,7 +138,7 @@ export default function StudentLessonNotesPage() {
     })
     const score = quizState.questions.length > 0 ? Math.round((correct / quizState.questions.length) * 100) : 0
     const payload = {
-      studentId: userId,
+      studentId: studentId,
       lessonNoteId: quizState.lessonNoteId,
       subject: quizState.subject,
       totalQuestions: quizState.questions.length,

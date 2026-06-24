@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Play, Clock, FileText, Eye, Shield } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
@@ -20,6 +21,8 @@ import { EmptyState } from "@/components/admin/EmptyState"
 import Link from "next/link"
 
 export default function TeacherExamsPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [items, setItems] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -30,13 +33,41 @@ export default function TeacherExamsPage() {
   const [filterType, setFilterType] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
+  const [myClassIds, setMyClassIds] = useState<string[]>([])
+  const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
 
   const fetchData = async () => {
-    const [eRes, sRes, cRes] = await Promise.all([fetch("/api/exams?type=regular"), fetch("/api/subjects"), fetch("/api/classes")])
-    setItems(await eRes.json()); setSubjects(await sRes.json()); setClasses(await cRes.json()); setLoading(false)
+    const [eRes, sRes, cRes] = await Promise.all([
+      fetch("/api/exams?type=regular"),
+      fetch("/api/subjects"),
+      fetch("/api/classes"),
+    ])
+    const allExams = await eRes.json()
+    const allSubjects = await sRes.json()
+    const allClasses = await cRes.json()
+    setItems(myClassIds.length > 0 ? allExams.filter((e: any) => myClassIds.includes(e.classId) && (mySubjectIds.length === 0 || mySubjectIds.includes(e.subjectId))) : allExams)
+    setSubjects(mySubjectIds.length > 0 ? allSubjects.filter((s: any) => mySubjectIds.includes(s.id)) : allSubjects)
+    setClasses(myClassIds.length > 0 ? allClasses.filter((c: any) => myClassIds.includes(c.id)) : allClasses)
+    setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        const staffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        setMyClassIds(ta?.classIds || [])
+        setMySubjectIds(ta?.subjectIds || [])
+      })
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => { fetchData().catch(() => setLoading(false)) }, [myClassIds, mySubjectIds])
 
   const update = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
 

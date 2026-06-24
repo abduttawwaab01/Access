@@ -8,11 +8,15 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Search, CheckCircle2, Clock, AlertTriangle, User, History, Camera, QrCode, ScanLine } from "lucide-react"
 import { QRScanner } from "@/components/QRScanner"
 
 export default function TeacherAttendancePage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [teacher, setTeacher] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("mark")
   const [students, setStudents] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
@@ -22,18 +26,34 @@ export default function TeacherAttendancePage() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/students").then((r) => r.json()),
-      fetch("/api/attendance-logs").then((r) => r.json()),
-      fetch("/api/classes").then((r) => r.json()),
-    ]).then(([s, l, c]) => {
-      setStudents(s)
-      setLogs(l)
-      setClasses(c)
-      if (c.length > 0) setSelectedClass(c[0].id)
-      setLoading(false)
-    })
-  }, [])
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        setTeacher(staffData)
+        const staffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        const classIds: string[] = ta?.classIds || []
+        return Promise.all([
+          fetch("/api/students").then((r) => r.json()),
+          fetch("/api/attendance-logs").then((r) => r.json()),
+          fetch("/api/classes").then((r) => r.json()),
+          classIds,
+        ])
+      })
+      .then(([s, l, c, classIds]) => {
+        setStudents(s)
+        setLogs(l)
+        setClasses(c)
+        const defaultClass = classIds.length > 0 ? classIds[0] : (c.length > 0 ? c[0].id : "")
+        setSelectedClass(defaultClass)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [userId])
 
   const classStudents = students.filter((s) => s.classId === selectedClass || !selectedClass)
   const today = new Date().toISOString().split("T")[0]

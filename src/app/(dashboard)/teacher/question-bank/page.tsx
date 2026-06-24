@@ -62,8 +62,9 @@ const defaultForm: FormState = {
 
 export default function QuestionBankPage() {
   const { data: session } = useSession()
-  const TEACHER_ID = (session?.user as any)?.id || "1"
-  const TEACHER_NAME = (session?.user as any)?.name || "Grace Hopper"
+  const userId = (session?.user as any)?.id || ""
+  const [teacherId, setTeacherId] = useState("")
+  const teacherName = (session?.user as any)?.name || ""
   const [questions, setQuestions] = useState<any[]>([])
   const [assignments, setAssignments] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -85,7 +86,7 @@ export default function QuestionBankPage() {
 
   const fetchData = async () => {
     const [qRes, aRes, cRes, sRes] = await Promise.all([
-      fetch(`/api/question-bank?teacherId=${TEACHER_ID}`),
+      fetch(`/api/question-bank?teacherId=${teacherId}`),
       fetch("/api/teacher-assignments"),
       fetch("/api/classes"),
       fetch("/api/subjects"),
@@ -97,7 +98,18 @@ export default function QuestionBankPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => setTeacherId(staffData?.id || ""))
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    if (!teacherId) return
+    fetchData().catch(() => setLoading(false))
+  }, [teacherId])
 
   const update = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }))
 
@@ -125,7 +137,7 @@ export default function QuestionBankPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const body: any = { ...form, teacherId: TEACHER_ID, teacherName: TEACHER_NAME }
+    const body: any = { ...form, teacherId: teacherId, teacherName: teacherName || teacherId }
     if (form.type === "true_false") body.options = ["True", "False"]
     if (form.type === "theory") delete body.options
 
@@ -171,7 +183,7 @@ export default function QuestionBankPage() {
     return true
   })
 
-  const canEdit = (q: any) => q.teacherId === TEACHER_ID && q.status !== "approved"
+  const canEdit = (q: any) => q.teacherId === teacherId && q.status !== "approved"
 
   const getClassName = (id: string) => classes.find((c) => c.id === id)
   const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || id
@@ -254,7 +266,7 @@ export default function QuestionBankPage() {
           <AnimatePresence>
             {filtered.map((item, i) => {
               const Icon = typeIcons[item.type] || HelpCircle
-              const isOwner = item.teacherId === TEACHER_ID
+              const isOwner = item.teacherId === teacherId
               return (
                 <motion.div
                   key={item.id}

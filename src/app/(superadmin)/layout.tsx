@@ -46,8 +46,8 @@ const navGroups: NavGroup[] = [
     { id: "admissions", icon: ClipboardCheck, label: "Admissions" },
     { id: "attendance", icon: Calendar, label: "Attendance" },
     { id: "documents", icon: FileText, label: "Documents" },
+    { id: "communication", icon: MessageSquare, label: "Communication" },
     { id: "announcements", icon: Megaphone, label: "Announcements" },
-    { id: "feedback", icon: MessageSquare, label: "Feedback" },
   ]},
   { label: "System", items: [
     { id: "bank-details", icon: Building2, label: "Bank Details" },

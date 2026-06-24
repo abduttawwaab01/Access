@@ -10,6 +10,7 @@ import {
   GraduationCap, Send, Eye, CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 
 const containerVariants = {
@@ -33,6 +34,9 @@ const itemVariants = {
 }
 
 export default function TeacherDashboard() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [teacher, setTeacher] = useState<any>(null)
   const [stats, setStats] = useState<any>({})
   const [lessons, setLessons] = useState<any[]>([])
   const [assignments, setAssignments] = useState<any[]>([])
@@ -42,34 +46,52 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!userId) return
     const today = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()]
-    Promise.all([
-      fetch("/api/classes").then((r) => r.json()),
-      fetch("/api/lesson-notes").then((r) => r.json()),
-      fetch("/api/assignments").then((r) => r.json()),
-      fetch("/api/timetable").then((r) => r.json()),
-      fetch("/api/events?upcoming=true").then((r) => r.json()).catch(() => []),
-      fetch("/api/attendance-logs").then((r) => r.json()).catch(() => []),
-    ]).then(([classes, notes, asgns, tt, evts, logs]) => {
-      setStats({
-        classes: classes.length,
-        students: classes.reduce((s: number, c: any) => s + (c.studentCount || 0), 0),
-        lessons: notes.length,
-        assignments: asgns.length,
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        setTeacher(staffData)
+        const staffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
-      setLessons(notes.filter((n: any) => n.status === "draft").slice(0, 3))
-      setAssignments(asgns.filter((a: any) => a.status === "active"))
-      setSchedule(tt.filter((t: any) => t.day === today))
-      setEvents(Array.isArray(evts) ? evts.slice(0, 5) : [])
-      const logsArr = Array.isArray(logs) ? logs : []
-      setAttendanceMarked(logsArr.some((l: any) => {
-        const logDate = new Date(l.date || l.createdAt)
-        const now = new Date()
-        return logDate.toDateString() === now.toDateString()
-      }))
-      setLoading(false)
-    })
-  }, [])
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        const classIds: string[] = ta?.classIds || []
+        return Promise.all([
+          fetch("/api/classes").then((r) => r.json()),
+          fetch("/api/lesson-notes").then((r) => r.json()),
+          fetch("/api/assignments").then((r) => r.json()),
+          fetch("/api/timetable").then((r) => r.json()),
+          fetch("/api/events?upcoming=true").then((r) => r.json()).catch(() => []),
+          fetch("/api/attendance-logs").then((r) => r.json()).catch(() => []),
+          classIds,
+        ])
+      })
+      .then(([classes, notes, asgns, tt, evts, logs, classIds]) => {
+        const filteredNotes = classIds.length > 0 ? notes.filter((n: any) => classIds.includes(n.classId)) : notes
+        const filteredAsgns = classIds.length > 0 ? asgns.filter((a: any) => classIds.includes(a.classId)) : asgns
+        const filteredTT = classIds.length > 0 ? tt.filter((t: any) => classIds.includes(t.classId)) : tt
+        setStats({
+          classes: classIds.length || classes.length,
+          students: classes.reduce((s: number, c: any) => s + (c.studentCount || 0), 0),
+          lessons: filteredNotes.length,
+          assignments: filteredAsgns.length,
+        })
+        setLessons(filteredNotes.filter((n: any) => n.status === "draft").slice(0, 3))
+        setAssignments(filteredAsgns.filter((a: any) => a.status === "active"))
+        setSchedule(filteredTT.filter((t: any) => t.day === today))
+        setEvents(Array.isArray(evts) ? evts.slice(0, 5) : [])
+        const logsArr = Array.isArray(logs) ? logs : []
+        setAttendanceMarked(logsArr.some((l: any) => {
+          const logDate = new Date(l.date || l.createdAt)
+          const now = new Date()
+          return logDate.toDateString() === now.toDateString()
+        }))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [userId])
 
   const pendingTasks = [
     { task: `${lessons.length} lesson note${lessons.length !== 1 ? "s" : ""} need${lessons.length === 1 ? "s" : ""} publishing`, priority: "medium" as const, href: "/teacher/lesson-notes", icon: FileText },

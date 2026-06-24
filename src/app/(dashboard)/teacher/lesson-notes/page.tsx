@@ -23,8 +23,9 @@ import { useSession } from "next-auth/react"
 
 export default function LessonNotesPage() {
   const { data: session } = useSession()
-  const teacherId = (session?.user as any)?.id || "1"
-  const teacherName = (session?.user as any)?.name || "Grace Hopper"
+  const userId = (session?.user as any)?.id || ""
+  const teacherName = (session?.user as any)?.name || ""
+  const [teacherId, setTeacherId] = useState("")
   const [items, setItems] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,7 +56,20 @@ export default function LessonNotesPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        setTeacherId(staffData?.id || "")
+      })
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => {
+    if (!teacherId) return
+    fetchData().catch(() => setLoading(false))
+  }, [teacherId])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 

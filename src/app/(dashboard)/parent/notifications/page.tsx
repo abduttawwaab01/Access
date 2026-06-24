@@ -15,7 +15,7 @@ export default function ParentNotificationsPage() {
     fetch("/api/announcements").then((r) => r.json()).then((data) => {
       setItems(data.filter((a: any) => a.audience === "all" || a.audience === "parents"))
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [])
 
   const priorityIcon: Record<string, any> = { high: AlertTriangle, normal: Bell, low: Info }

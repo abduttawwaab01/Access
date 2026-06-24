@@ -13,8 +13,11 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send
 } from "lucide-react"
+import { ConversationList } from "@/components/chat/ConversationList"
+import { ChatWindow } from "@/components/chat/ChatWindow"
+import { NewChatDialog } from "@/components/chat/NewChatDialog"
 
 const saFetch = async (url: string, options: RequestInit = {}) => {
   const res = await fetch(url, {
@@ -67,6 +70,7 @@ export default function SuperAdminPage() {
       case "documents": return <DocumentsSection />
       case "announcements": return <AnnouncementsSection />
       case "feedback": return <FeedbackSection />
+      case "communication": return <CommunicationSection />
       case "ai-assistant": return <AIAssistantSection />
       case "bank-details": return <BankDetailsSection />
       case "data-export": return <DataExportSection />
@@ -1997,6 +2001,110 @@ function DataExportSection() {
 }
 
 // ========================== AI ASSISTANT ==========================
+function CommunicationSection() {
+  // Using inline state instead of the hook to avoid import complexity
+  const [convs, setConvs] = useState<any[]>([])
+  const [convLoading, setConvLoading] = useState(true)
+  const [activeConvId, setActiveConvId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<any[]>([])
+  const [msgLoading, setMsgLoading] = useState(false)
+  const [showNewChat, setShowNewChat] = useState(false)
+  const token = typeof window !== "undefined" ? localStorage.getItem("sa_token") : null
+  const headers = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) } as Record<string, string>
+
+  const api = async (url: string, opts?: RequestInit) => {
+    const res = await fetch(url, { ...opts, headers: { ...headers, ...(opts?.headers as Record<string, string> || {}) } })
+    if (!res.ok) throw new Error("API error")
+    return res.json()
+  }
+
+  const fetchConvs = useCallback(async () => {
+    try { setConvs(await api("/api/chat/conversations")) } catch {}
+    setConvLoading(false)
+  }, [])
+
+  const fetchMessages = useCallback(async (convId: string) => {
+    setMsgLoading(true)
+    try {
+      const data = await api(`/api/chat/conversations/${convId}/messages`)
+      setMessages(data)
+      await api(`/api/chat/conversations/${convId}/read`, { method: "PUT" }).catch(() => {})
+    } catch {}
+    setMsgLoading(false)
+  }, [])
+
+  const sendMessage = async (convId: string, content: string) => {
+    const msg = await api(`/api/chat/conversations/${convId}/messages`, { method: "POST", body: JSON.stringify({ content }) })
+    setMessages((prev: any[]) => [...prev, msg])
+  }
+
+  const createConversation = async (participantIds: string[]) => {
+    const data = await api("/api/chat/conversations", { method: "POST", body: JSON.stringify({ participantIds }) })
+    await fetchConvs()
+    setActiveConvId(data.id)
+  }
+
+  useEffect(() => { fetchConvs() }, [])
+
+  useEffect(() => {
+    if (activeConvId) fetchMessages(activeConvId)
+  }, [activeConvId])
+
+  // Polling
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchConvs()
+      if (activeConvId) fetchMessages(activeConvId)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [activeConvId])
+
+  const activeConv = convs.find((c: any) => c.id === activeConvId)
+  const otherName = activeConv?.others?.[0]?.name || ""
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/20 flex items-center justify-center">
+          <MessageSquare className="h-5 w-5 text-red-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">Communication</h2>
+          <p className="text-sm text-zinc-500">Direct messaging across all schools</p>
+        </div>
+      </div>
+      <div className="flex h-[calc(100vh-12rem)] rounded-xl border border-zinc-800 overflow-hidden bg-[#12121a]">
+        <div className="w-72 shrink-0 border-r border-zinc-800 flex flex-col">
+          <ConversationList
+            conversations={convs}
+            activeId={activeConvId}
+            onSelect={setActiveConvId}
+            onNewChat={() => setShowNewChat(true)}
+            currentUserId="superadmin"
+            loading={convLoading}
+          />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <ChatWindow
+            messages={messages}
+            currentUserId="superadmin"
+            conversationId={activeConvId}
+            onSend={async (content) => { if (activeConvId) await sendMessage(activeConvId, content) }}
+            loading={msgLoading}
+            otherUserName={otherName}
+          />
+        </div>
+      </div>
+      <NewChatDialog
+        open={showNewChat}
+        onClose={() => setShowNewChat(false)}
+        onSelect={(contactId) => createConversation([contactId])}
+        role="superadmin"
+      />
+    </div>
+  )
+}
+
 const SUPER_ADMIN_QUICK_ACTIONS = [
   { label: "System Overview", prompt: "Give me a complete overview of the entire system including all schools, users, and financial data." },
   { label: "Financial Health", prompt: "Summarize the financial health of the system. Include revenue, pending payments, salary costs, and fee structures." },

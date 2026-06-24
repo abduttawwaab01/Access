@@ -3,7 +3,14 @@ import { db } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const userId = searchParams.get("userId")
+  if (userId) {
+    const staff = await db.staff.getByUserId(userId)
+    if (!staff) return NextResponse.json({ error: "Staff not found" }, { status: 404 })
+    return NextResponse.json(staff)
+  }
   return NextResponse.json(await db.staff.getAll())
 }
 

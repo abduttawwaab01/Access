@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, ClipboardCheck, Users, CalendarDays } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
@@ -21,6 +22,8 @@ import { EmptyState } from "@/components/admin/EmptyState"
 import { cn } from "@/lib/utils"
 
 export default function AssignmentsPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [items, setItems] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,15 +31,37 @@ export default function AssignmentsPage() {
   const [tab, setTab] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ title: "", subject: "", classId: "", dueDate: "", type: "homework", description: "" })
+  const [myClassIds, setMyClassIds] = useState<string[]>([])
 
   const fetchData = async () => {
-    const [asgnsRes, classesRes] = await Promise.all([fetch("/api/assignments"), fetch("/api/classes")])
-    setItems(await asgnsRes.json())
-    setClasses(await classesRes.json())
+    const [asgnsRes, classesRes] = await Promise.all([
+      fetch("/api/assignments"),
+      fetch("/api/classes"),
+    ])
+    const allAssignments = await asgnsRes.json()
+    const allClasses = await classesRes.json()
+    setItems(myClassIds.length > 0 ? allAssignments.filter((a: any) => myClassIds.includes(a.classId)) : allAssignments)
+    setClasses(myClassIds.length > 0 ? allClasses.filter((c: any) => myClassIds.includes(c.id)) : allClasses)
+    if (form.classId === "" && myClassIds.length > 0) setForm((p) => ({ ...p, classId: myClassIds[0] }))
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        const staffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        setMyClassIds(ta?.classIds || [])
+      })
+      .catch(() => setLoading(false))
+  }, [userId])
+
+  useEffect(() => { fetchData().catch(() => setLoading(false)) }, [myClassIds])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 
