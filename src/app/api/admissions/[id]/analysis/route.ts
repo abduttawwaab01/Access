@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     // Fetch all questions
     const allQuestions = await db.questions.getAll()
-    const qIds = (exam.questions || []).map((q: any) => q.questionId)
+    const qIds = ((exam.questions as any[]) || []).map((q: any) => q.questionId)
     const questions = allQuestions.filter((q: any) => qIds.includes(q.id))
 
     // Build question map
@@ -47,7 +47,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     const questionDetails: any[] = []
 
-    exam.questions.forEach((eq: any) => {
+    ;(exam.questions as any[])?.forEach((eq: any) => {
       const q = questionMap[eq.questionId]
       if (!q) return
 

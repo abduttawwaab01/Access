@@ -28,6 +28,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Exam not available" }, { status: 400 })
     }
 
+    // Resolve class name from class ID
+    const classInfo = await db.classes.getById(entranceCode.classId)
+    const className = classInfo?.name || entranceCode.classId
+
     // Create the exam session first
     const session = await db.examSessions.create({
       examId: entranceCode.examId,
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
       gender: gender || null,
       dateOfBirth: dateOfBirth || null,
       address: address || null,
-      classApplyingFor: classApplyingFor || entranceCode.classId,
+      classApplyingFor: className,
       parentName: parentName || null,
       parentPhone: parentPhone || null,
       previousSchool: previousSchool || null,

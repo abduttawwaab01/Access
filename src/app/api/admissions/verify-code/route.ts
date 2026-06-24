@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       classId: entranceCode.classId,
       className: classInfo.name,
       duration: exam.duration,
-      questionCount: (exam.questions || []).length,
+      questionCount: ((exam.questions as any[]) || []).length,
     })
   } catch (error) {
     console.error("Error verifying entrance code:", error)

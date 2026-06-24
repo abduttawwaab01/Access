@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import { useRouter, useSearchParams } from "next/navigation"
-import { GraduationCap, Loader2, ArrowRight, FileText, Clock, BookOpen } from "lucide-react"
+import { GraduationCap, Loader2, ArrowRight, FileText, BookOpen } from "lucide-react"
 
 function ApplyForm() {
   const searchParams = useSearchParams()
@@ -29,8 +29,11 @@ function ApplyForm() {
 
   useEffect(() => {
     if (!codeId) {
-      toast.error("No entrance code provided. Please use a valid code.")
-      router.push("/admissions/entrance")
+      const t = setTimeout(() => {
+        toast.error("No entrance code provided. Please use a valid code.")
+        router.push("/admissions/entrance")
+      }, 100)
+      return () => clearTimeout(t)
     }
   }, [codeId, router])
 

@@ -111,8 +111,13 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Create Student record
-      const targetClassId = body.transferToClassId || app.classApplyingFor || ""
+      // Resolve class name to class ID
+      let targetClassId = body.transferToClassId || ""
+      if (!targetClassId && app.classApplyingFor) {
+        const classList = await db.classes.getAll()
+        const matched = classList.find((c: any) => c.name === app.classApplyingFor)
+        if (matched) targetClassId = matched.id
+      }
       const student = await db.students.create({
         firstName: app.firstName,
         lastName: app.lastName,

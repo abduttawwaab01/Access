@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
-import { AlertTriangle, Clock, ChevronLeft, ChevronRight, Send, AlertCircle } from "lucide-react"
+import { AlertTriangle, Clock, ChevronLeft, ChevronRight, Send } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
 import { useAntiCheat } from "@/hooks/useAntiCheat"
 import { ExamCalculator } from "@/components/ExamCalculator"
@@ -188,6 +188,10 @@ export default function ExamTakePage() {
   )
 
   if (submitted && result) {
+    const isEntrance = exam?.type === "entrance" || session?.examType === "entrance"
+    const percentage = result.maxScore > 0 ? Math.round(result.totalScore / result.maxScore * 100) : 0
+    const passed = percentage >= 50 // default cut-off, actual value synced server-side
+
     return (
       <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md text-center space-y-6">
@@ -195,11 +199,20 @@ export default function ExamTakePage() {
             <Send className="h-10 w-10 text-green-500" />
           </div>
           <h1 className="text-2xl font-bold">Exam Submitted</h1>
-          {exam?.showResults ? (
-            <div className="space-y-2">
-              <p className="text-4xl font-bold text-primary">{result.totalScore} / {result.maxScore}</p>
-              <p className="text-lg text-muted-foreground">{result.maxScore > 0 ? Math.round(result.totalScore / result.maxScore * 100) : 0}% Score</p>
-              <Progress value={result.maxScore > 0 ? (result.totalScore / result.maxScore) * 100 : 0} className="h-3" />
+          {(exam?.showResults || isEntrance) ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-5xl font-bold text-primary">{result.totalScore} / {result.maxScore}</p>
+                <p className="text-lg text-muted-foreground mt-1">{percentage}% Score</p>
+              </div>
+              <Progress value={percentage} className="h-3" />
+              {isEntrance && (
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
+                  passed ? "bg-green-500/15 text-green-600" : "bg-red-500/15 text-red-600"
+                }`}>
+                  {passed ? "Passed" : "Failed"}
+                </div>
+              )}
               {result.flagged && (
                 <div className="flex items-center justify-center gap-2 text-amber-500 mt-2">
                   <AlertTriangle className="h-4 w-4" /> Flagged for review
@@ -209,7 +222,11 @@ export default function ExamTakePage() {
           ) : (
             <p className="text-muted-foreground">Your answers have been recorded. Results will be available later.</p>
           )}
-          <Button variant="outline" onClick={() => router.push("/exam-take")} className="mt-4">Back to Exam Portal</Button>
+          <div className="flex gap-3 justify-center mt-4">
+            <Button variant="outline" onClick={() => router.push(isEntrance ? "/" : "/exam-take")}>
+              {isEntrance ? "Back to Homepage" : "Back to Exam Portal"}
+            </Button>
+          </div>
         </motion.div>
       </div>
     )

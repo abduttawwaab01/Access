@@ -40,7 +40,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
           let passed = false
           if (settings?.cutOffs) {
             const cutOffs = settings.cutOffs as Record<string, number>
-            const classCutOff = cutOffs[application.classApplyingFor || ""] || cutOffs[application.classId || ""] || 0
+            // Try to match the class name to a class ID for cut-off lookup
+            const classes = await prisma.class.findMany()
+            const matchedClass = classes.find((c: any) => c.name === application.classApplyingFor)
+            const classCutOff = matchedClass ? (cutOffs[matchedClass.id] || 0) : 0
             passed = classCutOff > 0 ? percentage >= classCutOff : false
           }
 
