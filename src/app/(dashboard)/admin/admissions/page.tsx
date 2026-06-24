@@ -15,6 +15,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieCha
 import { CheckCircle, XCircle, Clock, Search, User, BookOpen, DownloadCloud, FileSpreadsheet, LayoutDashboard, FileText, BarChart3, Brain, Target, Lightbulb, Award, AlertTriangle, Plus, Edit3, Eye, ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Save, Share2, Trash2, KeyRound, Loader2 } from "lucide-react"
 import { downloadCsv, downloadPng, downloadPdf, downloadDoc } from "@/lib/capture"
 import { PageHeader } from "@/components/admin/PageHeader"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 const tabs = ["Dashboard", "Applications", "Entrance Scores", "Reports"]
 const statusColors: Record<string, string> = { pending: "bg-amber-500/15 text-amber-600", accepted: "bg-emerald-500/15 text-emerald-600", rejected: "bg-red-500/15 text-red-600", transferred: "bg-blue-500/15 text-blue-600" }
@@ -48,6 +49,7 @@ export default function AdminAdmissionsPage() {
   const [generating, setGenerating] = useState(false)
   const [analysisData, setAnalysisData] = useState<any>(null)
   const [analysisLoading, setAnalysisLoading] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<any>(null)
   const reportRef = useRef<HTMLDivElement>(null)
 
   const fetchData = async () => {
@@ -133,6 +135,17 @@ export default function AdminAdmissionsPage() {
     } catch {
       toast.error("Failed to process action")
     }
+  }
+
+  const confirmDeleteItem = async () => {
+    if (!confirmDelete) return
+    const res = await fetch(`/api/admissions/${confirmDelete.id}`, { method: "DELETE" })
+    if (res.ok) {
+      toast.success("Application deleted")
+      fetchData()
+      setShowDetail(false)
+      setConfirmDelete(null)
+    } else toast.error("Failed to delete")
   }
 
   const handleUpdateApplication = async () => {
@@ -374,6 +387,9 @@ export default function AdminAdmissionsPage() {
                               </Button>
                               <Button variant="outline" className="text-red-600 border-red-300" onClick={() => handleAction(selectedApp.id, "rejectApplication")}>
                                 <XCircle className="h-4 w-4 mr-1" /> Reject
+                              </Button>
+                              <Button variant="outline" className="text-red-600 border-red-300 ml-auto" onClick={() => setConfirmDelete(selectedApp)}>
+                                <Trash2 className="h-4 w-4 mr-1" /> Delete
                               </Button>
                               <div className="flex items-center gap-2">
                                 <select value={transferClassId} onChange={(e) => setTransferClassId(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
@@ -652,6 +668,9 @@ export default function AdminAdmissionsPage() {
                               <div className="flex items-center gap-1 shrink-0">
                                 <Button variant="ghost" size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); openDetail(app) }}>
                                   <Eye className="h-3.5 w-3.5 mr-1" /> View
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-8 text-red-500 hover:text-red-700" onClick={(e) => { e.stopPropagation(); setConfirmDelete(app) }}>
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             </div>
@@ -1023,6 +1042,8 @@ export default function AdminAdmissionsPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
+        title="Delete Application" description={`Permanently delete ${confirmDelete?.firstName} ${confirmDelete?.lastName}'s application? This cannot be undone.`} />
     </div>
   )
 }
