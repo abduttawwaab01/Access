@@ -198,7 +198,7 @@ export default function ExamDetailPage() {
     setEditQuestion(q)
     setEditForm({
       text: override.text ?? q.text,
-      type: override.type ?? q.type || "mcq",
+      type: override.type ?? (q.type || "mcq"),
       options: override.options ?? q.options ?? ["", "", "", ""],
       answer: override.answer ?? q.correctAnswer ?? "",
       difficulty: override.difficulty ?? q.difficulty ?? "medium",
