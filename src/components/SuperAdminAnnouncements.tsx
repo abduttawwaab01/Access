@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, AlertTriangle, Info } from "lucide-react"
+import { X, Megaphone, AlertTriangle } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 const DISMISSED_KEY = "super-announcement-dismissed"
@@ -62,32 +62,39 @@ export function SuperAdminAnnouncements() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            initial={{ scale: 0.92, opacity: 0, y: 16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-full max-w-md rounded-2xl border border-border/50 bg-gradient-to-b from-zinc-900 to-zinc-950 p-6 shadow-2xl"
+            exit={{ scale: 0.92, opacity: 0, y: 16 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="relative w-full max-w-md overflow-hidden rounded-xl border border-border/50 bg-card shadow-2xl"
           >
-            <div className="mb-4 flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/20">
-                <AlertTriangle className="h-5 w-5 text-red-400" />
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
+            <div className="relative p-5 md:p-6">
+              <div className="mb-4 flex items-start gap-3.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Megaphone className="h-4.5 w-4.5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground">{a.title}</h3>
+                  <p className="text-xs text-muted-foreground">Portal Announcement</p>
+                </div>
+                <button
+                  onClick={() => setDismissed((p) => new Set(p).add(a.id))}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-white">{a.title}</h3>
-                <p className="text-xs text-zinc-500">Portal Announcement</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{a.content}</p>
+              <div className="mt-5 flex items-center gap-2 rounded-lg bg-muted/50 px-3.5 py-2.5 text-xs text-muted-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" />
+                <span>This announcement requires your attention</span>
               </div>
             </div>
-            <p className="mb-6 text-sm leading-relaxed text-zinc-300">{a.content}</p>
-            <button
-              onClick={() => setDismissed((p) => new Set(p).add(a.id))}
-              className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-800 py-2.5 text-sm font-semibold text-white shadow-lg transition-opacity hover:opacity-90"
-            >
-              Got it
-            </button>
           </motion.div>
         </motion.div>
       ))}
@@ -99,20 +106,21 @@ export function SuperAdminAnnouncements() {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="relative overflow-hidden border-b border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-red-500/5"
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="relative overflow-hidden border-b border-border/40 bg-gradient-to-r from-primary/[0.04] via-background to-primary/[0.04]"
         >
-          <div className="flex items-start gap-3 px-4 py-3 md:px-6 md:py-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
-              <Info className="h-3 w-3 text-amber-400" />
+          <div className="flex items-center gap-3 px-4 py-2.5 md:px-6">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
+              <Megaphone className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-amber-100">{a.title}</p>
-              <p className="mt-0.5 text-xs text-amber-200/70">{a.content}</p>
+            <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-foreground whitespace-nowrap">{a.title}</span>
+              <span className="hidden sm:inline text-muted-foreground/30">|</span>
+              <span className="text-xs text-muted-foreground/80">{a.content}</span>
             </div>
             <button
               onClick={() => setDismissed((p) => new Set(p).add(a.id))}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-amber-300/50 transition-colors hover:bg-amber-500/10 hover:text-amber-300"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/30 transition-colors hover:bg-muted hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
