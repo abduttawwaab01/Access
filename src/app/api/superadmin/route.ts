@@ -93,14 +93,16 @@ export async function POST(request: NextRequest) {
       })
       if (app.parentName || app.parentPhone) {
         const { prisma } = await import("@/lib/prisma")
+        const bcrypt = (await import("bcryptjs")).default
         const schoolId = student.schoolId
         const parentEmail = app.email ? `parent.${app.email}` : null
+        const hashed = await bcrypt.hash("parent123", 10)
         const parentUser = await prisma.user.create({
           data: {
             name: app.parentName || `${app.firstName}'s Parent`,
             email: parentEmail || `${app.firstName.toLowerCase()}.parent@school.com`,
             phone: app.parentPhone || null,
-            password: "parent123",
+            password: hashed,
             role: "parent",
             schoolId,
           },

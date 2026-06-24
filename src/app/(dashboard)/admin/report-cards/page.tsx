@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, User } from "lucide-react"
 import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
-import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { downloadPng, downloadPdf, openPrintWindow, elementToPngBlob } from "@/lib/capture"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
 export default function AdminReportCardsPage() {
@@ -22,6 +22,7 @@ export default function AdminReportCardsPage() {
   const [attendance, setAttendance] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [bulkExportingZip, setBulkExportingZip] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("")
   const [chartReady, setChartReady] = useState(false)
@@ -179,6 +180,43 @@ export default function AdminReportCardsPage() {
     openPrintWindow(reportRef.current, `Report Card - ${reportData?.studentName || ""}`)
   }
 
+  const handleExportAllZip = async () => {
+    setBulkExportingZip(true)
+    try {
+      const JSZip = (await import("jszip")).default
+      const zip = new JSZip()
+      const termForFilter = selectedTerm || currentTerm
+      const studentsWithResults = students.filter((s) => results.some((r) => r.studentId === s.id && (!selectedTerm || r.term === selectedTerm)))
+      if (studentsWithResults.length === 0) { toast.error("No students with results to export"); setBulkExportingZip(false); return }
+
+      for (let i = 0; i < studentsWithResults.length; i++) {
+        const s = studentsWithResults[i]
+        toast.info(`Exporting ${i + 1}/${studentsWithResults.length}: ${s.firstName} ${s.lastName}`)
+        setSelectedStudentId(s.id)
+        if (!selectedTerm) {
+          const sResults = results.filter((r) => r.studentId === s.id)
+          const sTerms = [...new Set(sResults.map((r) => r.term))] as string[]
+          setSelectedTerm(sTerms[sTerms.length - 1] || "")
+        }
+        await new Promise((r) => setTimeout(r, 500))
+
+        if (reportRef.current) {
+          const blob = await elementToPngBlob(reportRef.current, { scale: 2 })
+          zip.file(`${s.firstName}_${s.lastName}_${termForFilter}.png`, blob)
+        }
+      }
+
+      const content = await zip.generateAsync({ type: "blob" })
+      const link = document.createElement("a")
+      link.href = URL.createObjectURL(content)
+      link.download = `Report_Cards_${termForFilter}.zip`
+      link.click()
+      URL.revokeObjectURL(link.href)
+      toast.success(`Exported ${studentsWithResults.length} report cards as ZIP`)
+    } catch (err) { console.error(err); toast.error("ZIP export failed") }
+    setBulkExportingZip(false)
+  }
+
   const handleShareWhatsApp = () => {
     if (!reportData) return
     const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / (reportData.subjects.length || 1))}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}\n\nView full report on Access School Portal.`
@@ -238,6 +276,11 @@ export default function AdminReportCardsPage() {
                 </select>
               </div>
             )}
+            <div className="flex items-end">
+              <Button variant="outline" size="sm" onClick={handleExportAllZip} disabled={bulkExportingZip} className="shrink-0">
+                <DownloadCloud className="h-4 w-4 mr-1" /> {bulkExportingZip ? "Exporting..." : "Export All as ZIP"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

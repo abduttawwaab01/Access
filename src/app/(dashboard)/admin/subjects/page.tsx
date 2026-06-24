@@ -15,6 +15,40 @@ import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 
+function SubjectCard({ item, classes, i, openEdit, handleDelete }: { item: any; classes: any[]; i: number; openEdit: (item: any) => void; handleDelete: (item: any) => void }) {
+  const cls = classes.find((c) => c.id === item.classId)
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+      <Card className="glass-card border-0">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <BookOpen className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{item.name}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                  {item.code && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{item.code}</Badge>}
+                  {cls && <span className="truncate">{cls.name}{cls.arm ? ` ${cls.arm}` : ""}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0 ml-2">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
 export default function SubjectsPage() {
   const [items, setItems] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -76,7 +110,13 @@ export default function SubjectsPage() {
   }
 
   const filtered = filterClass === "all" ? items : items.filter((s) => s.classId === filterClass)
-  const getClassName = (id: string) => classes.find((c) => c.id === id)
+  const grouped = filterClass === "all" ? filtered.reduce((acc: any, s: any) => {
+    const cls = classes.find((c) => c.id === s.classId)
+    const key = cls ? `${cls.name}${cls.arm ? ` ${cls.arm}` : ""}` : "Unassigned"
+    if (!acc[key]) acc[key] = []
+    acc[key].push(s)
+    return acc
+  }, {} as Record<string, any[]>) : null
 
   return (
     <div className="p-4 md:p-6">
@@ -101,42 +141,29 @@ export default function SubjectsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState title="No subjects found" description={filterClass !== "all" ? "No subjects for this class" : "Add your first subject"} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <AnimatePresence>
-            {filtered.map((item, i) => {
-              const cls = getClassName(item.classId)
-              return (
-                <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                  <Card className="glass-card border-0">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                            <BookOpen className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-semibold">{item.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                              {item.code && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{item.code}</Badge>}
-                              {cls && <span>{cls.name}{cls.arm ? ` ${cls.arm}` : ""}</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-danger" onClick={() => handleDelete(item)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )
-            })}
-          </AnimatePresence>
+        <div className="space-y-4">
+          {grouped ? (
+            Object.entries(grouped).map(([grade, subjectList]: [string, any]) => (
+              <div key={grade}>
+                <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">{grade}</h3>
+                <div className="space-y-2">
+                  <AnimatePresence>
+                    {subjectList.map((item: any, i: number) => (
+                      <SubjectCard key={item.id} item={item} classes={classes} i={i} openEdit={openEdit} handleDelete={handleDelete} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="space-y-2">
+              <AnimatePresence>
+                {filtered.map((item, i) => (
+                  <SubjectCard key={item.id} item={item} classes={classes} i={i} openEdit={openEdit} handleDelete={handleDelete} />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       )}
 

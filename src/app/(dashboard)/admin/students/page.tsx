@@ -11,12 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Search, X, Filter, ImageIcon, Loader2 } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, X, Filter, ImageIcon, Loader2, Eye, EyeOff, Save, CalendarIcon } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { getInitials, cn } from "@/lib/utils"
 import { compressAndUpload } from "@/lib/imageUtils"
+
+function DetailField({ label, value, className }: { label: string; value: string; className?: string }) {
+  return (
+    <div className={cn("space-y-0.5", className)}>
+      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">{label}</p>
+      <p className="text-sm">{value || <span className="italic text-muted-foreground/40">Not set</span>}</p>
+    </div>
+  )
+}
 
 export default function StudentsPage() {
   const [items, setItems] = useState<any[]>([])
@@ -28,6 +38,15 @@ export default function StudentsPage() {
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", gender: "", classId: "", passportPhoto: "", password: "" })
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailStudent, setDetailStudent] = useState<any>(null)
+  const [detailEditing, setDetailEditing] = useState(false)
+  const [detailSaving, setDetailSaving] = useState(false)
+  const [detailForm, setDetailForm] = useState({
+    firstName: "", lastName: "", email: "", phone: "", dateOfBirth: "",
+    gender: "", address: "", bloodGroup: "", medicalNotes: "",
+    enrollmentDate: "", classId: "", status: "active", passportPhoto: ""
+  })
 
   const fetchData = async () => {
     const [studentsRes, classesRes] = await Promise.all([fetch("/api/students"), fetch("/api/classes")])
@@ -50,6 +69,45 @@ export default function StudentsPage() {
     setEditing(item)
     setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", gender: item.gender || "", classId: item.classId || "", passportPhoto: item.passportPhoto || "", password: "" })
     setSheetOpen(true)
+  }
+
+  const openDetail = (item: any) => {
+    setDetailStudent(item)
+    setDetailForm({
+      firstName: item.firstName || "", lastName: item.lastName || "",
+      email: item.email || "", phone: item.phone || "",
+      dateOfBirth: item.dateOfBirth ? item.dateOfBirth.split("T")[0] : "",
+      gender: item.gender || "", address: item.address || "",
+      bloodGroup: item.bloodGroup || "", medicalNotes: item.medicalNotes || "",
+      enrollmentDate: item.enrollmentDate ? item.enrollmentDate.split("T")[0] : "",
+      classId: item.classId || "", status: item.status || "active",
+      passportPhoto: item.passportPhoto || ""
+    })
+    setDetailEditing(false)
+    setDetailOpen(true)
+  }
+
+  const saveDetail = async () => {
+    if (!detailStudent) return
+    setDetailSaving(true)
+    try {
+      const res = await fetch(`/api/students/${detailStudent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(detailForm)
+      })
+      if (res.ok) {
+        toast.success("Student updated")
+        setDetailOpen(false)
+        fetchData()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.message || "Failed to save")
+      }
+    } catch {
+      toast.error("Failed to save student details")
+    }
+    setDetailSaving(false)
   }
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,7 +194,7 @@ export default function StudentsPage() {
           <AnimatePresence>
             {filtered.map((item, i) => (
               <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
-                <Card className="glass-card border-0">
+                <Card className="glass-card border-0 cursor-pointer transition-shadow hover:shadow-md" onClick={() => openDetail(item)}>
                   <CardContent className="p-3">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 shrink-0">
@@ -155,10 +213,10 @@ export default function StudentsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(item)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(item) }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-danger" onClick={() => handleDelete(item)}>
+                        <Button variant="ghost" size="icon" className="text-danger" onClick={(e) => { e.stopPropagation(); handleDelete(item) }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -235,6 +293,196 @@ export default function StudentsPage() {
           </Button>
         </form>
       </FormSheet>
+
+      <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setDetailEditing(false) } }}>
+        <DialogContent className="sm:max-w-xl max-h-[85dvh] overflow-y-auto" showCloseButton={false}>
+          <DialogHeader className="flex-row items-center justify-between gap-2">
+            <div className="min-w-0">
+              <DialogTitle>{detailStudent?.firstName} {detailStudent?.lastName}</DialogTitle>
+              <DialogDescription>{detailStudent?.studentId}</DialogDescription>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {detailEditing ? (
+                <Button variant="ghost" size="sm" onClick={() => setDetailEditing(false)}>
+                  <EyeOff className="h-3.5 w-3.5 mr-1" /> View
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setDetailEditing(true)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                </Button>
+              )}
+              <button onClick={() => { setDetailOpen(false); setDetailEditing(false) }} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            {/* Photo + Status */}
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-muted">
+                {detailForm.passportPhoto ? (
+                  <img src={detailForm.passportPhoto} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary font-bold text-lg">
+                    {getInitials(`${detailForm.firstName} ${detailForm.lastName}`)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold text-base">{detailForm.firstName} {detailForm.lastName}</p>
+                <p className="text-xs text-muted-foreground">{detailStudent?.studentId}</p>
+              </div>
+              {detailEditing ? (
+                <Select value={detailForm.status} onValueChange={(v) => setDetailForm((p) => ({ ...p, status: v || "active" }))}>
+                  <SelectTrigger className="h-8 w-[120px] ml-auto"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="ml-auto">
+                  <Badge variant="outline" className={cn("text-xs px-2 py-0.5", detailForm.status === "active" ? "text-success border-success/30" : "text-muted-foreground")}>
+                    {detailForm.status}
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {/* Personal Information */}
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Personal Information</h4>
+              {detailEditing ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">First Name</Label>
+                    <Input value={detailForm.firstName} onChange={(e) => setDetailForm((p) => ({ ...p, firstName: e.target.value }))} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Last Name</Label>
+                    <Input value={detailForm.lastName} onChange={(e) => setDetailForm((p) => ({ ...p, lastName: e.target.value }))} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Date of Birth</Label>
+                    <Input type="date" value={detailForm.dateOfBirth} onChange={(e) => setDetailForm((p) => ({ ...p, dateOfBirth: e.target.value }))} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Gender</Label>
+                    <Select value={detailForm.gender} onValueChange={(v) => setDetailForm((p) => ({ ...p, gender: v || "" }))}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailField label="First Name" value={detailForm.firstName} />
+                  <DetailField label="Last Name" value={detailForm.lastName} />
+                  <DetailField label="Date of Birth" value={detailForm.dateOfBirth ? new Date(detailForm.dateOfBirth + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""} />
+                  <DetailField label="Gender" value={detailForm.gender} />
+                </div>
+              )}
+            </div>
+
+            {/* Contact Information */}
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Contact Information</h4>
+              {detailEditing ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Email</Label>
+                    <Input type="email" value={detailForm.email} onChange={(e) => setDetailForm((p) => ({ ...p, email: e.target.value }))} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Phone</Label>
+                    <Input value={detailForm.phone} onChange={(e) => setDetailForm((p) => ({ ...p, phone: e.target.value }))} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-[11px] text-muted-foreground/70">Address</Label>
+                    <textarea value={detailForm.address} onChange={(e) => setDetailForm((p) => ({ ...p, address: e.target.value }))} className="flex min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" rows={2} />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailField label="Email" value={detailForm.email} className="sm:col-span-2" />
+                  <DetailField label="Phone" value={detailForm.phone} />
+                  <DetailField label="Address" value={detailForm.address} className="sm:col-span-3" />
+                </div>
+              )}
+            </div>
+
+            {/* Academic Information */}
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Academic Information</h4>
+              {detailEditing ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Class</Label>
+                    <Select value={detailForm.classId} onValueChange={(v) => setDetailForm((p) => ({ ...p, classId: v || "" }))}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select class" /></SelectTrigger>
+                      <SelectContent>
+                        {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Enrollment Date</Label>
+                    <Input type="date" value={detailForm.enrollmentDate} onChange={(e) => setDetailForm((p) => ({ ...p, enrollmentDate: e.target.value }))} className="h-10" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailField label="Class" value={classes.find((c) => c.id === detailForm.classId) ? `${classes.find((c) => c.id === detailForm.classId).name}${classes.find((c) => c.id === detailForm.classId).arm ? ` ${classes.find((c) => c.id === detailForm.classId).arm}` : ""}` : ""} />
+                  <DetailField label="Enrollment Date" value={detailForm.enrollmentDate ? new Date(detailForm.enrollmentDate + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""} />
+                  <DetailField label="Student ID" value={detailStudent?.studentId} />
+                </div>
+              )}
+            </div>
+
+            {/* Medical Information */}
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-3">Medical Information</h4>
+              {detailEditing ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground/70">Blood Group</Label>
+                    <Select value={detailForm.bloodGroup} onValueChange={(v) => setDetailForm((p) => ({ ...p, bloodGroup: v }))}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((bg) => <SelectItem key={bg} value={bg}>{bg}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-[11px] text-muted-foreground/70">Medical Notes</Label>
+                    <textarea value={detailForm.medicalNotes} onChange={(e) => setDetailForm((p) => ({ ...p, medicalNotes: e.target.value }))} className="flex min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" rows={2} />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <DetailField label="Blood Group" value={detailForm.bloodGroup} />
+                  <DetailField label="Medical Notes" value={detailForm.medicalNotes} className="sm:col-span-3" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {detailEditing && (
+            <DialogFooter className="mt-2">
+              <Button variant="outline" onClick={() => { setDetailEditing(false); openDetail(detailStudent) }}>
+                Cancel
+              </Button>
+              <Button onClick={saveDetail} disabled={detailSaving} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">
+                {detailSaving ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Saving...</> : <><Save className="h-4 w-4 mr-1" /> Save Changes</>}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

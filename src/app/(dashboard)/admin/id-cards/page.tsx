@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Search, Download, Printer, Users, GraduationCap, RefreshCw, Edit3, Eye, EyeOff, ArrowLeft, QrCode, RotateCw, FileDown } from "lucide-react"
-import { captureElement, downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { captureElement, elementToPngBlob, downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { createRoot } from "react-dom/client"
 import { StudentIDCardFront } from "@/components/id-card/StudentIDCardFront"
 import { StudentIDCardBack } from "@/components/id-card/StudentIDCardBack"
@@ -99,7 +100,63 @@ export default function AdminIDCardsPage() {
     return root
   }
 
-  const handleBulkExport = async () => {
+  const captureCardCanvas = async (item: any, side: "front" | "back"): Promise<HTMLCanvasElement> => {
+    const cardW = orientation === "landscape" ? 600 : 340
+    const cardH = orientation === "landscape" ? 300 : 510
+    const container = document.createElement("div")
+    container.style.width = `${cardW}px`
+    container.style.height = `${cardH}px`
+    container.style.overflow = "hidden"
+    container.style.position = "absolute"
+    container.style.left = "-9999px"
+    container.style.top = "0"
+    container.style.background = "#ffffff"
+    document.body.appendChild(container)
+
+    const root = renderCardToContainer(container, item, side)
+    await new Promise((r) => setTimeout(r, 300))
+
+    const canvas = await captureElement(container, { scale: 2, backgroundColor: "#ffffff", inlineStyles: true })
+    root.unmount()
+    document.body.removeChild(container)
+    return canvas
+  }
+
+  const handleBulkExportZip = async () => {
+    setBulkExporting(true)
+    try {
+      const JSZip = (await import("jszip")).default
+      const zip = new JSZip()
+      const list = tab === "students" ? filteredStudents : filteredStaff
+      const slug = tab === "students" ? "Student" : "Staff"
+      if (list.length === 0) { toast.error("No items to export"); setBulkExporting(false); return }
+
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i]
+        const prefix = `${item.firstName}_${item.lastName}`
+        toast.info(`Exporting ${i + 1}/${list.length}: ${prefix}`)
+
+        const frontCanvas = await captureCardCanvas(item, "front")
+        const frontBlob = await new Promise<Blob>((resolve, reject) => frontCanvas.toBlob((b) => b ? resolve(b) : reject(new Error("toBlob failed")), "image/png"))
+        zip.file(`${prefix}_Front.png`, frontBlob)
+
+        const backCanvas = await captureCardCanvas(item, "back")
+        const backBlob = await new Promise<Blob>((resolve, reject) => backCanvas.toBlob((b) => b ? resolve(b) : reject(new Error("toBlob failed")), "image/png"))
+        zip.file(`${prefix}_Back.png`, backBlob)
+      }
+
+      const content = await zip.generateAsync({ type: "blob" })
+      const link = document.createElement("a")
+      link.href = URL.createObjectURL(content)
+      link.download = `${slug}_ID_Cards.zip`
+      link.click()
+      URL.revokeObjectURL(link.href)
+      toast.success(`Exported ${list.length} ID cards (front & back) as ZIP`)
+    } catch (err) { console.error(err); toast.error("ZIP export failed") }
+    setBulkExporting(false)
+  }
+
+  const handleBulkExportPdfSideBySide = async () => {
     setBulkExporting(true)
     try {
       const { jsPDF } = await import("jspdf")
@@ -107,48 +164,43 @@ export default function AdminIDCardsPage() {
       const slug = tab === "students" ? "Student" : "Staff"
       if (list.length === 0) { toast.error("No items to export"); setBulkExporting(false); return }
 
-      const cardWidth = orientation === "landscape" ? 600 : 340
-      const cardHeight = orientation === "landscape" ? 300 : 510
-      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [cardWidth, cardHeight] })
-
-      const captureAndAdd = async (item: any, side: "front" | "back"): Promise<void> => {
-        const container = document.createElement("div")
-        container.style.width = `${cardWidth}px`
-        container.style.height = `${cardHeight}px`
-        container.style.overflow = "hidden"
-        container.style.position = "absolute"
-        container.style.left = "-9999px"
-        container.style.top = "0"
-        container.style.background = "#ffffff"
-        document.body.appendChild(container)
-
-        const root = renderCardToContainer(container, item, side)
-        await new Promise((r) => setTimeout(r, 300))
-
-        const canvas = await captureElement(container, { scale: 4, backgroundColor: "#ffffff", inlineStyles: true })
-        root.unmount()
-        document.body.removeChild(container)
-
-        const isLandscape = canvas.width > canvas.height
-        const pageSize = isLandscape ? [canvas.height, canvas.width] : [canvas.width, canvas.height]
-        const imgData = canvas.toDataURL("image/png")
-        pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height)
-      }
+      const isPortraitCards = orientation === "portrait"
+      const gap = 20
+      let pdf: import("jspdf").jsPDF | null = null
 
       for (let i = 0; i < list.length; i++) {
         const item = list[i]
-        if (i > 0) {
-          const isLandscape = cardWidth > cardHeight
-          pdf.addPage(isLandscape ? [cardHeight, cardWidth] : [cardWidth, cardHeight])
+        toast.info(`Exporting ${i + 1}/${list.length}: ${item.firstName} ${item.lastName}`)
+
+        const frontCanvas = await captureCardCanvas(item, "front")
+        const backCanvas = await captureCardCanvas(item, "back")
+
+        if (isPortraitCards) {
+          const pageW = frontCanvas.width + gap + backCanvas.width
+          const pageH = Math.max(frontCanvas.height, backCanvas.height)
+          if (i == 0) {
+            pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [pageW, pageH] })
+          } else {
+            pdf!.addPage([pageW, pageH], "landscape")
+          }
+          pdf!.addImage(frontCanvas, "PNG", 0, 0, frontCanvas.width, frontCanvas.height)
+          pdf!.addImage(backCanvas, "PNG", frontCanvas.width + gap, 0, backCanvas.width, backCanvas.height)
+        } else {
+          const pageW = Math.max(frontCanvas.width, backCanvas.width)
+          const pageH = frontCanvas.height + gap + backCanvas.height
+          if (i == 0) {
+            pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [pageW, pageH] })
+          } else {
+            pdf!.addPage([pageW, pageH], "portrait")
+          }
+          pdf!.addImage(frontCanvas, "PNG", 0, 0, frontCanvas.width, frontCanvas.height)
+          pdf!.addImage(backCanvas, "PNG", 0, frontCanvas.height + gap, backCanvas.width, backCanvas.height)
         }
-        await captureAndAdd(item, "front")
-        pdf.addPage([cardWidth, cardHeight])
-        await captureAndAdd(item, "back")
       }
 
-      pdf.save(`${slug}_ID_Cards_Bulk.pdf`)
-      toast.success(`Exported ${list.length} ID cards (front & back)`)
-    } catch (err) { console.error(err); toast.error("Bulk export failed") }
+      pdf!.save(`${slug}_ID_Cards.pdf`)
+      toast.success(`Exported ${list.length} ID cards (front & back) as PDF`)
+    } catch (err) { console.error(err); toast.error("PDF export failed") }
     setBulkExporting(false)
   }
 
@@ -203,9 +255,15 @@ export default function AdminIDCardsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search students by name or ID..." className="pl-9 h-12" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="md" onClick={handleBulkExport} disabled={bulkExporting || filteredStudents.length === 0} className="shrink-0 min-w-[140px]">
-                <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="outline" size="md" disabled={bulkExporting || filteredStudents.length === 0} className="shrink-0 min-w-[140px]" />}>
+                  <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleBulkExportZip} disabled={bulkExporting}>Export as ZIP (PNGs)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkExportPdfSideBySide} disabled={bulkExporting}>Export as PDF (side-by-side)</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredStudents.map((s) => (
@@ -241,9 +299,15 @@ export default function AdminIDCardsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search staff by name or ID..." className="pl-9 h-12" value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Button variant="outline" size="md" onClick={handleBulkExport} disabled={bulkExporting || filteredStaff.length === 0} className="shrink-0 min-w-[140px]">
-                <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="outline" size="md" disabled={bulkExporting || filteredStaff.length === 0} className="shrink-0 min-w-[140px]" />}>
+                  <FileDown className="h-4 w-4 mr-1.5" /> {bulkExporting ? "Exporting..." : "Export All"}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleBulkExportZip} disabled={bulkExporting}>Export as ZIP (PNGs)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkExportPdfSideBySide} disabled={bulkExporting}>Export as PDF (side-by-side)</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredStaff.map((s) => (

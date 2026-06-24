@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
 
 async function getSchoolId(): Promise<string> {
   const school = await prisma.school.findFirst()
@@ -36,8 +37,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A user with this email already exists" }, { status: 400 })
   }
   const schoolId = await getSchoolId()
+  const hashed = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
-    data: { name, email, phone: phone || null, password, role: "parent", schoolId },
+    data: { name, email, phone: phone || null, password: hashed, role: "parent", schoolId },
   })
   if (studentId) {
     await db.parentLinks.create({ parentId: user.id, studentId })
