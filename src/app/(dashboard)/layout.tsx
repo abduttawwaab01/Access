@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/layout/AppShell"
@@ -131,6 +131,13 @@ const parentBottomNav: NavItem[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [schoolName, setSchoolName] = useState("Access School")
+
+  useEffect(() => {
+    fetch("/api/school").then((r) => r.json()).then((data) => {
+      if (data?.name) setSchoolName(data.name)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -154,7 +161,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       navItems={navItems}
       bottomNavItems={bottomNavItems}
       user={{ id: (session?.user as any)?.id || "", name: session?.user?.name || "", email: session?.user?.email || "", role }}
-      schoolName="Access School"
+      schoolName={schoolName}
       role={role as "admin" | "teacher" | "parent" | "student"}
     >
       {children}

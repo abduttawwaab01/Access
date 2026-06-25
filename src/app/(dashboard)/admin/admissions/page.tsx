@@ -27,6 +27,7 @@ export default function AdminAdmissionsPage() {
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [exams, setExams] = useState<any[]>([])
+  const [school, setSchool] = useState<any>(null)
   const [settings, setSettings] = useState<any>({ cutOffs: {}, entranceExamId: null })
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -55,13 +56,14 @@ export default function AdminAdmissionsPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    const [appsRes, clsRes, examsRes, setRes, codesRes, subsRes] = await Promise.all([
+    const [appsRes, clsRes, examsRes, setRes, codesRes, subsRes, schoolRes] = await Promise.all([
       fetch("/api/admissions"),
       fetch("/api/classes"),
       fetch("/api/exams"),
       fetch("/api/admissions/settings"),
       fetch("/api/entrance-codes"),
       fetch("/api/subjects"),
+      fetch("/api/school"),
     ])
     setApplications(await appsRes.json())
     setClasses(await clsRes.json())
@@ -69,6 +71,7 @@ export default function AdminAdmissionsPage() {
     setSettings(await setRes.json())
     setEntranceCodes(await codesRes.json())
     setSubjects(await subsRes.json())
+    setSchool(await schoolRes.json())
     setLoading(false)
   }
 
@@ -442,10 +445,10 @@ export default function AdminAdmissionsPage() {
                       <Button variant="outline" size="sm" onClick={() => whatsappShare(selectedApp, analysisData)} disabled={!selectedApp.phone && !selectedApp.parentPhone}>
                         <Share2 className="h-4 w-4 mr-1" /> Share via WhatsApp
                       </Button>
-                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPng(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.png`); toast.success("Exported as PNG") } }}>
+                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPng(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.png`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") } }}>
                         <DownloadCloud className="h-4 w-4 mr-1" /> PNG
                       </Button>
-                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPdf(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.pdf`); toast.success("Exported as PDF") } }}>
+                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPdf(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.pdf`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") } }}>
                         <DownloadCloud className="h-4 w-4 mr-1" /> PDF
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => { if (analysisRef.current) downloadDoc(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.doc`, "Entrance Exam Analysis") }}>
@@ -489,7 +492,7 @@ export default function AdminAdmissionsPage() {
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <Card className="border border-border/50">
                               <CardHeader><CardTitle className="text-sm font-semibold"><Brain className="h-4 w-4 inline mr-1" />Subject Performance</CardTitle></CardHeader>
-                              <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%">
+                              <CardContent><div className="h-64 min-h-[200px] w-full" style={{ minWidth: 0, minHeight: "240px" }}><ResponsiveContainer width="100%" height="100%">
                                 <RadarChart data={analysisData.radarData}>
                                   <PolarGrid stroke="#e5e7eb" /><PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} /><PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                                   <Radar dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
@@ -498,7 +501,7 @@ export default function AdminAdmissionsPage() {
                             </Card>
                             <Card className="border border-border/50">
                               <CardHeader><CardTitle className="text-sm font-semibold"><BarChart3 className="h-4 w-4 inline mr-1" />Scores by Subject</CardTitle></CardHeader>
-                              <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%">
+                              <CardContent><div className="h-64 min-h-[200px] w-full" style={{ minWidth: 0, minHeight: "240px" }}><ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={analysisData.subjectBreakdown.map((s: any) => ({ name: s.subjectName, score: s.percentage }))} layout="vertical">
                                   <XAxis type="number" domain={[0, 100]} /><YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} /><Tooltip />
                                   <Bar dataKey="score" name="Score %" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
@@ -516,7 +519,7 @@ export default function AdminAdmissionsPage() {
                               {analysisData.subjectBreakdown.filter((s: any) => s.topics?.length > 0).map((sub: any, si: number) => (
                                 <div key={si}>
                                   <p className="text-sm font-medium mb-2">{sub.subjectName}</p>
-                                  <div className="h-32"><ResponsiveContainer width="100%" height="100%">
+                                  <div className="h-32 min-h-[120px] w-full" style={{ minWidth: 0, minHeight: "128px" }}><ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={sub.topics.map((t: any) => ({ name: t.name, score: t.percentage }))} layout="vertical">
                                       <XAxis type="number" domain={[0, 100]} /><YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} /><Tooltip />
                                       <Bar dataKey="score" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
@@ -650,10 +653,10 @@ export default function AdminAdmissionsPage() {
                   <div ref={formRef} className="bg-white rounded-2xl shadow-xl overflow-hidden border print:shadow-none print:border-0">
                     {/* School Header */}
                     <div className="bg-gradient-to-r from-primary via-primary/90 to-secondary p-6 text-white text-center print:bg-black print:text-white">
-                      <h1 className="text-xl font-bold tracking-tight">SKOOLAR INTERNATIONAL SCHOOL</h1>
-                      <p className="text-sm opacity-80">Excellence in Education</p>
+                      <h1 className="text-xl font-bold tracking-tight">{school?.name?.toUpperCase() || "ACCESS SCHOOL"}</h1>
+                      <p className="text-sm opacity-80">{school?.motto || "Excellence in Education"}</p>
                       <div className="mt-1 h-px bg-white/20 mx-auto max-w-96" />
-                      <p className="text-xs opacity-70 mt-1">123 Education Avenue, Learning City, Nigeria | info@skoolar.edu.ng | +234 800 000 0000</p>
+                      <p className="text-xs opacity-70 mt-1">{school?.address || "123 Education Avenue, Learning City, Nigeria"} | {school?.email || "info@skoolar.edu.ng"} | {school?.phone || "+234 800 000 0000"}</p>
                     </div>
 
                     <div className="p-6 space-y-6">
@@ -1076,7 +1079,7 @@ export default function AdminAdmissionsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <h4 className="text-sm font-semibold mb-3">Status Distribution</h4>
-                <div className="h-48">
+                <div className="h-48 min-h-[180px] w-full" style={{ minWidth: 0, minHeight: "192px" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart><Pie data={statusChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                       {statusChartData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
@@ -1086,7 +1089,7 @@ export default function AdminAdmissionsPage() {
               </div>
               <div>
                 <h4 className="text-sm font-semibold mb-3">Applications by Class</h4>
-                <div className="h-48">
+                <div className="h-48 min-h-[180px] w-full" style={{ minWidth: 0, minHeight: "192px" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={classChartData} layout="vertical">
                       <XAxis type="number" /><YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10 }} />
@@ -1141,7 +1144,7 @@ export default function AdminAdmissionsPage() {
             {applications.filter((a) => a.entranceExamScore != null).length > 1 && (
               <div>
                 <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><Brain className="h-4 w-4" /> Score Comparison</h4>
-                <div className="h-64">
+                <div className="h-64 min-h-[200px] w-full" style={{ minWidth: 0, minHeight: "240px" }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={applications.filter((a) => a.entranceExamScore != null).map((a) => ({ name: `${a.firstName} ${a.lastName}`, score: a.entranceExamScore }))}>
                       <PolarGrid /><PolarAngleAxis dataKey="name" tick={{ fontSize: 10 }} /><PolarRadiusAxis angle={30} domain={[0, 100]} />
