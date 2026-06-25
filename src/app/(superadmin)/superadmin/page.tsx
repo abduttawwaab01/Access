@@ -13,7 +13,7 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive
 } from "lucide-react"
 import { ConversationList } from "@/components/chat/ConversationList"
 import { ChatWindow } from "@/components/chat/ChatWindow"
@@ -1922,6 +1922,7 @@ function BankDetailsSection() {
 // ========================== DATA EXPORT ==========================
 function DataExportSection() {
   const [message, setMessage] = useState("")
+  const [zipping, setZipping] = useState(false)
 
   const fetchAll = async (url: string) => { const d = await saFetch(url); return Array.isArray(d) ? d : [] }
 
@@ -1964,6 +1965,24 @@ function DataExportSection() {
     downloadJSON({ staff, students, classes, subjects, questions, exams, payments, feeStructures: fees, salary: salary, schemeOfWork: schemes, lessonNotes: notes, admissions, documents, timetable, sessions, terms }, "school-export-all")
   }
 
+  const exportZIP = async () => {
+    setZipping(true)
+    setMessage("Building ZIP archive...")
+    try {
+      const res = await fetch("/api/export")
+      if (!res.ok) { setMessage("Export failed"); return }
+      const blob = await res.blob()
+      const link = document.createElement("a")
+      link.href = URL.createObjectURL(blob)
+      const dateStr = new Date().toISOString().split("T")[0]
+      link.download = `school-export-${dateStr}.zip`
+      link.click()
+      URL.revokeObjectURL(link.href)
+      setMessage("ZIP archive downloaded")
+    } catch { setMessage("Export failed") }
+    finally { setZipping(false) }
+  }
+
   const exports = [
     { label: "Staff", url: "/api/staff", file: "staff" },
     { label: "Students", url: "/api/students", file: "students" },
@@ -1984,6 +2003,22 @@ function DataExportSection() {
     <div className="space-y-6 max-w-4xl">
       <Toast message={message} type="success" onClose={() => setMessage("")} />
       <h1 className="text-xl font-bold text-white">Data Export</h1>
+
+      <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-5">
+        <div className="flex items-start gap-4">
+          <Archive className="h-6 w-6 text-red-400 mt-0.5 shrink-0" />
+          <div>
+            <h3 className="text-base font-semibold text-white">Full School ZIP Archive</h3>
+            <p className="text-sm text-zinc-400 mt-1">Download all school data as a compressed ZIP with CSV files for every table plus a manifest.</p>
+            <button onClick={exportZIP} disabled={zipping}
+              className="mt-3 flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-800 px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity">
+              {zipping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {zipping ? "Building..." : "Download Full ZIP"}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {exports.map((ex) => (
           <button key={ex.file} onClick={async () => { const d = await fetchAll(ex.url); downloadCSV(d, ex.file) }}

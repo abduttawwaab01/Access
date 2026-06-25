@@ -34,6 +34,7 @@ const adminNav: NavItem[] = [
   { label: "Results", href: "/admin/results", icon: "BarChart3" },
   { label: "Report Cards", href: "/admin/report-cards", icon: "Award" },
   { label: "Weekly Reports", href: "/admin/weekly-reports", icon: "ClipboardList" },
+  { label: "Data Export", href: "/admin/data-export", icon: "Download" },
   { label: "Settings", href: "/admin/settings", icon: "Settings" },
   { label: "Profile", href: "/admin/profile", icon: "User" },
 ]

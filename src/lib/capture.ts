@@ -210,6 +210,11 @@ export async function captureElement(
         tailwindOverride.textContent = TAILWIND_HEX_OVERRIDES
         clonedDoc.head.appendChild(tailwindOverride)
 
+        // Prevent html2canvas from encountering oklab/oklch in computed background colors
+        const root = clonedDoc.documentElement
+        if (root) root.style.backgroundColor = backgroundColor
+        if (clonedDoc.body) clonedDoc.body.style.backgroundColor = "transparent"
+
         const style = clonedDoc.createElement("style")
         style.textContent = `
           .animated-gradient {
