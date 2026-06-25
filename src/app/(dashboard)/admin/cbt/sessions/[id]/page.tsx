@@ -335,7 +335,7 @@ export default function SessionDetailPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2"><Brain className="h-4 w-4" /> Performance Radar</h3>
-                  <div className="h-48 md:h-56 min-h-[160px]">
+                  <div className="h-48 md:h-56 min-h-[160px] w-full" style={{ position: "relative", width: "100%", minHeight: "192px" }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={radarData}>
                         <PolarGrid stroke="#e5e7eb" />

@@ -95,6 +95,7 @@ export default function TeacherCommunicationPage() {
               loading={convLoading}
             />
           }
+          onNewChat={() => setShowNewChat(true)}
         >
           <ChatWindow
             messages={messages}

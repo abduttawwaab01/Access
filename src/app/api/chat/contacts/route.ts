@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     contacts = all.map((u: { id: string; name: string; email: string; role: string; image?: string | null }) => ({ ...u, role: u.role }))
     contacts.unshift({ id: "superadmin", name: "Super Admin", email: "superadmin@skoolar.com", role: "superadmin", image: null })
   } else if (user.role === "admin") {
-    const all = await prisma.user.findMany({ where: { schoolId: user.schoolId }, select: { id: true, name: true, email: true, role: true, image: true }, orderBy: { name: "asc" as const } })
+    const all = await prisma.user.findMany({ where: { schoolId: user.schoolId, role: { not: "student" as const } }, select: { id: true, name: true, email: true, role: true, image: true }, orderBy: { name: "asc" as const } })
     contacts = all.map((u: any) => ({ ...u, role: u.role }))
   } else if (user.role === "teacher") {
     const staff = await prisma.staff.findFirst({ where: { userId: user.id } })

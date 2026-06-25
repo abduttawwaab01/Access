@@ -498,12 +498,46 @@ export const db = {
     },
   },
 
+  timetableSets: {
+    getAll: async (filters?: { type?: string; classId?: string }) => {
+      const where: any = {}
+      if (filters?.type) where.type = filters.type
+      if (filters?.classId) where.classId = filters.classId
+      return prisma.timetableSet.findMany({ where, orderBy: { createdAt: "desc" } })
+    },
+    getById: async (id: string) => {
+      return prisma.timetableSet.findUnique({ where: { id } })
+    },
+    create: async (data: any) => {
+      const schoolId = await ensureSchoolId()
+      return prisma.timetableSet.create({ data: { name: data.name, type: data.type || null, classId: data.classId || null, schoolId } })
+    },
+    update: async (id: string, data: any) => {
+      return prisma.timetableSet.update({ where: { id }, data })
+    },
+    delete: async (id: string) => {
+      await prisma.timetableEntry.deleteMany({ where: { setId: id } })
+      await prisma.timetableSet.delete({ where: { id } })
+      return true
+    },
+  },
+
   timetable: {
-    getAll: async () => {
-      return prisma.timetableEntry.findMany()
+    getAll: async (filters?: { setId?: string; day?: string; classId?: string }) => {
+      const where: any = {}
+      if (filters?.setId) where.setId = filters.setId
+      if (filters?.day) where.day = filters.day
+      if (filters?.classId) where.classId = filters.classId
+      return prisma.timetableEntry.findMany({ where })
+    },
+    getById: async (id: string) => {
+      return prisma.timetableEntry.findUnique({ where: { id } })
     },
     getByDay: async (day: string) => {
       return prisma.timetableEntry.findMany({ where: { day } })
+    },
+    getBySet: async (setId: string) => {
+      return prisma.timetableEntry.findMany({ where: { setId } })
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
@@ -515,6 +549,9 @@ export const db = {
     delete: async (id: string) => {
       await prisma.timetableEntry.delete({ where: { id } })
       return true
+    },
+    deleteBySet: async (setId: string) => {
+      await prisma.timetableEntry.deleteMany({ where: { setId } })
     },
   },
 

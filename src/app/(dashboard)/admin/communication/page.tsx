@@ -59,6 +59,7 @@ export default function AdminCommunicationPage() {
               loading={convLoading}
             />
           }
+          onNewChat={() => setShowNewChat(true)}
         >
           <ChatWindow
             messages={messages}

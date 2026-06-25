@@ -73,6 +73,7 @@ export default function ParentCommunicationPage() {
               loading={convLoading}
             />
           }
+          onNewChat={() => setShowNewChat(true)}
         >
           <ChatWindow
             messages={messages}

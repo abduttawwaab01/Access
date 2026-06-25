@@ -63,10 +63,15 @@ const TAILWIND_HEX_OVERRIDES = `
   --color-pink-50: #fdf2f8; --color-pink-100: #fce7f3; --color-pink-200: #fbcfe8; --color-pink-300: #f9a8d4; --color-pink-400: #f472b6; --color-pink-500: #ec4899; --color-pink-600: #db2777; --color-pink-700: #be185d; --color-pink-800: #9d174d; --color-pink-900: #831843; --color-pink-950: #500724;
   --color-rose-50: #fff1f2; --color-rose-100: #ffe4e6; --color-rose-200: #fecdd3; --color-rose-300: #fda4af; --color-rose-400: #fb7185; --color-rose-500: #f43f5e; --color-rose-600: #e11d48; --color-rose-700: #be123c; --color-rose-800: #9f1239; --color-rose-900: #881337; --color-rose-950: #4c0519;
   --color-background: #f8fafc; --color-foreground: #0f172a;
+  --background: #f8fafc; --foreground: #0f172a;
   --color-primary: #6366f1; --color-primary-hover: #4f46e5;
+  --primary: #6366f1; --primary-hover: #4f46e5;
+  --secondary: #06b6d4;
+  --accent: #f59e0b;
   --color-secondary: #06b6d4;
   --color-accent: #f59e0b; --color-accent-hover: #d97706;
   --color-success: #10b981; --color-warning: #f59e0b; --color-danger: #ef4444; --color-info: #3b82f6;
+  --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
   --color-card: #ffffff; --color-card-foreground: #0f172a;
   --color-muted: #f1f5f9; --color-muted-foreground: #64748b;
   --color-border: #e2e8f0; --color-ring: #6366f1;

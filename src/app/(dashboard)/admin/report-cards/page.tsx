@@ -128,10 +128,10 @@ export default function AdminReportCardsPage() {
         ]
     ),
     attendance: {
-      present: allLogs.filter((l) => l.status === "present").length || 38,
-      absent: allLogs.filter((l) => l.status === "absent").length || 2,
-      late: allLogs.filter((l) => l.status === "late").length || 5,
-      total: allLogs.length || 45,
+      present: allLogs.filter((l) => l.status === "present").length,
+      absent: allLogs.filter((l) => l.status === "absent").length,
+      late: allLogs.filter((l) => l.status === "late").length,
+      total: allLogs.length,
     },
     teacherComment: `${student.firstName} ${student.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`,
     teacherName: "Class Teacher",

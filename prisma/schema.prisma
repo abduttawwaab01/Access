@@ -37,6 +37,7 @@ model School {
   lessonNotes        LessonNote[]
   schemeOfWorks      SchemeOfWork[]
   assignments        Assignment[]
+  timetableSets      TimetableSet[]
   timetableEntries   TimetableEntry[]
   results            Result[]
   attendanceRecords  AttendanceRecord[]
@@ -290,18 +291,38 @@ model Assignment {
   updatedAt   DateTime @updatedAt
 }
 
-model TimetableEntry {
-  id        String   @id @default(cuid())
-  day       String
-  period    String
-  subjectId String
-  classId   String
-  teacherId String?
-  room      String?
+model TimetableSet {
+  id        String          @id @default(cuid())
+  name      String
+  type      String?
+  classId   String?
   schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  school    School          @relation(fields: [schoolId], references: [id])
+  entries   TimetableEntry[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model TimetableEntry {
+  id          String        @id @default(cuid())
+  setId       String?
+  set         TimetableSet? @relation(fields: [setId], references: [id], onDelete: Cascade)
+  day         String
+  period      String?
+  startTime   String?
+  endTime     String?
+  subjectId   String?
+  subjectName String?
+  classId     String
+  teacherId   String?
+  teacherName String?
+  room        String?
+  isBreak     Boolean       @default(false)
+  date        String?
+  schoolId    String
+  school      School        @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Result {

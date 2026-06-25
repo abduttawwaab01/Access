@@ -109,10 +109,10 @@ export default function ParentReportCardPage() {
         ]
     ),
     attendance: {
-      present: allLogs.filter((l: any) => l.status === "present").length || 38,
-      absent: allLogs.filter((l: any) => l.status === "absent").length || 2,
-      late: allLogs.filter((l: any) => l.status === "late").length || 5,
-      total: allLogs.length || 45,
+      present: allLogs.filter((l: any) => l.status === "present").length,
+      absent: allLogs.filter((l: any) => l.status === "absent").length,
+      late: allLogs.filter((l: any) => l.status === "late").length,
+      total: allLogs.length,
     },
     teacherComment: `${activeChild.firstName} ${activeChild.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`,
     teacherName: "Class Teacher",

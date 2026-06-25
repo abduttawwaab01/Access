@@ -36,6 +36,7 @@ export default function SuperAdminCommunicationPage() {
             loading={convLoading}
           />
         }
+        onNewChat={() => setShowNewChat(true)}
       >
         <ChatWindow
           messages={messages}
