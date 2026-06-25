@@ -55,6 +55,7 @@ const teacherNav: NavItem[] = [
   { label: "CBT Engine", href: "/teacher/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/teacher/question-bank", icon: "HelpCircle" },
   { label: "Results", href: "/teacher/results", icon: "BarChart3" },
+  { label: "Report Cards", href: "/teacher/report-cards", icon: "Award" },
   { label: "Salary", href: "/teacher/salary", icon: "Wallet" },
   { label: "Profile", href: "/teacher/profile", icon: "User" },
 ]
@@ -104,6 +105,7 @@ const adminBottomNav: NavItem[] = [
 const teacherBottomNav: NavItem[] = [
   { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
   { label: "Results", href: "/teacher/results", icon: "BarChart3" },
+  { label: "Report Cards", href: "/teacher/report-cards", icon: "Award" },
   { label: "Communication", href: "/teacher/communication", icon: "MessageSquare" },
   { label: "AI Assistant", href: "/teacher/ai-assistant", icon: "BotMessageSquare" },
   { label: "Classes", href: "/teacher/classes", icon: "BookOpen" },
