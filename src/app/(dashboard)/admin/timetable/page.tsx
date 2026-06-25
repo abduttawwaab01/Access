@@ -34,6 +34,7 @@ export default function AdminTimetablePage() {
   const [sets, setSets] = useState<any[]>([])
   const [entries, setEntries] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
   const [school, setSchool] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [selectedSetId, setSelectedSetId] = useState<string>("")
@@ -44,21 +45,23 @@ export default function AdminTimetablePage() {
   const exportRef = useRef<HTMLDivElement>(null)
 
   const [setForm, setSetForm] = useState({ name: "", type: "regular", classId: "", classLabel: "", term: "", session: "" })
-  const [entryForm, setEntryForm] = useState({ day: "Monday", startTime: "08:00", endTime: "08:40", subject: "", room: "", teacherName: "", isBreak: false, date: "" })
+  const [entryForm, setEntryForm] = useState({ day: "Monday", startTime: "08:00", endTime: "08:40", subject: "", room: "", teacherName: "", teacherId: "", isBreak: false, date: "" })
 
   const selectedSet = sets.find((s) => s.id === selectedSetId)
   const classMap = Object.fromEntries(classes.map((c: any) => [c.id, c.name]))
 
   const load = async () => {
     setLoading(true)
-    const [s, c, sch] = await Promise.all([
+    const [s, c, sch, t] = await Promise.all([
       fetch("/api/timetable/sets").then((r) => r.json()),
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()).catch(() => null),
+      fetch("/api/staff").then((r) => r.json()).catch(() => []),
     ])
     setSets(Array.isArray(s) ? s : [])
     setClasses(Array.isArray(c) ? c : [])
     setSchool(sch)
+    setTeachers(Array.isArray(t) ? t : [])
     if (!selectedSetId && Array.isArray(s) && s.length > 0) setSelectedSetId(s[0].id)
     setLoading(false)
   }
@@ -101,19 +104,19 @@ export default function AdminTimetablePage() {
   const saveEntry = async () => {
     if (!selectedSetId) return
     setSaving(true)
-    const body = {
+    const body: Record<string, any> = {
       setId: selectedSetId,
       day: entryForm.day,
       startTime: entryForm.startTime,
       endTime: entryForm.endTime,
-      time: entryForm.startTime,
-      subject: entryForm.isBreak ? "Break" : entryForm.subject,
+      subjectName: entryForm.isBreak ? "Break" : entryForm.subject,
       room: entryForm.room,
       teacherName: entryForm.teacherName,
       isBreak: entryForm.isBreak,
       classId: selectedSet?.classId || "",
       date: entryForm.date || undefined,
     }
+    if (entryForm.teacherId) body.teacherId = entryForm.teacherId
     const url = editingEntry ? `/api/timetable/${editingEntry.id}` : "/api/timetable"
     const method = editingEntry ? "PUT" : "POST"
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -144,6 +147,7 @@ export default function AdminTimetablePage() {
       subject: "",
       room: "",
       teacherName: "",
+      teacherId: "",
       isBreak: false,
       date: "",
     })
@@ -156,9 +160,10 @@ export default function AdminTimetablePage() {
       day: entry.day || "Monday",
       startTime: entry.startTime || "08:00",
       endTime: entry.endTime || "08:40",
-      subject: entry.isBreak ? "" : (entry.subject || ""),
+      subject: entry.isBreak ? "" : (entry.subjectName || entry.subject || ""),
       room: entry.room || "",
       teacherName: entry.teacherName || "",
+      teacherId: entry.teacherId || "",
       isBreak: !!entry.isBreak,
       date: entry.date || "",
     })
@@ -173,7 +178,7 @@ export default function AdminTimetablePage() {
       Day: e.day,
       "Start Time": e.startTime,
       "End Time": e.endTime,
-      Subject: e.isBreak ? "Break" : (e.subject || ""),
+      Subject: e.isBreak ? "Break" : (e.subjectName || e.subject || ""),
       Room: e.room || "",
       Teacher: e.teacherName || "",
       Type: e.isBreak ? "Break" : "Class",
@@ -358,7 +363,20 @@ export default function AdminTimetablePage() {
                       </div>
                       <div>
                         <Label className="text-xs">Teacher / Supervisor</Label>
-                        <Input value={entryForm.teacherName} onChange={(e) => setEntryForm({ ...entryForm, teacherName: e.target.value })} placeholder="e.g. Mr. Okonkwo" />
+                        <Select value={entryForm.teacherId} onValueChange={(v) => {
+                          if (!v) { setEntryForm({ ...entryForm, teacherId: "", teacherName: "" }); return }
+                          const t = teachers.find((t) => t.id === v)
+                          setEntryForm({ ...entryForm, teacherId: v, teacherName: t ? `${t.firstName} ${t.lastName}` : "" })
+                        }}>
+                          <SelectTrigger><SelectValue placeholder="Select teacher..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none">None</SelectItem>
+                            {teachers.map((t: any) => (
+                              <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName} {t.staffId ? `(${t.staffId})` : ""}</SelectItem>
+                            ))}
+                            {teachers.length === 0 && <SelectItem value="__empty" disabled>No teachers found</SelectItem>}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </>
                   )}
@@ -411,12 +429,12 @@ export default function AdminTimetablePage() {
                           {entriesInCell.length > 0 ? (
                             <div className="space-y-1">
                               {entriesInCell.map((entry) => (
-                                <div key={entry.id} className={`rounded-lg border px-2 py-1.5 text-xs font-medium relative group ${entry.isBreak ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : getSubjectColor(entry.subject)}`}>
+                                <div key={entry.id} className={`rounded-lg border px-2 py-1.5 text-xs font-medium relative group ${entry.isBreak ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : getSubjectColor(entry.subjectName || entry.subject)}`}>
                                   {entry.isBreak ? (
                                     <div className="flex items-center gap-1"><Clock className="h-3 w-3" /><span>Break</span></div>
                                   ) : (
                                     <>
-                                      <div className="font-semibold">{entry.subject}</div>
+                                      <div className="font-semibold">{entry.subjectName || entry.subject}</div>
                                       {entry.room && <div className="text-[10px] opacity-70">{entry.room}</div>}
                                       {entry.teacherName && <div className="text-[10px] opacity-70">{entry.teacherName}</div>}
                                     </>

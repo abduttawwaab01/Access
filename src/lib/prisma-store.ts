@@ -375,11 +375,16 @@ export const db = {
       return prisma.lessonNote.create({
         data: {
           classId: data.classId,
-          subjectId: data.subjectId,
+          subjectId: data.subjectId || null,
+          subject: data.subject || null,
           title: data.title,
           content: data.content || undefined,
           topic: data.topic || null,
           quiz: data.quiz || [],
+          week: data.week ? Number(data.week) : null,
+          term: data.term || null,
+          session: data.session || null,
+          resources: data.resources || null,
           status: data.status || "draft",
           createdBy: data.createdBy || null,
           approvedBy: data.approvedBy || null,
@@ -389,9 +394,11 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      const updateData: any = { ...data }
-      if (data.approvedAt) updateData.approvedAt = new Date(data.approvedAt)
-      if (data.rejectedAt) updateData.rejectedAt = new Date(data.rejectedAt)
+      const { approvedAt, rejectedAt, ...rest } = data
+      const updateData: any = { ...rest }
+      if (data.week) updateData.week = Number(data.week)
+      if (approvedAt) updateData.approvedAt = new Date(approvedAt)
+      if (rejectedAt) updateData.rejectedAt = new Date(rejectedAt)
       return prisma.lessonNote.update({ where: { id }, data: updateData })
     },
     delete: async (id: string) => {
@@ -481,15 +488,28 @@ export const db = {
       const schoolId = await ensureSchoolId()
       return prisma.assignment.create({
         data: {
-          ...data,
+          classId: data.classId,
+          subjectId: data.subjectId || data.subject || "",
+          subject: data.subject || null,
+          type: data.type || null,
+          title: data.title,
+          description: data.description || null,
           dueDate: data.dueDate ? new Date(data.dueDate) : null,
+          createdBy: data.createdBy || null,
           schoolId,
         },
       })
     },
     update: async (id: string, data: any) => {
-      const updateData: any = { ...data }
-      if (data.dueDate) updateData.dueDate = new Date(data.dueDate)
+      const updateData: any = {}
+      if (data.classId !== undefined) updateData.classId = data.classId
+      if (data.title !== undefined) updateData.title = data.title
+      if (data.description !== undefined) updateData.description = data.description
+      if (data.subjectId !== undefined) updateData.subjectId = data.subjectId
+      if (data.subject !== undefined) updateData.subject = data.subject
+      if (data.type !== undefined) updateData.type = data.type
+      if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
+      if (data.createdBy !== undefined) updateData.createdBy = data.createdBy
       return prisma.assignment.update({ where: { id }, data: updateData })
     },
     delete: async (id: string) => {
@@ -523,11 +543,12 @@ export const db = {
   },
 
   timetable: {
-    getAll: async (filters?: { setId?: string; day?: string; classId?: string }) => {
+    getAll: async (filters?: { setId?: string; day?: string; classId?: string; teacherId?: string }) => {
       const where: any = {}
       if (filters?.setId) where.setId = filters.setId
       if (filters?.day) where.day = filters.day
       if (filters?.classId) where.classId = filters.classId
+      if (filters?.teacherId) where.teacherId = filters.teacherId
       return prisma.timetableEntry.findMany({ where })
     },
     getById: async (id: string) => {
@@ -1309,14 +1330,20 @@ export const db = {
       const schoolId = await ensureSchoolId()
       return prisma.event.create({
         data: {
-          ...data,
+          title: data.title,
+          description: data.description || null,
           date: new Date(data.date),
+          time: data.time || null,
+          type: data.type || null,
+          audience: data.audience || "all",
+          createdBy: data.createdBy || null,
           schoolId,
         },
       })
     },
     update: async (id: string, data: any) => {
-      const updateData: any = { ...data }
+      const { endDate, endTime, createdAt, ...clean } = data
+      const updateData: any = { ...clean }
       if (data.date) updateData.date = new Date(data.date)
       return prisma.event.update({ where: { id }, data: updateData })
     },

@@ -16,7 +16,7 @@ const subjectColors: Record<string, string> = {
   English: "bg-orange-500/10 text-orange-600 border-orange-500/20",
   History: "bg-rose-500/10 text-rose-600 border-rose-500/20",
 }
-const getSubjectColor = (sub: string) => subjectColors[sub] || "bg-primary/10 text-primary border-primary/20"
+const getSubjectColor = (sub: string) => subjectColors[sub] || "bg-indigo-500/10 text-indigo-600 border-indigo-500/20"
 
 interface TimetableExportProps {
   set: any
@@ -103,7 +103,7 @@ export function TimetableExport({ set: timetableSet, entries, school, classMap, 
                                 <span>Break</span>
                               ) : (
                                 <>
-                                  <div style={{ fontWeight: 700 }}>{entry.subject}</div>
+                                  <div style={{ fontWeight: 700 }}>{entry.subjectName || entry.subject}</div>
                                   {entry.room && <div style={{ fontSize: "0.65rem", opacity: 0.7 }}>{entry.room}</div>}
                                   {entry.teacherName && <div style={{ fontSize: "0.65rem", opacity: 0.7 }}>{entry.teacherName}</div>}
                                 </>

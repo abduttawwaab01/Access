@@ -11,14 +11,18 @@ import { FileSpreadsheet, DownloadCloud } from "lucide-react"
 import { downloadCsv, downloadPng, downloadPdf } from "@/lib/capture"
 import { TimetableExport } from "@/components/timetable/TimetableExport"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 const timeSlots = [{ start: "08:00", end: "08:40" }, { start: "08:40", end: "09:20" }, { start: "09:20", end: "10:00" }, { start: "10:30", end: "11:10" }, { start: "11:10", end: "11:50" }, { start: "11:50", end: "12:30" }, { start: "13:10", end: "13:50" }]
 
 export default function StudentTimetablePage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [sets, setSets] = useState<any[]>([])
   const [entries, setEntries] = useState<any[]>([])
   const [school, setSchool] = useState<any>(null)
+  const [studentClassId, setStudentClassId] = useState("")
   const [loading, setLoading] = useState(true)
   const [selectedSetId, setSelectedSetId] = useState("")
   const [selectedDay, setSelectedDay] = useState("Monday")
@@ -26,23 +30,29 @@ export default function StudentTimetablePage() {
   const exportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!userId) return
     Promise.all([
       fetch("/api/timetable/sets").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()).catch(() => null),
-    ]).then(([s, sch]) => {
+      fetch(`/api/students?userId=${userId}`).then((r) => r.json()).catch(() => null),
+    ]).then(([s, sch, student]) => {
       const allSets = Array.isArray(s) ? s : []
       setSets(allSets)
       setSchool(sch)
+      setStudentClassId(student?.classId || "")
       const defaultSet = allSets.find((set: any) => set.type === typeFilter) || allSets[0]
       if (defaultSet) setSelectedSetId(defaultSet.id)
       setLoading(false)
     })
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     if (!selectedSetId) return
-    fetch(`/api/timetable?setId=${selectedSetId}`).then((r) => r.json()).then((data) => setEntries(Array.isArray(data) ? data : []))
-  }, [selectedSetId])
+    fetch(`/api/timetable?setId=${selectedSetId}`).then((r) => r.json()).then((data) => {
+      const all = Array.isArray(data) ? data : []
+      setEntries(studentClassId ? all.filter((e: any) => e.classId === studentClassId) : all)
+    })
+  }, [selectedSetId, studentClassId])
 
   const filteredByType = sets.filter((s) => s.type === typeFilter)
   const selectedSet = sets.find((s) => s.id === selectedSetId)
@@ -61,7 +71,7 @@ export default function StudentTimetablePage() {
   }
 
   const handleExportCSV = () => {
-    const data = entries.map((e) => ({ Day: e.day, Start: e.startTime, End: e.endTime, Subject: e.isBreak ? "Break" : e.subject, Room: e.room || "", Teacher: e.teacherName || "" }))
+    const data = entries.map((e) => ({ Day: e.day, Start: e.startTime, End: e.endTime, Subject: e.isBreak ? "Break" : (e.subjectName || e.subject), Room: e.room || "", Teacher: e.teacherName || "" }))
     downloadCsv(data, `${selectedSet?.name || "Timetable"}.csv`)
     toast.success("CSV exported")
   }
@@ -147,11 +157,11 @@ export default function StudentTimetablePage() {
                         <BookOpen className="h-6 w-6 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold">{entry.subject}</p>
+                        <p className="font-semibold">{entry.subjectName || entry.subject}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{slot.start} - {slot.end}</span>
                           {entry.room && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{entry.room}</span>}
-                          {entry.teacherName && <span className="flex items-center gap-1">👤 {entry.teacherName}</span>}
+                          {entry.teacherName && <span className="flex items-center gap-1">{entry.teacherName}</span>}
                         </div>
                       </div>
                       {entry.room && <Badge variant="outline">{entry.room}</Badge>}

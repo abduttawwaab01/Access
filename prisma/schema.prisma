@@ -245,11 +245,16 @@ model TeacherAssignment {
 model LessonNote {
   id          String   @id @default(cuid())
   classId     String
-  subjectId   String
+  subjectId   String?
+  subject     String?
   title       String
   content     Json?
   topic       String?
   quiz        Json     @default("[]")
+  week        Int?
+  term        String?
+  session     String?
+  resources   String?
   status      String   @default("draft")
   createdBy   String?
   approvedBy  String?
@@ -280,7 +285,9 @@ model SchemeOfWork {
 model Assignment {
   id          String   @id @default(cuid())
   classId     String
-  subjectId   String
+  subjectId   String   @default("")
+  subject     String?
+  type        String?
   title       String
   description String?
   dueDate     DateTime?

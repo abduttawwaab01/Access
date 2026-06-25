@@ -39,31 +39,43 @@ export default function TimetablePage() {
 
   useEffect(() => {
     if (!userId) return
+    let staffId = ""
     fetch("/api/staff?userId=" + userId)
       .then((r) => r.json())
       .then((staffData) => {
         setTeacher(staffData)
-        const staffId = staffData?.id || ""
-        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
-      })
-      .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        const classIds: string[] = ta?.classIds || []
-        const classParam = classIds.length > 0 ? `?classId=${classIds[0]}` : ""
+        staffId = staffData?.id || ""
         return Promise.all([
           fetch("/api/timetable/sets").then((r) => r.json()),
           fetch("/api/classes").then((r) => r.json()),
           fetch("/api/school").then((r) => r.json()).catch(() => null),
-          classIds.length > 0 ? fetch("/api/timetable" + classParam).then((r) => r.json()) : Promise.resolve([]),
+          staffId ? fetch(`/api/timetable?teacherId=${staffId}`).then((r) => r.json()) : Promise.resolve([]),
+          fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json().catch(() => [])),
         ])
       })
-      .then(([s, c, sch, ttEntries]) => {
+      .then(([s, c, sch, teacherEntries, tas]) => {
         const allSets = Array.isArray(s) ? s : []
-        setSets(allSets)
+        const ta = Array.isArray(tas) ? tas[0] : null
+        const classIds: string[] = ta?.classIds || []
+        // Also fetch entries by classId for classes the teacher is assigned to
+        const classPromises = classIds.map((cid: string) =>
+          fetch(`/api/timetable?classId=${cid}`).then((r) => r.json()).catch(() => [])
+        )
+        return Promise.all([Promise.resolve(allSets), Promise.resolve(c), Promise.resolve(sch), Promise.resolve(Array.isArray(teacherEntries) ? teacherEntries : []), Promise.all(classPromises)])
+      })
+      .then(([s, c, sch, teacherEntries, classEntriesArray]) => {
+        setSets(s as any[])
         setClasses(Array.isArray(c) ? c : [])
         setSchool(sch)
-        setEntries(Array.isArray(ttEntries) ? ttEntries : [])
-        const defaultSet = allSets.find((set: any) => set.type === typeFilter) || allSets[0]
+        // Merge teacher entries and class entries, deduplicate by id
+        const merged = [...(teacherEntries as any[])]
+        for (const arr of classEntriesArray as any[][]) {
+          for (const entry of arr) {
+            if (!merged.find((e) => e.id === entry.id)) merged.push(entry)
+          }
+        }
+        setEntries(merged)
+        const defaultSet = (s as any[]).find((set: any) => set.type === typeFilter) || (s as any[])[0]
         if (defaultSet) setSelectedSetId(defaultSet.id)
         setLoading(false)
       }).catch(() => setLoading(false))
@@ -92,7 +104,7 @@ export default function TimetablePage() {
   }
 
   const handleExportCSV = () => {
-    const data = entries.map((e) => ({ Day: e.day, "Start": e.startTime, "End": e.endTime, Subject: e.isBreak ? "Break" : e.subject, Room: e.room || "", Teacher: e.teacherName || "" }))
+    const data = entries.map((e) => ({ Day: e.day, "Start": e.startTime, "End": e.endTime, Subject: e.isBreak ? "Break" : (e.subjectName || e.subject || ""), Room: e.room || "", Teacher: e.teacherName || "" }))
     downloadCsv(data, `${selectedSet?.name || "Timetable"}.csv`)
     toast.success("CSV exported")
   }
@@ -175,8 +187,8 @@ export default function TimetablePage() {
                           <p className="text-sm font-semibold text-amber-600">Break</p>
                         </div>
                       ) : (
-                        <div className={cn("flex-1 rounded-lg border px-3 py-2", subjectColors[entry.subject] || "bg-primary/5")}>
-                          <p className="text-sm font-semibold">{entry.subject}</p>
+                        <div className={cn("flex-1 rounded-lg border px-3 py-2", subjectColors[entry.subjectName || entry.subject] || "bg-primary/5")}>
+                          <p className="text-sm font-semibold">{entry.subjectName || entry.subject}</p>
                           <p className="text-xs text-muted-foreground">{entry.room && <>Room {entry.room}</>}{entry.teacherName && <> &middot; {entry.teacherName}</>}</p>
                         </div>
                       )
@@ -214,8 +226,8 @@ export default function TimetablePage() {
                           entry.isBreak ? (
                             <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2 py-1.5 text-xs font-medium text-amber-600">Break</div>
                           ) : (
-                            <div className={cn("rounded-lg px-2 py-1.5 text-xs font-medium", subjectColors[entry.subject] || "bg-primary/10 text-primary")}>
-                              {entry.subject}
+                            <div className={cn("rounded-lg px-2 py-1.5 text-xs font-medium", subjectColors[entry.subjectName || entry.subject] || "bg-primary/10 text-primary")}>
+                              {entry.subjectName || entry.subject}
                               <div className="text-[10px] opacity-70">{entry.room && <>Rm {entry.room}</>}</div>
                             </div>
                           )

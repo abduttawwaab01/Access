@@ -71,7 +71,7 @@ export default function AdminEventsPage() {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, createdAt: editingId ? undefined : new Date().toISOString() }),
+      body: JSON.stringify({ title: form.title, description: form.description, date: form.date, time: form.time, type: form.type, audience: form.audience }),
     })
     if (res.ok) {
       toast.success(editingId ? "Event updated" : "Event created")

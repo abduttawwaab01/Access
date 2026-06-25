@@ -73,7 +73,7 @@ export default function ParentTimetablePage() {
   }
 
   const handleExportCSV = () => {
-    const data = filteredTimetable.map((e) => ({ Day: e.day, Start: e.startTime, End: e.endTime, Subject: e.isBreak ? "Break" : e.subject, Room: e.room || "", Teacher: e.teacherName || "" }))
+    const data = filteredTimetable.map((e) => ({ Day: e.day, Start: e.startTime, End: e.endTime, Subject: e.isBreak ? "Break" : (e.subjectName || e.subject), Room: e.room || "", Teacher: e.teacherName || "" }))
     downloadCsv(data, `${selectedSet?.name || "Timetable"}.csv`)
     toast.success("CSV exported")
   }
@@ -171,8 +171,8 @@ export default function ParentTimetablePage() {
                             entry.isBreak ? (
                               <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2 py-1.5 text-xs font-medium text-amber-600">Break</div>
                             ) : (
-                              <div className={cn("rounded-lg px-2 py-1.5 text-xs font-medium border", subjectColors[entry.subject] || "bg-primary/10 text-primary border-primary/20")}>
-                                {entry.subject}
+                              <div className={cn("rounded-lg px-2 py-1.5 text-xs font-medium border", subjectColors[entry.subjectName || entry.subject] || "bg-primary/10 text-primary border-primary/20")}>
+                                {entry.subjectName || entry.subject}
                                 <div className="text-[10px] opacity-70">Rm {entry.room}</div>
                               </div>
                             )
