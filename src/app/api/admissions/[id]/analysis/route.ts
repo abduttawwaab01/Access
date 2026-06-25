@@ -56,7 +56,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       const userAnswer = answer?.answer || null
       const correctAnswer = q.answer || null
       const isCorrect = q.type === "mcq" || q.type === "true_false"
-        ? userAnswer?.trim().toLowerCase() === correctAnswer?.trim().toLowerCase()
+        ? (userAnswer != null && correctAnswer != null && userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase())
         : null
       const earnedPoints = isCorrect === true ? points : (isCorrect === false ? 0 : 0)
 

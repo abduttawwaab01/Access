@@ -25,6 +25,11 @@ export async function GET(request: Request) {
     const results = await db.results.getByClassAndSubject(classId, subjectId, term, session, examId)
     return NextResponse.json(await mapSubjectNames(results))
   }
+  if (classId && !subjectId) {
+    const session = searchParams.get("session") || undefined
+    const results = await db.results.getByClass(classId, term, session)
+    return NextResponse.json(await mapSubjectNames(results))
+  }
   if (studentId) {
     if (term) {
       const results = await db.results.getByStudentAndTerm(studentId, term)

@@ -163,7 +163,7 @@ export default function AdminAdmissionsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         entranceExamScore: editScore ? Number(editScore) : null,
-        notes: editNotes,
+        adminNotes: editNotes,
         entranceExamPassed: editScore && getCutOffForApp(selectedApp) ? Number(editScore) >= (getCutOffForApp(selectedApp) || 0) : undefined,
       }),
     })
@@ -227,7 +227,7 @@ export default function AdminAdmissionsPage() {
   const openDetail = (app: any) => {
     setSelectedApp(app)
     setEditScore(app.entranceExamScore?.toString() ?? "")
-    setEditNotes(app.notes || "")
+    setEditNotes(app.adminNotes || "")
     setTransferClassId("")
     setShowDetail(true)
     setDetailSubTab("details")

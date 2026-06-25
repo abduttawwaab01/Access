@@ -36,8 +36,8 @@ export default function StudentAttendancePage() {
   const present = records.filter((r) => r.status === "present").length
   const absent = records.filter((r) => r.status === "absent").length
   const late = records.filter((r) => r.status === "late").length
-  const total = records.length || 1
-  const rate = Math.round(present / total * 100)
+  const total = records.length
+  const rate = total > 0 ? Math.round(present / total * 100) : 0
 
   const pieData = [
     { name: "Present", value: present },

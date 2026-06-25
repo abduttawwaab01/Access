@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, GraduationCap, Brain, ChevronDown, ChevronUp, ArrowUpDown, BookOpen, AlertTriangle, TrendingUp, Search, X, Target } from "lucide-react"
+import { Users, GraduationCap, Brain, ChevronDown, ChevronUp, ArrowUpDown, BookOpen, AlertTriangle, TrendingUp, X, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function DeepAnalysisPage() {
@@ -16,7 +16,8 @@ export default function DeepAnalysisPage() {
   const [loading, setLoading] = useState(true)
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null)
   const [sortAsc, setSortAsc] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("")
+  const toggleSort = () => setSortAsc((p) => !p)
 
   useEffect(() => {
     fetch("/api/classes").then((r) => r.json()).then((data) => {
@@ -33,6 +34,7 @@ export default function DeepAnalysisPage() {
     if (selectedClassId) {
       setLoading(true)
       setExpandedStudent(null)
+      setSelectedStudentId("")
       fetch(`/api/analytics/deep-analysis?classId=${selectedClassId}`)
         .then((r) => r.json())
         .then((data) => {
@@ -43,16 +45,13 @@ export default function DeepAnalysisPage() {
     }
   }, [selectedClassId])
 
-  const toggleSort = () => setSortAsc((prev) => !prev)
-
   const students = analysis?.gapAnalysis || []
   const sortedStudents = [...students].sort((a, b) =>
     sortAsc ? a.masteryRate - b.masteryRate : b.masteryRate - a.masteryRate
   )
 
-  const filteredStudents = sortedStudents.filter((s: any) =>
-    !searchQuery || s.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const selectedStudent = sortedStudents.find((s: any) => s.studentId === selectedStudentId)
+  const filteredStudents = selectedStudent ? [selectedStudent] : sortedStudents
 
   const masteryColor = (rate: number) => {
     if (rate >= 80) return "bg-emerald-500"
@@ -207,20 +206,23 @@ export default function DeepAnalysisPage() {
                     <p className="text-xs text-muted-foreground">Sorted by mastery rate (weakest first)</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="relative flex-1 sm:w-48">
-                      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                      <input
-                        placeholder="Search student..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-8 w-full rounded-lg border border-input bg-transparent pl-8 pr-7 text-xs outline-none focus:border-ring"
-                      />
-                      {searchQuery && (
-                        <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2">
-                          <X className="h-3 w-3 text-muted-foreground" />
-                        </button>
-                      )}
-                    </div>
+                    <Select value={selectedStudentId} onValueChange={(v) => v && setSelectedStudentId(v)}>
+                      <SelectTrigger className="h-8 w-full sm:w-56 text-xs">
+                        <SelectValue placeholder="All students" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sortedStudents.map((s: any) => (
+                          <SelectItem key={s.studentId} value={s.studentId} className="text-xs">
+                            {s.studentName || "Unknown"} — {s.masteryRate}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedStudentId && (
+                      <button onClick={() => setSelectedStudentId("")} className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                     <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={toggleSort}>
                       <ArrowUpDown className="h-3 w-3 mr-1" />
                       {sortAsc ? "Lowest" : "Highest"}

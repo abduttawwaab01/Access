@@ -49,8 +49,8 @@ export default function ParentAnalyticsPage() {
     : 0
 
   const present = attendance.present || 0
-  const totalAttendance = attendance.total || 1
-  const attendanceRate = Math.round(present / totalAttendance * 100)
+  const totalAttendance = attendance.total
+  const attendanceRate = totalAttendance > 0 ? Math.round(present / totalAttendance * 100) : 0
 
   const termScores = [...new Set(results.map((r: any) => r.term))].map((term: string) => {
     const termResults = results.filter((r: any) => r.term === term)

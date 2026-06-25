@@ -61,11 +61,11 @@ export default function ParentWeeklyReportsPage() {
     week: report.week,
     subjectPerformances: report.subjectPerformances || [],
     behavior: {
-      punctuality: report.punctuality || 3,
-      attentiveness: report.attentiveness || 3,
-      conduct: report.conduct || 3,
-      homeworkCompletion: report.homeworkCompletion || 3,
-      teamwork: report.teamwork || 3,
+      punctuality: report.punctuality ?? 0,
+      attentiveness: report.attentiveness ?? 0,
+      conduct: report.conduct ?? 0,
+      homeworkCompletion: report.homeworkCompletion ?? 0,
+      teamwork: report.teamwork ?? 0,
       behaviorNotes: report.behaviorNotes || "",
     },
     attendance: {
@@ -76,7 +76,7 @@ export default function ParentWeeklyReportsPage() {
     },
     teacherComment: report.teacherComment || "",
     teacherName: report.teacherName,
-    overallRating: report.overallRating || 3,
+    overallRating: report.overallRating ?? 0,
     generatedAt: report.updatedAt || report.createdAt,
   })
 
@@ -117,7 +117,7 @@ export default function ParentWeeklyReportsPage() {
 
   const handleShareWhatsApp = (report: any) => {
     const subjText = report.subjectPerformances?.map((s: any) => `- ${s.subject}: ${s.score}%`).join("\n") || ""
-    const text = `*${report.studentName}'s Weekly Report - Week ${report.week}*\nOverall: ${report.overallRating}/5\n\n${subjText}\n\nAttendance: ${report.attendancePresent || 0}/${report.attendanceTotal || 0} days present\n\nView full report on Access School Portal.`
+    const text = `*${report.studentName}'s Weekly Report - Week ${report.week}*\nOverall: ${report.overallRating}/5\n\n${subjText}\n\nAttendance: ${report.attendancePresent || 0}/${report.attendanceTotal || 0} days present`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 

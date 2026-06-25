@@ -66,6 +66,7 @@ model School {
   feedbackTickets    FeedbackTicket[]
   weeklyReports      WeeklyReport[]
   conversations      Conversation[]
+  reportCardEntries  ReportCardEntry[]
 }
 
 model User {
@@ -417,6 +418,27 @@ model ReportCard {
   updatedAt DateTime @updatedAt
 }
 
+model ReportCardEntry {
+  id               String   @id @default(cuid())
+  studentId        String
+  classId          String
+  term             String
+  session          String
+  schoolId         String
+  school           School   @relation(fields: [schoolId], references: [id])
+
+  teacherComment   String?
+  teacherName      String?
+  principalComment String?
+  nextTerm         String?
+  domains          Json?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([studentId, term, session])
+}
+
 model Topic {
   id        String   @id @default(cuid())
   name      String
@@ -635,28 +657,29 @@ model AdmissionSettings {
 }
 
 model AdmissionApplication {
-  id              String   @id @default(cuid())
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String?
-  gender          String?
-  dateOfBirth     DateTime?
-  address         String?
-  classApplyingFor String?
-  parentName      String?
-  parentPhone     String?
-  previousSchool  String?
-  status          String   @default("pending")
-  entranceExamPassed Boolean @default(false)
-  entranceExamScore Float?
-  entranceCodeId  String?
-  examSessionId   String?
-  userId          String?
-  schoolId        String
-  school          School   @relation(fields: [schoolId], references: [id])
-  appliedAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  firstName           String
+  lastName            String
+  email               String?
+  phone               String?
+  gender              String?
+  dateOfBirth         DateTime?
+  address             String?
+  classApplyingFor    String?
+  parentName          String?
+  parentPhone         String?
+  previousSchool      String?
+  status              String   @default("pending")
+  entranceExamPassed  Boolean  @default(false)
+  entranceExamScore   Float?
+  entranceCodeId      String?
+  examSessionId       String?
+  adminNotes          String?
+  userId              String?
+  schoolId            String
+  school              School   @relation(fields: [schoolId], references: [id])
+  appliedAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model Event {

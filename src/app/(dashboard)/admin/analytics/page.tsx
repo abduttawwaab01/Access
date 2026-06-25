@@ -51,7 +51,7 @@ export default function AdminAnalyticsPage() {
   const totalClasses = classes.length
 
   const subjectAvgScores = subjects.map((sub) => {
-    const subResults = results.filter((r) => r.subject === sub.name)
+    const subResults = results.filter((r) => r.subjectId === sub.id)
     const avg = subResults.length > 0 ? subResults.reduce((s, r) => s + (r.score / r.total) * 100, 0) / subResults.length : 0
     return { name: sub.name, average: Math.round(avg * 10) / 10, count: subResults.length }
   }).filter((s) => s.count > 0)
@@ -77,6 +77,26 @@ export default function AdminAnalyticsPage() {
     outstanding: acc.outstanding + (f.amount - f.paid),
   }), { total: 0, paid: 0, outstanding: 0 })
   const feeCollectionRate = feeSummary.total > 0 ? feeSummary.paid / feeSummary.total * 100 : 0
+
+  const sortedAttendance = [...attendance].sort((a, b) => new Date(a.createdAt || a.date).getTime() - new Date(b.createdAt || b.date).getTime())
+  const midAtt = Math.floor(sortedAttendance.length / 2)
+  const attFirstHalf = sortedAttendance.slice(0, midAtt)
+  const attSecondHalf = sortedAttendance.slice(midAtt)
+  const attFirstRate = attFirstHalf.length > 0 ? attFirstHalf.filter((a) => a.status === "present").length / attFirstHalf.length * 100 : 0
+  const attSecondRate = attSecondHalf.length > 0 ? attSecondHalf.filter((a) => a.status === "present").length / attSecondHalf.length * 100 : 0
+  const attendanceChange = attendance.length > 0 ? (attSecondRate - attFirstRate) : 0
+
+  const sortedFees = [...fees].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  const midFee = Math.floor(sortedFees.length / 2)
+  const feeFirstHalf = sortedFees.slice(0, midFee)
+  const feeSecondHalf = sortedFees.slice(midFee)
+  const feeFirstTotal = feeFirstHalf.reduce((s, f) => s + f.amount, 0)
+  const feeFirstPaid = feeFirstHalf.reduce((s, f) => s + f.paid, 0)
+  const feeSecondTotal = feeSecondHalf.reduce((s, f) => s + f.amount, 0)
+  const feeSecondPaid = feeSecondHalf.reduce((s, f) => s + f.paid, 0)
+  const feeFirstRate = feeFirstTotal > 0 ? feeFirstPaid / feeFirstTotal * 100 : 0
+  const feeSecondRate = feeSecondTotal > 0 ? feeSecondPaid / feeSecondTotal * 100 : 0
+  const feeChange = fees.length > 0 ? (feeSecondRate - feeFirstRate) : 0
 
   const bestSubject = subjectAvgScores.length > 0 ? [...subjectAvgScores].sort((a, b) => b.average - a.average)[0] : null
   const worstSubject = subjectAvgScores.length > 0 ? [...subjectAvgScores].sort((a, b) => a.average - b.average)[0] : null
@@ -163,8 +183,8 @@ export default function AdminAnalyticsPage() {
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Performance Trend", value: `${Math.round(passRate)}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].avgScore > termScoreData[termScoreData.length - 2].avgScore ? "+" : ""}${termScoreData[termScoreData.length - 1].avgScore - termScoreData[termScoreData.length - 2].avgScore}%` : "—", icon: TrendingUp, color: passRate >= 70 ? "from-green-500 to-green-600" : "from-amber-500 to-amber-600", trend: passRate >= 70 ? "up" : "down" },
-          { label: "Attendance Trend", value: `${Math.round(attendanceRate)}%`, change: "+2.3%", icon: CalendarCheck, color: attendanceRate >= 80 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600", trend: "up" },
-          { label: "Fee Collection", value: `${Math.round(feeCollectionRate)}%`, change: "+5%", icon: DollarSign, color: "from-violet-500 to-violet-600", trend: "up" },
+          { label: "Attendance Trend", value: `${Math.round(attendanceRate)}%`, change: `${attendanceChange >= 0 ? "+" : ""}${attendanceChange.toFixed(1)}%`, icon: CalendarCheck, color: attendanceRate >= 80 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600", trend: attendanceChange >= 0 ? "up" : "down" },
+          { label: "Fee Collection", value: `${Math.round(feeCollectionRate)}%`, change: `${feeChange >= 0 ? "+" : ""}${feeChange.toFixed(1)}%`, icon: DollarSign, color: "from-violet-500 to-violet-600", trend: feeChange >= 0 ? "up" : "down" },
           { label: "Student:Teacher", value: `${studentTeacherRatio}:1`, change: "—", icon: UserCheck, color: "from-blue-500 to-blue-600", trend: Number(studentTeacherRatio) < 25 ? "up" : "down" },
         ].map((stat, i) => (
           <motion.div key={stat.label} variants={itemVariants}>
@@ -377,8 +397,8 @@ export default function AdminAnalyticsPage() {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: "Male", value: students.filter((s) => s.gender === "Male").length || 1 },
-                          { name: "Female", value: students.filter((s) => s.gender === "Female").length || 1 },
+                          { name: "Male", value: students.filter((s) => s.gender === "Male").length || 0 },
+                          { name: "Female", value: students.filter((s) => s.gender === "Female").length || 0 },
                         ]}
                         cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={4} dataKey="value"
                       >

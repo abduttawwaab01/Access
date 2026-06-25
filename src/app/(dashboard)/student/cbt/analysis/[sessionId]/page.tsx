@@ -67,7 +67,7 @@ export default function ExamAnalysisPage() {
     </div>
   )
 
-  const pct = session.maxScore > 0 ? Math.round((session.totalScore / session.maxScore) * 100) : 0
+  const pct = session.maxScore > 0 ? Math.round(((session.score ?? session.totalScore) / session.maxScore) * 100) : 0
   const grade = getGrade(pct)
 
   const subjectName = subjects.find((s) => s.id === exam.subjectId)?.name || "Unknown"
@@ -154,7 +154,7 @@ export default function ExamAnalysisPage() {
             <p className="text-sm opacity-80 uppercase tracking-wider">{subjectName} - {exam.title}</p>
             <div className="mt-4 flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
               <div className="text-center">
-                <p className="text-3xl font-bold">{session.totalScore}/{session.maxScore}</p>
+                <p className="text-3xl font-bold">{(session.score ?? session.totalScore)}/{session.maxScore}</p>
                 <p className="text-xs opacity-80 mt-1">Total Score</p>
               </div>
               <div className="text-center">

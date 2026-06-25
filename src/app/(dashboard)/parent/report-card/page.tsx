@@ -10,6 +10,7 @@ import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { useParentChildren } from "@/hooks/useParentChildren"
 import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
 
 export default function ParentReportCardPage() {
   const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
@@ -19,6 +20,8 @@ export default function ParentReportCardPage() {
   const [attendance, setAttendance] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [entryData, setEntryData] = useState<any>(null)
+  const [classResults, setClassResults] = useState<any[]>([])
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -38,6 +41,11 @@ export default function ParentReportCardPage() {
     }).catch(() => setLoading(false))
   }, [activeChildId])
 
+  useEffect(() => {
+    if (!activeChildId || !activeChild?.classId) return
+    fetch(`/api/results?classId=${activeChild.classId}`).then((r) => r.json()).then((data) => setClassResults(Array.isArray(data) ? data : [])).catch(() => {})
+  }, [activeChildId, activeChild?.classId])
+
   if (childrenLoading) return <div className="p-4 md:p-6 space-y-4">{["h-24", "h-96"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
 
   if (!activeChild) {
@@ -54,6 +62,7 @@ export default function ParentReportCardPage() {
   const terms = [...new Set(studentResults.map((r: any) => r.term))] as string[]
   const currentTerm = terms[terms.length - 1] || "First Term"
   const termResults = studentResults.filter((r: any) => r.term === currentTerm)
+  const session = termResults[0]?.session || currentSession()
 
   const studentClass = classes.find((c) => c.id === activeChild.classId)
   const childAttendance = attendance.filter((a: any) => a.userId === activeChildId)
@@ -62,6 +71,24 @@ export default function ParentReportCardPage() {
   const totalStudents = children.reduce((sum: number, child: any) => {
     return child.classId === activeChild.classId ? sum + 1 : sum
   }, 0)
+
+  useEffect(() => {
+    if (!activeChildId || !activeChild?.classId) return
+    const res = results.filter((r: any) => r.studentId === activeChildId)
+    const tList = [...new Set(res.map((r: any) => r.term))] as string[]
+    const ct = tList[tList.length - 1] || ""
+    if (!ct) return
+    const sess = res.find((r: any) => r.term === ct)?.session || currentSession()
+    fetch(`/api/report-card-entries?studentId=${activeChildId}&term=${ct}&session=${sess}&classId=${activeChild.classId}`)
+      .then((r) => r.json())
+      .then((data) => setEntryData(data?.entry || null))
+      .catch(() => {})
+  }, [activeChildId, activeChild?.classId, results])
+
+  const domains = entryData?.domains || {}
+  const position = activeChild && classResults.length > 0
+    ? computePosition(classResults, activeChildId, activeChild.classId, currentTerm, session)
+    : null
 
   const reportData = {
     schoolName: school?.name || "Access School",
@@ -78,7 +105,7 @@ export default function ParentReportCardPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: termResults[0]?.session || currentSession(),
+    session,
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score,
@@ -90,35 +117,22 @@ export default function ParentReportCardPage() {
       caTotal: r.caTotal,
       examTotal: r.examTotal,
     })),
-    domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
-      ? [
-          { name: "Punctuality", score: 8, max: 10 },
-          { name: "Neatness", score: 7, max: 10 },
-          { name: "Attentiveness", score: 9, max: 10 },
-          { name: "Honesty", score: 8, max: 10 },
-          { name: "Leadership", score: 7, max: 10 },
-          { name: "Participation", score: 8, max: 10 },
-        ]
-      : [
-          { name: "Critical Thinking", score: 82, max: 100 },
-          { name: "Communication", score: 75, max: 100 },
-          { name: "Collaboration", score: 88, max: 100 },
-          { name: "Creativity", score: 70, max: 100 },
-          { name: "Problem Solving", score: 78, max: 100 },
-          { name: "Leadership", score: 72, max: 100 },
-        ]
-    ),
+    domains: STANDARD_DOMAINS.map((d) => ({
+      name: d.name,
+      score: domains[d.name] ? Math.min(domains[d.name], d.max) : 0,
+      max: d.max,
+    })),
     attendance: {
       present: allLogs.filter((l: any) => l.status === "present").length,
       absent: allLogs.filter((l: any) => l.status === "absent").length,
       late: allLogs.filter((l: any) => l.status === "late").length,
       total: allLogs.length,
     },
-    teacherComment: `${activeChild.firstName} ${activeChild.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`,
-    teacherName: "Class Teacher",
-    principalComment: "A well-rounded student who demonstrates good character and academic promise. Encouraged to maintain focus and participate in school activities.",
-    nextTerm: "6th January 2025",
-    position: "—",
+    teacherComment: entryData?.teacherComment || "",
+    teacherName: entryData?.teacherName || "",
+    principalComment: entryData?.principalComment || "",
+    nextTerm: entryData?.nextTerm || "",
+    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "—",
     totalStudents: totalStudents,
     generatedAt: new Date().toISOString(),
   }
@@ -166,7 +180,7 @@ export default function ParentReportCardPage() {
   }
 
   const handleShareWhatsApp = () => {
-    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${totalAverage}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}\n\nView full report on Access School Portal.`
+    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${totalAverage}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 

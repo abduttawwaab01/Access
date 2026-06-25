@@ -646,6 +646,12 @@ export const db = {
       if (examId) where.examId = examId
       return prisma.result.findMany({ where })
     },
+    getByClass: async (classId: string, term?: string, session?: string) => {
+      const where: any = { classId }
+      if (term) where.term = term
+      if (session) where.session = session
+      return prisma.result.findMany({ where })
+    },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
       const gc = await db.gradingConfig.get()
@@ -1023,6 +1029,60 @@ export const db = {
     },
   },
 
+  reportCardEntries: {
+    get: async (studentId: string, term: string, session: string) => {
+      return prisma.reportCardEntry.findUnique({
+        where: { studentId_term_session: { studentId, term, session } },
+      })
+    },
+    getByStudent: async (studentId: string) => {
+      return prisma.reportCardEntry.findMany({ where: { studentId } })
+    },
+    upsert: async (data: {
+      studentId: string
+      classId: string
+      term: string
+      session: string
+      teacherComment?: string | null
+      teacherName?: string | null
+      principalComment?: string | null
+      nextTerm?: string | null
+      domains?: any
+    }) => {
+      const schoolId = await ensureSchoolId()
+      const existing = await prisma.reportCardEntry.findUnique({
+        where: { studentId_term_session: { studentId: data.studentId, term: data.term, session: data.session } },
+      })
+      if (existing) {
+        return prisma.reportCardEntry.update({
+          where: { id: existing.id },
+          data: {
+            classId: data.classId,
+            teacherComment: data.teacherComment,
+            teacherName: data.teacherName,
+            principalComment: data.principalComment,
+            nextTerm: data.nextTerm,
+            domains: data.domains,
+          },
+        })
+      }
+      return prisma.reportCardEntry.create({
+        data: {
+          studentId: data.studentId,
+          classId: data.classId,
+          term: data.term,
+          session: data.session,
+          schoolId,
+          teacherComment: data.teacherComment,
+          teacherName: data.teacherName,
+          principalComment: data.principalComment,
+          nextTerm: data.nextTerm,
+          domains: data.domains,
+        },
+      })
+    },
+  },
+
   topics: {
     getAll: async (subjectId?: string) => {
       return prisma.topic.findMany({
@@ -1268,7 +1328,13 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      return prisma.admissionApplication.update({ where: { id }, data })
+      const allowed = ["firstName","lastName","email","phone","gender","dateOfBirth","address","classApplyingFor","parentName","parentPhone","previousSchool","status","entranceExamPassed","entranceExamScore","entranceCodeId","examSessionId","adminNotes","userId"]
+      const clean: any = {}
+      for (const key of allowed) {
+        if (data[key] !== undefined) clean[key] = data[key]
+      }
+      if (data.dateOfBirth) clean.dateOfBirth = new Date(data.dateOfBirth)
+      return prisma.admissionApplication.update({ where: { id }, data: clean })
     },
     delete: async (id: string) => {
       await prisma.admissionApplication.delete({ where: { id } })

@@ -121,14 +121,14 @@ export default function AdminWeeklyReportsPage() {
     if (existing) {
       setForm({
         subjectPerformances: existing.subjectPerformances || [],
-        punctuality: existing.punctuality || 3,
-        attentiveness: existing.attentiveness || 3,
-        conduct: existing.conduct || 3,
-        homeworkCompletion: existing.homeworkCompletion || 3,
-        teamwork: existing.teamwork || 3,
+        punctuality: existing.punctuality ?? 0,
+        attentiveness: existing.attentiveness ?? 0,
+        conduct: existing.conduct ?? 0,
+        homeworkCompletion: existing.homeworkCompletion ?? 0,
+        teamwork: existing.teamwork ?? 0,
         behaviorNotes: existing.behaviorNotes || "",
         teacherComment: existing.teacherComment || "",
-        overallRating: existing.overallRating || 3,
+        overallRating: existing.overallRating ?? 0,
         status: existing.status || "draft",
       })
     } else {
@@ -251,7 +251,7 @@ export default function AdminWeeklyReportsPage() {
 
   const handleShareWhatsApp = (report: any) => {
     const subjText = report.subjectPerformances?.map((s: any) => `- ${s.subject}: ${s.score}%`).join("\n") || ""
-    const text = `*${report.studentName}'s Weekly Report - Week ${report.week}*\nOverall: ${report.overallRating}/5\n\n${subjText}\n\nAttendance: ${report.attendancePresent || 0}/${report.attendanceTotal || 0} days present\n\nView full report on Access School Portal.`
+    const text = `*${report.studentName}'s Weekly Report - Week ${report.week}*\nOverall: ${report.overallRating}/5\n\n${subjText}\n\nAttendance: ${report.attendancePresent || 0}/${report.attendanceTotal || 0} days present`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 
@@ -265,11 +265,11 @@ export default function AdminWeeklyReportsPage() {
     week: report.week,
     subjectPerformances: report.subjectPerformances || [],
     behavior: {
-      punctuality: report.punctuality || 3,
-      attentiveness: report.attentiveness || 3,
-      conduct: report.conduct || 3,
-      homeworkCompletion: report.homeworkCompletion || 3,
-      teamwork: report.teamwork || 3,
+      punctuality: report.punctuality ?? 0,
+      attentiveness: report.attentiveness ?? 0,
+      conduct: report.conduct ?? 0,
+      homeworkCompletion: report.homeworkCompletion ?? 0,
+      teamwork: report.teamwork ?? 0,
       behaviorNotes: report.behaviorNotes || "",
     },
     attendance: {
@@ -280,7 +280,7 @@ export default function AdminWeeklyReportsPage() {
     },
     teacherComment: report.teacherComment || "",
     teacherName: report.teacherName,
-    overallRating: report.overallRating || 3,
+    overallRating: report.overallRating ?? 0,
     generatedAt: report.updatedAt || report.createdAt,
   })
 

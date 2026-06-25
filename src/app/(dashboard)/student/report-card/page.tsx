@@ -11,10 +11,11 @@ import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
+import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
 
 export default function StudentReportCardPage() {
-  const { data: session } = useSession()
-  const userId = (session?.user as any)?.id || ""
+  const { data: authData } = useSession()
+  const userId = (authData?.user as any)?.id || ""
   const [studentId, setStudentId] = useState("")
   const [results, setResults] = useState<any[]>([])
   const [student, setStudent] = useState<any>(null)
@@ -25,6 +26,7 @@ export default function StudentReportCardPage() {
   const [attendance, setAttendance] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [entryData, setEntryData] = useState<any>(null)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -58,6 +60,19 @@ export default function StudentReportCardPage() {
     load()
   }, [userId])
 
+  useEffect(() => {
+    if (!studentId || !student?.classId) return
+    const studRes = results.filter((r) => r.studentId === studentId)
+    const tList = [...new Set(studRes.map((r) => r.term))] as string[]
+    const ct = tList[tList.length - 1] || ""
+    if (!ct) return
+    const sess = studRes.find((r) => r.term === ct)?.session || currentSession()
+    fetch(`/api/report-card-entries?studentId=${studentId}&term=${ct}&session=${sess}&classId=${student.classId}`)
+      .then((r) => r.json())
+      .then((data) => setEntryData(data?.entry || null))
+      .catch(() => {})
+  }, [studentId, student?.classId, results])
+
   if (!student && !loading) {
     return (
       <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -72,11 +87,17 @@ export default function StudentReportCardPage() {
   const terms = [...new Set(studentResults.map((r) => r.term))] as string[]
   const currentTerm = terms[terms.length - 1] || "First Term"
   const termResults = studentResults.filter((r) => r.term === currentTerm)
+  const session = termResults[0]?.session || currentSession()
 
   const studentClass = classes.find((c) => c.id === student?.classId)
   const studentAttendance = attendance.filter((a) => a.userId === studentId)
   const todayLogs = studentAttendance.filter((l) => l.date === new Date().toISOString().split("T")[0])
   const allLogs = studentAttendance.filter((l) => l.userType === "student" || !l.userType)
+
+  const domains = entryData?.domains || {}
+  const position = student && termResults.length > 0
+    ? computePosition(results, studentId, student.classId, currentTerm, session)
+    : null
 
   const reportData = {
     schoolName: school?.name || "Access School",
@@ -93,7 +114,7 @@ export default function StudentReportCardPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: currentSession(),
+    session,
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score,
@@ -101,37 +122,22 @@ export default function StudentReportCardPage() {
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",
     })),
-    domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
-      ? [
-          { name: "Punctuality", score: 8, max: 10 },
-          { name: "Neatness", score: 7, max: 10 },
-          { name: "Attentiveness", score: 9, max: 10 },
-          { name: "Honesty", score: 8, max: 10 },
-          { name: "Leadership", score: 7, max: 10 },
-          { name: "Participation", score: 8, max: 10 },
-        ]
-      : [
-          { name: "Critical Thinking", score: 82, max: 100 },
-          { name: "Communication", score: 75, max: 100 },
-          { name: "Collaboration", score: 88, max: 100 },
-          { name: "Creativity", score: 70, max: 100 },
-          { name: "Problem Solving", score: 78, max: 100 },
-          { name: "Leadership", score: 72, max: 100 },
-        ]
-    ),
+    domains: STANDARD_DOMAINS.map((d) => ({
+      name: d.name,
+      score: domains[d.name] ? Math.min(domains[d.name], d.max) : 0,
+      max: d.max,
+    })),
     attendance: {
       present: allLogs.filter((l) => l.status === "present").length,
       absent: allLogs.filter((l) => l.status === "absent").length,
       late: allLogs.filter((l) => l.status === "late").length,
       total: allLogs.length,
     },
-    teacherComment: student
-      ? `${student.firstName} ${student.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`
-      : "A diligent student with great potential.",
-    teacherName: "Class Teacher",
-    principalComment: "A well-rounded student who demonstrates good character and academic promise. Encouraged to maintain focus and participate in school activities.",
-    nextTerm: "6th January 2025",
-    position: termResults.length > 0 ? "—" : "—",
+    teacherComment: entryData?.teacherComment || "",
+    teacherName: entryData?.teacherName || "",
+    principalComment: entryData?.principalComment || "",
+    nextTerm: entryData?.nextTerm || "",
+    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "—",
     totalStudents: students.filter((s: any) => s.classId === student?.classId).length || 0,
     generatedAt: new Date().toISOString(),
   }
@@ -175,7 +181,8 @@ export default function StudentReportCardPage() {
   }
 
   const handleShareWhatsApp = () => {
-    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / (reportData.subjects.length || 1))}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}\n\nView full report on Access School Portal.`
+    const avg = reportData.subjects.length > 0 ? Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / reportData.subjects.length) : 0
+    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${avg}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
   }
 

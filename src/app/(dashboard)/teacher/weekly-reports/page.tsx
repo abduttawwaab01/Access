@@ -130,14 +130,14 @@ export default function TeacherWeeklyReportsPage() {
     if (existing) {
       setForm({
         subjectPerformances: existing.subjectPerformances || [],
-        punctuality: existing.punctuality || 3,
-        attentiveness: existing.attentiveness || 3,
-        conduct: existing.conduct || 3,
-        homeworkCompletion: existing.homeworkCompletion || 3,
-        teamwork: existing.teamwork || 3,
+        punctuality: existing.punctuality ?? 0,
+        attentiveness: existing.attentiveness ?? 0,
+        conduct: existing.conduct ?? 0,
+        homeworkCompletion: existing.homeworkCompletion ?? 0,
+        teamwork: existing.teamwork ?? 0,
         behaviorNotes: existing.behaviorNotes || "",
         teacherComment: existing.teacherComment || "",
-        overallRating: existing.overallRating || 3,
+        overallRating: existing.overallRating ?? 0,
         status: existing.status || "draft",
       })
     } else {

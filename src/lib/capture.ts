@@ -205,6 +205,10 @@ export async function captureElement(
       logging: false,
       allowTaint: true,
       onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+        // Remove ALL external stylesheets to prevent html2canvas from encountering oklab/oklch colors
+        const links = clonedDoc.querySelectorAll('link[rel="stylesheet"]')
+        for (const link of links) link.remove()
+
         const fontLinkEl = clonedDoc.createElement("head")
         fontLinkEl.innerHTML = getFontLinks()
         for (const child of Array.from(fontLinkEl.children)) {

@@ -63,8 +63,8 @@ export default function StudentAnalyticsPage() {
     : 0
 
   const present = attendance.filter((a) => a.status === "present").length
-  const totalAttendance = attendance.length || 1
-  const attendanceRate = Math.round(present / totalAttendance * 100)
+  const totalAttendance = attendance.length
+  const attendanceRate = totalAttendance > 0 ? Math.round(present / totalAttendance * 100) : 0
 
   const termScores = [...new Set(results.map((r) => r.term))].map((term) => {
     const termResults = results.filter((r) => r.term === term)
@@ -103,14 +103,19 @@ export default function StudentAnalyticsPage() {
   const bestSubject = subjectAvgScores.length > 0 ? subjectAvgScores[0] : null
   const weakestSubject = subjectAvgScores.length > 0 ? subjectAvgScores[subjectAvgScores.length - 1] : null
 
-  const attendanceByMonth = [
-    { month: "Sep", rate: 92 },
-    { month: "Oct", rate: 88 },
-    { month: "Nov", rate: 95 },
-    { month: "Dec", rate: 85 },
-    { month: "Jan", rate: 90 },
-    { month: "Feb", rate: 93 },
-  ]
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  const monthlyGroups: Record<string, { present: number; total: number }> = {}
+  attendance.forEach((a: any) => {
+    const d = new Date(a.date || a.createdAt)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    if (!monthlyGroups[key]) monthlyGroups[key] = { present: 0, total: 0 }
+    monthlyGroups[key].total++
+    if (a.status === "present") monthlyGroups[key].present++
+  })
+  const attendanceByMonth = Object.entries(monthlyGroups).slice(-6).map(([key, val]) => ({
+    month: monthNames[parseInt(key.split("-")[1], 10) - 1] || key,
+    rate: val.total > 0 ? Math.round(val.present / val.total * 100) : 0,
+  }))
 
   const insights: string[] = []
   if (avgScore >= 80) insights.push("Excellent work! You are consistently performing above the 80% benchmark. Keep it up!")

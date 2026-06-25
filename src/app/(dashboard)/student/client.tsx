@@ -34,8 +34,8 @@ export default function StudentDashboardClient({ data }: { data: StudentDashboar
 
   const avgScore = results.length > 0 ? Math.round(results.reduce((s, r) => s + (r.score / r.total) * 100, 0) / results.length) : 0
   const present = attendance.filter((a) => a.status === "present").length
-  const total = attendance.length || 1
-  const attPct = Math.round(present / total * 100)
+  const total = attendance.length
+  const attPct = total > 0 ? Math.round(present / total * 100) : 0
   const completedExams = exams.filter((e) => e.status === "completed").length
 
   const sessionFilter = activeSession || results[0]?.session || ""

@@ -11,6 +11,7 @@ import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, 
 import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { downloadPng, downloadPdf, openPrintWindow, elementToPngBlob } from "@/lib/capture"
+import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
 export default function AdminReportCardsPage() {
@@ -26,6 +27,13 @@ export default function AdminReportCardsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("")
   const [chartReady, setChartReady] = useState(false)
+  const [entryData, setEntryData] = useState<any>(null)
+  const [domainScores, setDomainScores] = useState<Record<string, number>>({})
+  const [teacherComment, setTeacherComment] = useState("")
+  const [teacherName, setTeacherName] = useState("")
+  const [principalComment, setPrincipalComment] = useState("")
+  const [nextTerm, setNextTerm] = useState("")
+  const [savingEntry, setSavingEntry] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
@@ -53,6 +61,37 @@ export default function AdminReportCardsPage() {
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!selectedStudentId) return
+    const s = students.find((st) => st.id === selectedStudentId)
+    const studResults = results.filter((r) => r.studentId === selectedStudentId)
+    const termsList = [...new Set(studResults.map((r) => r.term))] as string[]
+    const ct = selectedTerm || termsList[termsList.length - 1] || ""
+    if (!ct || !s?.classId) return
+    const sess = studResults.find((r) => r.term === ct)?.session || currentSession()
+    setEntryData(null)
+    fetch(`/api/report-card-entries?studentId=${selectedStudentId}&term=${ct}&session=${sess}&classId=${s.classId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.entry) {
+          setEntryData(data.entry)
+          setDomainScores((data.entry.domains as Record<string, number>) || {})
+          setTeacherComment(data.entry.teacherComment || "")
+          setTeacherName(data.entry.teacherName || "")
+          setPrincipalComment(data.entry.principalComment || "")
+          setNextTerm(data.entry.nextTerm || "")
+        } else {
+          setEntryData(null)
+          setDomainScores({})
+          setTeacherComment("")
+          setTeacherName("")
+          setPrincipalComment("")
+          setNextTerm("")
+        }
+      })
+      .catch(() => {})
+  }, [selectedStudentId, selectedTerm, students, results])
 
   const student = students.find((s: any) => s.id === selectedStudentId)
   const studentResults = results.filter((r) => r.studentId === selectedStudentId)
@@ -82,6 +121,11 @@ export default function AdminReportCardsPage() {
     average: Math.round((s.totalScore / s.totalMax) * 100),
   }))
 
+  const session = termResults[0]?.session || currentSession()
+  const position = student && termResults.length > 0
+    ? computePosition(results, selectedStudentId, student.classId, currentTerm, session)
+    : null
+
   const reportData = student ? {
     schoolName: school?.name || "Access School",
     schoolLogo: school?.logo || "",
@@ -97,7 +141,7 @@ export default function AdminReportCardsPage() {
     className: studentClass?.name || "N/A",
     classSection: studentClass?.section || "",
     term: currentTerm,
-    session: termResults[0]?.session || currentSession(),
+    session,
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score ?? 0,
@@ -109,35 +153,22 @@ export default function AdminReportCardsPage() {
       caTotal: r.caTotal,
       examTotal: r.examTotal,
     })),
-    domains: (studentClass?.section === "Early Years" || studentClass?.section === "Primary"
-      ? [
-          { name: "Punctuality", score: 8, max: 10 },
-          { name: "Neatness", score: 7, max: 10 },
-          { name: "Attentiveness", score: 9, max: 10 },
-          { name: "Honesty", score: 8, max: 10 },
-          { name: "Leadership", score: 7, max: 10 },
-          { name: "Participation", score: 8, max: 10 },
-        ]
-      : [
-          { name: "Critical Thinking", score: 82, max: 100 },
-          { name: "Communication", score: 75, max: 100 },
-          { name: "Collaboration", score: 88, max: 100 },
-          { name: "Creativity", score: 70, max: 100 },
-          { name: "Problem Solving", score: 78, max: 100 },
-          { name: "Leadership", score: 72, max: 100 },
-        ]
-    ),
+    domains: STANDARD_DOMAINS.map((d) => ({
+      name: d.name,
+      score: domainScores[d.name] ? Math.min(domainScores[d.name], d.max) : 0,
+      max: d.max,
+    })),
     attendance: {
       present: allLogs.filter((l) => l.status === "present").length,
       absent: allLogs.filter((l) => l.status === "absent").length,
       late: allLogs.filter((l) => l.status === "late").length,
       total: allLogs.length,
     },
-    teacherComment: `${student.firstName} ${student.lastName} has shown commendable effort this term. Consistent performance in core subjects. Keep up the good work!`,
-    teacherName: "Class Teacher",
-    principalComment: "A well-rounded student who demonstrates good character and academic promise. Encouraged to maintain focus and participate in school activities.",
-    nextTerm: "6th January 2025",
-    position: termResults.length > 0 ? "—" : "—",
+    teacherComment: teacherComment || `${student.firstName} ${student.lastName} has shown commendable effort this term.`,
+    teacherName: teacherName || "",
+    principalComment: principalComment || "",
+    nextTerm: nextTerm || "",
+    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "—",
     totalStudents: students.filter((s: any) => s.classId === student?.classId).length || 0,
     generatedAt: new Date().toISOString(),
   } : null
@@ -219,8 +250,42 @@ export default function AdminReportCardsPage() {
 
   const handleShareWhatsApp = () => {
     if (!reportData) return
-    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / (reportData.subjects.length || 1))}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}\n\nView full report on Access School Portal.`
+    const avg = reportData.subjects.length > 0 ? Math.round(reportData.subjects.reduce((s, r) => s + (r.score / r.total) * 100, 0) / reportData.subjects.length) : 0
+    const text = `*${reportData.studentName}'s Report Card - ${currentTerm}*\nAverage: ${avg}%\n\n${reportData.subjects.map((r) => `- ${r.subject}: ${r.score}/${r.total} (${r.grade})`).join("\n")}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank")
+  }
+
+  const handleSaveEntry = async () => {
+    if (!student || !currentTerm || !studentClass) return
+    setSavingEntry(true)
+    try {
+      const res = await fetch("/api/report-card-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId: selectedStudentId,
+          classId: student.classId,
+          term: currentTerm,
+          session,
+          teacherComment,
+          teacherName,
+          principalComment,
+          nextTerm,
+          domains: domainScores,
+        }),
+      })
+      if (!res.ok) throw new Error("Save failed")
+      const saved = await res.json()
+      setEntryData(saved)
+      toast.success("Domains and comments saved")
+    } catch {
+      toast.error("Failed to save")
+    }
+    setSavingEntry(false)
+  }
+
+  const setDomain = (name: string, value: number) => {
+    setDomainScores((prev) => ({ ...prev, [name]: value }))
   }
 
   if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-24", "h-96"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
@@ -284,6 +349,51 @@ export default function AdminReportCardsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {selectedStudentId && studentClass && (
+        <Card className="glass-card border-0">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Domains & Comments — {currentTerm}</h3>
+              <Button size="sm" onClick={handleSaveEntry} disabled={savingEntry}>
+                {savingEntry ? "Saving..." : "Save"}
+              </Button>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {STANDARD_DOMAINS.map((d) => (
+                <div key={d.name} className="space-y-1">
+                  <label className="text-[10px] font-medium text-muted-foreground block">{d.name}</label>
+                  <input
+                    type="number" min={0} max={d.max}
+                    value={domainScores[d.name] ?? ""}
+                    onChange={(e) => setDomain(d.name, Math.min(Math.max(Number(e.target.value) || 0, 0), d.max))}
+                    className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs text-center"
+                    placeholder={`0-${d.max}`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground block">Teacher Name</label>
+                <input value={teacherName} onChange={(e) => setTeacherName(e.target.value)} className="w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm" placeholder="e.g. Mr. John Doe" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground block">Next Term</label>
+                <input value={nextTerm} onChange={(e) => setNextTerm(e.target.value)} className="w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm" placeholder="e.g. 8th September 2025" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground block">Teacher Comment</label>
+              <textarea value={teacherComment} onChange={(e) => setTeacherComment(e.target.value)} rows={2} className="w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm resize-none" placeholder="Enter teacher comment..." />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground block">Principal Comment</label>
+              <textarea value={principalComment} onChange={(e) => setPrincipalComment(e.target.value)} rows={2} className="w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm resize-none" placeholder="Enter principal comment..." />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!selectedStudentId && (
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">

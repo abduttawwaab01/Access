@@ -71,7 +71,7 @@ export default function TeacherAnalyticsPage() {
   const totalExpected = assignments.reduce((s, a) => s + (a.total || 0), 0)
 
   const subjectAvgScores = subjects.map((sub) => {
-    const subResults = results.filter((r) => r.subject === sub.name)
+    const subResults = results.filter((r) => r.subjectId === sub.id)
     const avg = subResults.length > 0 ? subResults.reduce((s, r) => s + (r.score / r.total) * 100, 0) / subResults.length : 0
     return { name: sub.name, average: Math.round(avg * 10) / 10, count: subResults.length }
   }).filter((s) => s.count > 0)
@@ -97,6 +97,22 @@ export default function TeacherAnalyticsPage() {
   const submissionRate = totalExpected > 0 ? Math.round(totalSubmissions / totalExpected * 100) : 0
   const avgScore = results.length > 0 ? Math.round(results.reduce((s, r) => s + (r.score / r.total) * 100, 0) / results.length) : 0
   const passRate = results.length > 0 ? results.filter((r) => (r.score / r.total) * 100 >= 50).length / results.length * 100 : 0
+
+  const sortedAttendance = [...attendance].sort((a, b) => new Date(a.createdAt || a.date).getTime() - new Date(b.createdAt || b.date).getTime())
+  const midAtt = Math.floor(sortedAttendance.length / 2)
+  const attFirst = sortedAttendance.slice(0, midAtt)
+  const attSecond = sortedAttendance.slice(midAtt)
+  const attFirstRate = attFirst.length > 0 ? attFirst.filter((a) => a.status === "present").length / attFirst.length * 100 : 0
+  const attSecondRate = attSecond.length > 0 ? attSecond.filter((a) => a.status === "present").length / attSecond.length * 100 : 0
+  const attendanceChange = attendance.length > 0 ? (attSecondRate - attFirstRate) : 0
+
+  const sortedAssignments = [...assignments].sort((a, b) => new Date(a.createdAt || a.dueDate).getTime() - new Date(b.createdAt || b.dueDate).getTime())
+  const midAsn = Math.floor(sortedAssignments.length / 2)
+  const asnFirst = sortedAssignments.slice(0, midAsn)
+  const asnSecond = sortedAssignments.slice(midAsn)
+  const asnFirstRate = asnFirst.reduce((s, a) => s + (a.submissions || 0), 0) > 0 ? asnFirst.reduce((s, a) => s + (a.submissions || 0), 0) / asnFirst.reduce((s, a) => s + (a.total || 0), 0) * 100 : 0
+  const asnSecondRate = asnSecond.reduce((s, a) => s + (a.submissions || 0), 0) > 0 ? asnSecond.reduce((s, a) => s + (a.submissions || 0), 0) / asnSecond.reduce((s, a) => s + (a.total || 0), 0) * 100 : 0
+  const submissionChange = assignments.length > 0 ? (asnSecondRate - asnFirstRate) : 0
 
   const attendanceRate = attendance.length > 0 ? Math.round(attendanceSummary.present / attendance.length * 100) : 0
 
@@ -152,9 +168,9 @@ export default function TeacherAnalyticsPage() {
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Class Average", value: `${avgScore}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].avgScore > termScoreData[termScoreData.length - 2].avgScore ? "+" : ""}${termScoreData[termScoreData.length - 1].avgScore - termScoreData[termScoreData.length - 2].avgScore}%` : "—", icon: TrendingUp, color: avgScore >= 70 ? "from-green-500 to-green-600" : "from-amber-500 to-amber-600", trend: avgScore >= 70 },
-          { label: "Pass Rate", value: `${Math.round(passRate)}%`, change: "+3.2%", icon: Award, color: passRate >= 70 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600", trend: passRate >= 70 },
-          { label: "Submission Rate", value: `${submissionRate}%`, change: "+5%", icon: ClipboardCheck, color: "from-violet-500 to-violet-600", trend: submissionRate >= 70 },
-          { label: "Attendance", value: `${attendanceRate}%`, change: "+2.3%", icon: CalendarCheck, color: "from-blue-500 to-blue-600", trend: attendanceRate >= 80 },
+          { label: "Pass Rate", value: `${Math.round(passRate)}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].passRate > termScoreData[termScoreData.length - 2].passRate ? "+" : ""}${(termScoreData[termScoreData.length - 1].passRate - termScoreData[termScoreData.length - 2].passRate).toFixed(1)}%` : "—", icon: Award, color: passRate >= 70 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600", trend: passRate >= 70 },
+          { label: "Submission Rate", value: `${submissionRate}%`, change: `${submissionChange >= 0 ? "+" : ""}${submissionChange.toFixed(1)}%`, icon: ClipboardCheck, color: "from-violet-500 to-violet-600", trend: submissionRate >= 70 },
+          { label: "Attendance", value: `${attendanceRate}%`, change: `${attendanceChange >= 0 ? "+" : ""}${attendanceChange.toFixed(1)}%`, icon: CalendarCheck, color: "from-blue-500 to-blue-600", trend: attendanceRate >= 80 },
         ].map((stat, i) => (
           <motion.div key={stat.label} variants={itemVariants}>
             <Card className="glass-card border-0 overflow-hidden">
