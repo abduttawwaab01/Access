@@ -62,7 +62,7 @@ export default function StudentReportCardPage() {
 
   useEffect(() => {
     if (!studentId || !student?.classId) return
-    const studRes = results.filter((r) => r.studentId === studentId)
+    const studRes = results.filter((r) => r.studentId === studentId && r.classId === student?.classId)
     const tList = [...new Set(studRes.map((r) => r.term))] as string[]
     const ct = tList[tList.length - 1] || ""
     if (!ct) return
@@ -83,7 +83,7 @@ export default function StudentReportCardPage() {
     )
   }
 
-  const studentResults = results.filter((r) => r.studentId === studentId)
+  const studentResults = results.filter((r) => r.studentId === studentId && r.classId === student?.classId)
   const terms = [...new Set(studentResults.map((r) => r.term))] as string[]
   const currentTerm = terms[terms.length - 1] || "First Term"
   const termResults = studentResults.filter((r) => r.term === currentTerm)

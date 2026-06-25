@@ -77,7 +77,7 @@ export default function TeacherReportCardsPage() {
   }, [userId])
 
   const student = students.find((s: any) => s.id === selectedStudentId)
-  const studentResults = results.filter((r) => r.studentId === selectedStudentId)
+  const studentResults = results.filter((r) => r.studentId === selectedStudentId && r.classId === student?.classId)
   const termNames = [...new Set(studentResults.map((r) => r.term))] as string[]
   const currentTerm = selectedTermName || termNames[termNames.length - 1] || ""
   const termResults = studentResults.filter((r) => r.term === currentTerm)
@@ -89,7 +89,7 @@ export default function TeacherReportCardsPage() {
 
   useEffect(() => {
     if (!selectedStudentId || !student?.classId) return
-    const res = results.filter((r) => r.studentId === selectedStudentId)
+    const res = results.filter((r) => r.studentId === selectedStudentId && r.classId === student?.classId)
     const tList = [...new Set(res.map((r) => r.term))] as string[]
     const ct = selectedTermName || tList[tList.length - 1] || ""
     if (!ct) return

@@ -58,7 +58,7 @@ export default function ParentReportCardPage() {
     )
   }
 
-  const studentResults = results.filter((r: any) => r.studentId === activeChildId)
+  const studentResults = results.filter((r: any) => r.studentId === activeChildId && r.classId === activeChild.classId)
   const terms = [...new Set(studentResults.map((r: any) => r.term))] as string[]
   const currentTerm = terms[terms.length - 1] || "First Term"
   const termResults = studentResults.filter((r: any) => r.term === currentTerm)
@@ -74,7 +74,7 @@ export default function ParentReportCardPage() {
 
   useEffect(() => {
     if (!activeChildId || !activeChild?.classId) return
-    const res = results.filter((r: any) => r.studentId === activeChildId)
+    const res = results.filter((r: any) => r.studentId === activeChildId && r.classId === activeChild.classId)
     const tList = [...new Set(res.map((r: any) => r.term))] as string[]
     const ct = tList[tList.length - 1] || ""
     if (!ct) return

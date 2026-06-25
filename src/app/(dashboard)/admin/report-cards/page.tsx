@@ -94,7 +94,7 @@ export default function AdminReportCardsPage() {
   }, [selectedStudentId, selectedTerm, students, results])
 
   const student = students.find((s: any) => s.id === selectedStudentId)
-  const studentResults = results.filter((r) => r.studentId === selectedStudentId)
+  const studentResults = results.filter((r) => r.studentId === selectedStudentId && r.classId === student?.classId)
   const terms = [...new Set(studentResults.map((r) => r.term))] as string[]
   const currentTerm = selectedTerm || terms[terms.length - 1] || ""
   const termResults = studentResults.filter((r) => r.term === currentTerm)
