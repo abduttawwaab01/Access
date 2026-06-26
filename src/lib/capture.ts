@@ -207,6 +207,39 @@ function overrideColorVarsOnElement(el: HTMLElement): () => void {
   }
 }
 
+function overrideUnsupportedColorsAll(el: HTMLElement): () => void {
+  const restoreFns: Array<() => void> = []
+  const all = el.querySelectorAll("*")
+  for (const child of all) {
+    restoreFns.push(overrideUnsupportedColorsOnElement(child as HTMLElement))
+  }
+  restoreFns.push(overrideUnsupportedColorsOnElement(el))
+  return () => { for (const fn of restoreFns) fn() }
+}
+
+function overrideUnsupportedColorsOnElement(el: HTMLElement): () => void {
+  const restored: Array<{ prop: string; value: string }> = []
+  try {
+    const computed = window.getComputedStyle(el)
+    for (let i = 0; i < computed.length; i++) {
+      const prop = computed[i]
+      if (!isColorProperty(prop)) continue
+      const value = computed.getPropertyValue(prop)
+      if (hasUnsupportedColor(value)) {
+        const current = el.style.getPropertyValue(prop)
+        const priority = el.style.getPropertyPriority(prop)
+        if (current) restored.push({ prop, value: current + (priority === "important" ? " !important" : "") })
+        el.style.setProperty(prop, getFallbackForProperty(prop), "important")
+      }
+    }
+  } catch {}
+  return () => {
+    for (const { prop, value } of restored) {
+      el.style.setProperty(prop, value)
+    }
+  }
+}
+
 export async function captureElement(
   element: HTMLElement,
   options?: { scale?: number; backgroundColor?: string; inlineStyles?: boolean }
@@ -233,6 +266,7 @@ export async function captureElement(
     throw new Error("html2canvas is not available")
   }
 
+  const restoreSource = overrideUnsupportedColorsAll(element)
   const restore = overrideColorVarsOnElement(element)
   try {
     const canvas = await html2canvasFn(element, {
@@ -290,6 +324,7 @@ export async function captureElement(
     return canvas
   } finally {
     restore()
+    restoreSource()
   }
 }
 
