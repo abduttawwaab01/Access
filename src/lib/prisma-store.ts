@@ -662,10 +662,10 @@ export const db = {
       const total = caScore + examScore
       const totalMax = caTotal + examTotal
       const pct = totalMax > 0 ? (total / totalMax) * 100 : 0
-      const boundaries = gc.gradeBoundaries || []
+      const boundaries = [...(gc.gradeBoundaries || [])].sort((a: any, b: any) => b.min - a.min)
       let grade = "F", remark = "Needs Improvement"
       for (const b of boundaries) {
-        if (pct >= b.min) { grade = b.grade; remark = b.remark }
+        if (pct >= b.min) { grade = b.grade; remark = b.remark; break }
       }
       return prisma.result.create({
         data: {
@@ -705,10 +705,10 @@ export const db = {
       const total = caScore + examScore
       const totalMax = caTotal + examTotal
       const pct = totalMax > 0 ? (total / totalMax) * 100 : 0
-      const boundaries = gc.gradeBoundaries || []
+      const boundaries = [...(gc.gradeBoundaries || [])].sort((a: any, b: any) => b.min - a.min)
       let grade = "F", remark = "Needs Improvement"
       for (const b of boundaries) {
-        if (pct >= b.min) { grade = b.grade; remark = b.remark }
+        if (pct >= b.min) { grade = b.grade; remark = b.remark; break }
       }
       return prisma.result.update({
         where: { id },

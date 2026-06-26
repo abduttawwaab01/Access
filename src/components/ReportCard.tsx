@@ -1,6 +1,7 @@
 "use client"
 
 import { forwardRef } from "react"
+import { DEFAULT_GRADE_BOUNDARIES, getGradeFromBoundaries, type GradeBoundary } from "@/lib/report-card-constants"
 
 interface SubjectResult {
   subject: string
@@ -59,20 +60,12 @@ const GRADE_COLORS: Record<string, string> = {
   A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", E: "#ef4444", F: "#dc2626",
 }
 
-function getGrade(pct: number) {
-  if (pct >= 75) return { grade: "A", remark: "Excellent" }
-  if (pct >= 65) return { grade: "B", remark: "Very Good" }
-  if (pct >= 55) return { grade: "C", remark: "Good" }
-  if (pct >= 45) return { grade: "D", remark: "Fair" }
-  if (pct >= 40) return { grade: "E", remark: "Pass" }
-  return { grade: "F", remark: "Fail" }
-}
-
-export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData }>(({ data }, ref) => {
+export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData; gradeBoundaries?: GradeBoundary[] }>(({ data, gradeBoundaries }, ref) => {
+  const boundaries = gradeBoundaries || DEFAULT_GRADE_BOUNDARIES
   const totals = data.subjects.reduce((s, r) => s + r.score, 0)
   const maxTotal = data.subjects.reduce((s, r) => s + r.total, 0)
   const average = maxTotal > 0 ? Math.round((totals / maxTotal) * 100) : 0
-  const letterGrade = getGrade(average)
+  const letterGrade = getGradeFromBoundaries(average, boundaries)
   const subjectCount = data.subjects.length
   const compact = subjectCount > 8
 

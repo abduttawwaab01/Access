@@ -575,6 +575,7 @@ async function main() {
         { min: 65, grade: "B", remark: "Very Good" },
         { min: 55, grade: "C", remark: "Good" },
         { min: 45, grade: "D", remark: "Fair" },
+        { min: 35, grade: "E", remark: "Poor" },
         { min: 0, grade: "F", remark: "Needs Improvement" },
       ],
       schoolId,

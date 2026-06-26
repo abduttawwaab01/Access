@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
@@ -15,8 +16,10 @@ import {
 import {
   TrendingUp, Users, BookOpen, ClipboardCheck, Award,
   CalendarCheck, Lightbulb, ArrowUpRight, ArrowDownRight,
-  Activity, Zap,
+  Activity, Zap, DownloadCloud, FileText,
 } from "lucide-react"
+import { downloadPng, downloadPdf, downloadDoc } from "@/lib/capture"
+import { toast } from "sonner"
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"]
 
@@ -138,6 +141,27 @@ export default function TeacherAnalyticsPage() {
   if (attendanceRate < 75) insights.push("Class attendance is low. Consider discussing engagement strategies with students.")
   else if (attendanceRate >= 90) insights.push("Excellent attendance rate! Students are engaged and showing up consistently.")
 
+  const [exporting, setExporting] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
+
+  const handleExportPNG = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, "Teaching_Analytics.png", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, "Teaching_Analytics.pdf", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDOC = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { downloadDoc(reportRef.current, "Teaching_Analytics.doc", "Teaching Analytics"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -159,11 +183,19 @@ export default function TeacherAnalyticsPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold">Teaching Analytics</h2>
-        <p className="text-sm text-muted-foreground">Performance trends, class insights, and recommendations</p>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Teaching Analytics</h2>
+          <p className="text-sm text-muted-foreground">Performance trends, class insights, and recommendations</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" size="sm" onClick={handleExportDOC} disabled={exporting}><FileText className="h-4 w-4 mr-1" />DOC</Button>
+        </div>
       </motion.div>
 
+      <div ref={reportRef}>
       {/* Trend Summary Cards */}
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -468,6 +500,7 @@ export default function TeacherAnalyticsPage() {
           </motion.div>
       </div>
       )}
+    </div>
     </div>
   )
 }

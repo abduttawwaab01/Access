@@ -16,7 +16,7 @@ import { captureElement, downloadPng, downloadPdf, downloadCsv, downloadDoc } fr
 const tabs = ["Score Entry", "Dashboard"]
 
 const gradeColors: Record<string, string> = {
-  A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", F: "#ef4444",
+  A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", E: "#ef4444", F: "#dc2626",
 }
 
 export default function AdminResultsPage() {
@@ -129,7 +129,7 @@ export default function AdminResultsPage() {
   }
 
   const getGrade = (total: number) => {
-    const boundaries = gradingConfig?.gradeBoundaries || []
+    const boundaries = [...(gradingConfig?.gradeBoundaries || [])].sort((a, b) => b.min - a.min)
     const pct = total / (caMax + examMax) * 100
     for (const b of boundaries) { if (pct >= b.min) return b.grade }
     return "F"
@@ -144,11 +144,12 @@ export default function AdminResultsPage() {
   const passedCount = scoredStudents.filter((r) => (r.total || 0) >= passMark).length
   const passRate = scoredStudents.length > 0 ? Math.round((passedCount / scoredStudents.length) * 100) : 0
 
-  const gradeDist = { A: 0, B: 0, C: 0, D: 0, F: 0 }
+  const gradeDist = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 }
   const boundaries = gradingConfig?.gradeBoundaries || []
   const getGradeFromTotal = (total: number) => {
     const pct = total / (caMax + examMax) * 100
-    for (const b of boundaries) { if (pct >= b.min) return b.grade }
+    const sorted = [...boundaries].sort((a, b) => b.min - a.min)
+    for (const b of sorted) { if (pct >= b.min) return b.grade }
     return "F"
   }
   scoredStudents.forEach((r) => {

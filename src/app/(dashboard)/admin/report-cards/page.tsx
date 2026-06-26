@@ -11,7 +11,7 @@ import { Download, Printer, Send, FileText, DownloadCloud, Search, ChevronDown, 
 import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { downloadPng, downloadPdf, openPrintWindow, elementToPngBlob } from "@/lib/capture"
-import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
+import { STANDARD_DOMAINS, computePosition, DEFAULT_GRADE_BOUNDARIES, type GradeBoundary } from "@/lib/report-card-constants"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts"
 
 export default function AdminReportCardsPage() {
@@ -22,6 +22,7 @@ export default function AdminReportCardsPage() {
   const [reportCards, setReportCards] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [gradeBoundaries, setGradeBoundaries] = useState<GradeBoundary[]>(DEFAULT_GRADE_BOUNDARIES)
   const [exporting, setExporting] = useState(false)
   const [bulkExportingZip, setBulkExportingZip] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState("")
@@ -51,13 +52,15 @@ export default function AdminReportCardsPage() {
       fetch("/api/school").then((r) => r.json()),
       fetch("/api/report-cards").then((r) => r.json()),
       fetch("/api/attendance-logs").then((r) => r.json()),
-    ]).then(([res, stu, cls, sch, rc, att]) => {
+      fetch("/api/grading-config").then((r) => r.json()),
+    ]).then(([res, stu, cls, sch, rc, att, gc]) => {
       setResults(Array.isArray(res) ? res : [])
       setStudents(Array.isArray(stu) ? stu : [])
       setClasses(Array.isArray(cls) ? cls : [])
       setSchool(sch)
       setReportCards(Array.isArray(rc) ? rc : [])
       setAttendance(Array.isArray(att) ? att : [])
+      if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -465,7 +468,7 @@ export default function AdminReportCardsPage() {
           </div>
 
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
-            <ReportCard ref={reportRef} data={reportData!} />
+            <ReportCard ref={reportRef} data={reportData!} gradeBoundaries={gradeBoundaries} />
           </motion.div>
         </div>
       )}

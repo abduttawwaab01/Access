@@ -10,7 +10,7 @@ import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { useParentChildren } from "@/hooks/useParentChildren"
 import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
-import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
+import { STANDARD_DOMAINS, computePosition, DEFAULT_GRADE_BOUNDARIES, type GradeBoundary } from "@/lib/report-card-constants"
 
 export default function ParentReportCardPage() {
   const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
@@ -22,6 +22,7 @@ export default function ParentReportCardPage() {
   const [exporting, setExporting] = useState(false)
   const [entryData, setEntryData] = useState<any>(null)
   const [classResults, setClassResults] = useState<any[]>([])
+  const [gradeBoundaries, setGradeBoundaries] = useState<GradeBoundary[]>(DEFAULT_GRADE_BOUNDARIES)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -32,11 +33,13 @@ export default function ParentReportCardPage() {
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()),
       fetch("/api/attendance-logs").then((r) => r.json()),
-    ]).then(([res, cls, sch, att]) => {
+      fetch("/api/grading-config").then((r) => r.json()),
+    ]).then(([res, cls, sch, att, gc]) => {
       setResults(Array.isArray(res) ? res : [])
       setClasses(Array.isArray(cls) ? cls : [])
       setSchool(sch)
       setAttendance(Array.isArray(att) ? att : [])
+      if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [activeChildId])
@@ -236,7 +239,7 @@ export default function ParentReportCardPage() {
         </div>
       ) : (
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
-          <ReportCard ref={reportRef} data={reportData} />
+          <ReportCard ref={reportRef} data={reportData} gradeBoundaries={gradeBoundaries} />
         </motion.div>
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,8 +15,10 @@ import {
 import {
   Users, GraduationCap, BookOpen, TrendingUp, TrendingDown,
   DollarSign, CalendarCheck, AlertTriangle, Lightbulb, UserCheck,
-  Activity, ArrowUpRight, ArrowDownRight, Target, Zap,
+  Activity, ArrowUpRight, ArrowDownRight, Target, Zap, DownloadCloud, FileText,
 } from "lucide-react"
+import { downloadPng, downloadPdf, downloadDoc } from "@/lib/capture"
+import { toast } from "sonner"
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#84cc16", "#ec4899"]
 
@@ -136,6 +138,27 @@ export default function AdminAnalyticsPage() {
   const studentTeacherRatio = totalTeachers > 0 ? (totalStudents / totalTeachers).toFixed(1) : "N/A"
   if (Number(studentTeacherRatio) > 30) insights.push(`Student-teacher ratio is ${studentTeacherRatio}:1. Consider hiring more staff.`)
 
+  const [exporting, setExporting] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
+
+  const handleExportPNG = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, "School_Analytics.png", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, "School_Analytics.pdf", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDOC = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { downloadDoc(reportRef.current, "School_Analytics.doc", "School Analytics"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -162,7 +185,7 @@ export default function AdminAnalyticsPage() {
           <h2 className="text-2xl font-bold">School Analytics</h2>
           <p className="text-sm text-muted-foreground">Performance trends, insights, and forecasting</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {["all", "term", "month"].map((range) => (
             <button
               key={range}
@@ -176,9 +199,14 @@ export default function AdminAnalyticsPage() {
               {range === "all" ? "All Time" : range === "term" ? "This Term" : "This Month"}
             </button>
           ))}
+          <div className="w-px h-8 bg-border mx-1" />
+          <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" size="sm" onClick={handleExportDOC} disabled={exporting}><FileText className="h-4 w-4 mr-1" />DOC</Button>
         </div>
       </motion.div>
 
+      <div ref={reportRef}>
       {/* Trend Summary Cards */}
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -500,6 +528,7 @@ export default function AdminAnalyticsPage() {
         </motion.div>
       </div>
       )}
+    </div>
     </div>
   )
 }

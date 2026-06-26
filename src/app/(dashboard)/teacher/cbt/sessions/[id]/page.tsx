@@ -252,6 +252,42 @@ export default function TeacherSessionDetailPage() {
 
               {Object.keys(typeBreakdown).length > 1 && <><Separator /><div><h3 className="font-semibold mb-3">Performance by Question Type</h3><div className="grid grid-cols-2 md:grid-cols-4 gap-3">{Object.entries(typeBreakdown).map(([type, data]: [string, any]) => { const tpct = data.max > 0 ? Math.round((data.score / data.max) * 100) : 0; return (<Card key={type} className="border border-border/50"><CardContent className="p-4 text-center"><p className="text-xs text-muted-foreground">{typeLabels[type] || type}</p><p className="text-lg font-bold mt-1">{tpct}%</p><p className="text-[10px] text-muted-foreground">{data.score}/{data.max} pts</p></CardContent></Card>) })}</div></div></>}
 
+              {(() => {
+                const topicMap: Record<string, { correct: number; total: number; score: number; max: number }> = {}
+                enrichedAnswers.forEach((a: any) => {
+                  const topic = a.question?.topic || "General"
+                  if (!topicMap[topic]) topicMap[topic] = { correct: 0, total: 0, score: 0, max: 0 }
+                  topicMap[topic].total++
+                  topicMap[topic].score += a.score
+                  topicMap[topic].max += a.maxPoints
+                  if (a.isCorrect) topicMap[topic].correct++
+                })
+                const topics = Object.entries(topicMap)
+                if (topics.length <= 1) return null
+                return (
+                  <><Separator /><div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2"><Target className="h-4 w-4" /> Topic Breakdown</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {topics.map(([topic, data]) => {
+                        const tpct = data.max > 0 ? Math.round((data.score / data.max) * 100) : 0
+                        return (
+                          <Card key={topic} className="border border-border/50">
+                            <CardContent className="p-4 text-center">
+                              <p className="text-xs text-muted-foreground font-medium truncate" title={topic}>{topic}</p>
+                              <p className="text-lg font-bold mt-1">{tpct}%</p>
+                              <p className="text-[10px] text-muted-foreground">{data.score}/{data.max} pts</p>
+                              <div className="flex justify-center gap-2 mt-1 text-[10px]">
+                                <span className="text-green-600">{data.correct}/{data.total}</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </div></>
+                )
+              })()}
+
               <Separator />
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

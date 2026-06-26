@@ -200,10 +200,10 @@ export const store = {
       const total = caScore + examScore
       const totalMax = caTotal + examTotal
       const pct = totalMax > 0 ? (total / totalMax) * 100 : 0
-      const boundaries = gc.gradeBoundaries || []
+      const boundaries = [...(gc.gradeBoundaries || [])].sort((a: any, b: any) => b.min - a.min)
       let grade = "F", remark = "Needs Improvement"
       for (const b of boundaries) {
-        if (pct >= b.min) { grade = b.grade; remark = b.remark }
+        if (pct >= b.min) { grade = b.grade; remark = b.remark; break }
       }
       const item = { id: uid(), ...data, caScore, examScore, caTotal, examTotal, total, score: total, totalMax, grade, remark, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
       results.push(item)
@@ -221,10 +221,10 @@ export const store = {
       const total = caScore + examScore
       const totalMax = caTotal + examTotal
       const pct = totalMax > 0 ? (total / totalMax) * 100 : 0
-      const boundaries = gc.gradeBoundaries || []
+      const boundaries = [...(gc.gradeBoundaries || [])].sort((a: any, b: any) => b.min - a.min)
       let grade = "F", remark = "Needs Improvement"
       for (const b of boundaries) {
-        if (pct >= b.min) { grade = b.grade; remark = b.remark }
+        if (pct >= b.min) { grade = b.grade; remark = b.remark; break }
       }
       results[idx] = { ...results[idx], ...data, caScore, examScore, caTotal, examTotal, total, score: total, totalMax, grade, remark, updatedAt: new Date().toISOString() }
       return results[idx]

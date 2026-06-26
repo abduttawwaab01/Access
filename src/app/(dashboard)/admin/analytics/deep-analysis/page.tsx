@@ -1,12 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, GraduationCap, Brain, ChevronDown, ChevronUp, ArrowUpDown, BookOpen, AlertTriangle, TrendingUp, X, Target } from "lucide-react"
+import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts"
+import { Users, GraduationCap, Brain, ChevronDown, ChevronUp, ArrowUpDown, BookOpen, AlertTriangle, TrendingUp, X, Target, DownloadCloud, FileSpreadsheet, FileText } from "lucide-react"
+import { downloadPng, downloadPdf, downloadCsv, downloadDoc } from "@/lib/capture"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 export default function DeepAnalysisPage() {
@@ -111,6 +114,74 @@ export default function DeepAnalysisPage() {
     },
   ] : []
 
+  const [exporting, setExporting] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
+
+  // Compute class-level radar data
+  const radarData: { subject: string; score: number }[] = []
+  const masteryDist = [0, 0, 0, 0, 0]
+  if (analysis?.gapAnalysis) {
+    const subjectScores: Record<string, { total: number; correct: number }> = {}
+    analysis.gapAnalysis.forEach((s: any) => {
+      if (s.subjectBreakdown) {
+        Object.entries(s.subjectBreakdown).forEach(([sub, data]: [string, any]) => {
+          if (!subjectScores[sub]) subjectScores[sub] = { total: 0, correct: 0 }
+          subjectScores[sub].total += data.total
+          subjectScores[sub].correct += data.correct
+        })
+      }
+    })
+    Object.entries(subjectScores).forEach(([sub, data]) => {
+      const rate = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0
+      radarData.push({ subject: sub, score: rate })
+    })
+    analysis.gapAnalysis.forEach((s: any) => {
+      const r = s.masteryRate
+      if (r >= 80) masteryDist[0]++
+      else if (r >= 60) masteryDist[1]++
+      else if (r >= 40) masteryDist[2]++
+      else if (r >= 20) masteryDist[3]++
+      else masteryDist[4]++
+    })
+  }
+  const distData = [
+    { range: "80-100%", count: masteryDist[0], fill: "#22c55e" },
+    { range: "60-79%", count: masteryDist[1], fill: "#84cc16" },
+    { range: "40-59%", count: masteryDist[2], fill: "#f59e0b" },
+    { range: "20-39%", count: masteryDist[3], fill: "#f97316" },
+    { range: "0-19%", count: masteryDist[4], fill: "#ef4444" },
+  ]
+
+  const handleExportCSV = () => {
+    const data = sortedStudents.map((s: any) => ({
+      "Student Name": s.studentName || "Unknown",
+      "Mastery Rate": `${s.masteryRate}%`,
+      "Total Questions": s.totalQuestions || 0,
+      "Correct Answers": s.correctAnswers || 0,
+      "Weak Subjects": s.weakSubjects?.join(", ") || "",
+      "Strong Subjects": s.strongSubjects?.join(", ") || "",
+    }))
+    downloadCsv(data, `Deep_Analysis_${classes.find((c) => c.id === selectedClassId)?.name || "class"}.csv`)
+  }
+
+  const handleExportPNG = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, `Deep_Analysis_${classes.find((c) => c.id === selectedClassId)?.name || "class"}.png`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, `Deep_Analysis_${classes.find((c) => c.id === selectedClassId)?.name || "class"}.pdf`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDOC = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { downloadDoc(reportRef.current, `Deep_Analysis_${classes.find((c) => c.id === selectedClassId)?.name || "class"}.doc`, "Deep Analysis"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
   const renderSubjectBars = (breakdown: Record<string, { total: number; correct: number }>) => {
     const entries = Object.entries(breakdown).sort(([, a], [, b]) => {
       const rateA = a.total > 0 ? (a.correct / a.total) * 100 : 0
@@ -139,12 +210,20 @@ export default function DeepAnalysisPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold">Deep Analysis</h2>
-        <p className="text-sm text-muted-foreground">Student gap and mastery analysis by class</p>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Deep Analysis</h2>
+          <p className="text-sm text-muted-foreground">Student gap and mastery analysis by class</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV}><FileSpreadsheet className="h-4 w-4 mr-1" />CSV</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" size="sm" onClick={handleExportDOC} disabled={exporting}><FileText className="h-4 w-4 mr-1" />DOC</Button>
+        </div>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="flex items-center gap-3">
         <Select value={selectedClassId} onValueChange={(v) => v && setSelectedClassId(v)}>
           <SelectTrigger className="h-10 w-full md:w-64">
             <SelectValue placeholder="Select a class..." />
@@ -155,7 +234,10 @@ export default function DeepAnalysisPage() {
             ))}
           </SelectContent>
         </Select>
+        {analysis && <span className="text-xs text-muted-foreground">{analysis.studentCount || 0} students</span>}
       </motion.div>
+
+      <div ref={reportRef}>
 
       {loading ? (
         <div className="space-y-4">
@@ -196,6 +278,50 @@ export default function DeepAnalysisPage() {
               </motion.div>
             ))}
           </motion.div>
+
+          {/* Subject Radar & Mastery Distribution */}
+          {(radarData.length > 0 || distData.some((d) => d.count > 0)) && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {radarData.length > 1 && (
+                  <Card className="glass-card border-0">
+                    <CardContent className="p-5">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2"><Brain className="h-4 w-4" /> Subject Mastery Radar</h3>
+                      <div className="h-56 min-h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart data={radarData}>
+                            <PolarGrid stroke="#e5e7eb" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                            <Radar dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {distData.some((d) => d.count > 0) && (
+                  <Card className="glass-card border-0">
+                    <CardContent className="p-5">
+                      <h3 className="font-semibold mb-3 flex items-center gap-2"><BarChart className="h-4 w-4" /> Mastery Distribution</h3>
+                      <div className="h-56 min-h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={distData}>
+                            <XAxis dataKey="range" tick={{ fontSize: 10 }} />
+                            <YAxis allowDecimals={false} />
+                            <Tooltip />
+                            <Bar dataKey="count" name="Students">
+                              {distData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </motion.div>
+          )}
 
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <Card className="glass-card border-0">
@@ -344,6 +470,7 @@ export default function DeepAnalysisPage() {
           </motion.div>
         </>
       )}
+    </div>
     </div>
   )
 }

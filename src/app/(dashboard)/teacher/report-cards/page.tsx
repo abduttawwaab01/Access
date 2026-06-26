@@ -9,7 +9,7 @@ import { Download, Printer, Send, FileText, DownloadCloud, User, Award } from "l
 import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { downloadPng, downloadPdf, openPrintWindow, elementToPngBlob } from "@/lib/capture"
-import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
+import { STANDARD_DOMAINS, computePosition, DEFAULT_GRADE_BOUNDARIES, type GradeBoundary } from "@/lib/report-card-constants"
 import { useSession } from "next-auth/react"
 
 export default function TeacherReportCardsPage() {
@@ -20,6 +20,7 @@ export default function TeacherReportCardsPage() {
   const [school, setSchool] = useState<any>(null)
   const [results, setResults] = useState<any[]>([])
   const [attendance, setAttendance] = useState<any[]>([])
+  const [gradeBoundaries, setGradeBoundaries] = useState<GradeBoundary[]>(DEFAULT_GRADE_BOUNDARIES)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState("")
@@ -45,7 +46,8 @@ export default function TeacherReportCardsPage() {
       fetch("/api/attendance-logs").then((r) => r.json()),
       fetch("/api/terms").then((r) => r.json()),
       fetch("/api/sessions").then((r) => r.json()),
-    ]).then(([staffData, assignments, cls, stu, sch, res, att, trms, sess]) => {
+      fetch("/api/grading-config").then((r) => r.json()),
+    ]).then(([staffData, assignments, cls, stu, sch, res, att, trms, sess, gc]) => {
       const staffId = staffData?.id || ""
       const assigns = Array.isArray(assignments) ? assignments : []
       const myAssignment = assigns.find((a: any) => a.teacherId === staffId)
@@ -71,6 +73,7 @@ export default function TeacherReportCardsPage() {
       setResults(Array.isArray(res) ? res : [])
       setSchool(sch)
       setAttendance(Array.isArray(att) ? att : [])
+      if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
       setSelectedTermName(currentTerm?.name || (allTerms.length > 0 ? allTerms[0].name : ""))
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -319,7 +322,7 @@ export default function TeacherReportCardsPage() {
 
       {selectedStudentId && termResults.length > 0 && (
         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
-          <ReportCard ref={reportRef} data={reportData!} />
+          <ReportCard ref={reportRef} data={reportData!} gradeBoundaries={gradeBoundaries} />
         </motion.div>
       )}
     </div>

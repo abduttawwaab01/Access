@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -15,7 +16,10 @@ import {
 import {
   TrendingUp, TrendingDown, CalendarCheck, BookOpen,
   ArrowUpRight, ArrowDownRight, Target, Lightbulb, Activity,
+  DownloadCloud, FileText,
 } from "lucide-react"
+import { downloadPng, downloadPdf, downloadDoc } from "@/lib/capture"
+import { toast } from "sonner"
 import { getInitials, cn } from "@/lib/utils"
 import { useParentChildren } from "@/hooks/useParentChildren"
 
@@ -111,6 +115,27 @@ export default function ParentAnalyticsPage() {
 
   if (fees.outstanding > 0) insights.push(`There is an outstanding fee balance of ₦${fees.outstanding.toLocaleString()}. Consider clearing this to avoid any disruption.`)
 
+  const [exporting, setExporting] = useState(false)
+  const reportRef = useRef<HTMLDivElement>(null)
+
+  const handleExportPNG = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, "Academic_Analytics.png", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, "Academic_Analytics.pdf", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDOC = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { downloadDoc(reportRef.current, "Academic_Analytics.doc", "Academic Analytics"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -132,10 +157,19 @@ export default function ParentAnalyticsPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold">Academic Analytics</h2>
-        <p className="text-sm text-muted-foreground">Detailed insights into your child&apos;s performance</p>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Academic Analytics</h2>
+          <p className="text-sm text-muted-foreground">Detailed insights into your child&apos;s performance</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" size="sm" onClick={handleExportDOC} disabled={exporting}><FileText className="h-4 w-4 mr-1" />DOC</Button>
+        </div>
       </motion.div>
+
+      <div ref={reportRef}>
 
       {/* Child Selector */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex gap-2 overflow-x-auto pb-1">
@@ -449,6 +483,7 @@ export default function ParentAnalyticsPage() {
           </motion.div>
       </div>
       )}
+    </div>
     </div>
   )
 }

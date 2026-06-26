@@ -11,7 +11,7 @@ import { ReportCard } from "@/components/ReportCard"
 import { currentSession } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 import { downloadPng, downloadPdf, openPrintWindow } from "@/lib/capture"
-import { STANDARD_DOMAINS, computePosition } from "@/lib/report-card-constants"
+import { STANDARD_DOMAINS, computePosition, DEFAULT_GRADE_BOUNDARIES, getGradeFromBoundaries, type GradeBoundary } from "@/lib/report-card-constants"
 
 export default function StudentReportCardPage() {
   const { data: authData } = useSession()
@@ -27,6 +27,7 @@ export default function StudentReportCardPage() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [entryData, setEntryData] = useState<any>(null)
+  const [gradeBoundaries, setGradeBoundaries] = useState<GradeBoundary[]>(DEFAULT_GRADE_BOUNDARIES)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -41,13 +42,14 @@ export default function StudentReportCardPage() {
       }
       setStudentId(sid)
       setStudent(studentData)
-      const [res, stu, cls, sch, rc, att] = await Promise.all([
+      const [res, stu, cls, sch, rc, att, gc] = await Promise.all([
         fetch("/api/results").then((r) => r.json()),
         fetch("/api/students").then((r) => r.json()),
         fetch("/api/classes").then((r) => r.json()),
         fetch("/api/school").then((r) => r.json()),
         fetch(`/api/report-cards?studentId=${sid}`).then((r) => r.json()),
         fetch("/api/attendance-logs").then((r) => r.json()),
+        fetch("/api/grading-config").then((r) => r.json()),
       ])
       setResults(Array.isArray(res) ? res : [])
       setStudents(Array.isArray(stu) ? stu : [])
@@ -55,6 +57,7 @@ export default function StudentReportCardPage() {
       setSchool(sch)
       setReportCards(Array.isArray(rc) ? rc : [])
       setAttendance(Array.isArray(att) ? att : [])
+      if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
       setLoading(false)
     }
     load()
@@ -118,7 +121,7 @@ export default function StudentReportCardPage() {
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
       score: r.score,
-      total: r.total,
+      total: r.totalMax || 100,
       grade: r.grade || "F",
       remark: r.remark || "Needs Improvement",
     })),
@@ -218,7 +221,7 @@ export default function StudentReportCardPage() {
       </div>
 
       <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
-        <ReportCard ref={reportRef} data={reportData} />
+        <ReportCard ref={reportRef} data={reportData} gradeBoundaries={gradeBoundaries} />
       </motion.div>
     </div>
   )

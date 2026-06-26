@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from "recharts"
-import { ArrowLeft, Clock, Award, Brain, AlertTriangle, Lightbulb, Target, CheckCircle2, XCircle, FileText, DownloadCloud } from "lucide-react"
-import { captureElement } from "@/lib/capture"
+import { ArrowLeft, Clock, Award, Brain, AlertTriangle, Lightbulb, Target, CheckCircle2, XCircle, FileText, DownloadCloud, FileSpreadsheet } from "lucide-react"
+import { downloadPng, downloadPdf, downloadCsv, downloadDoc } from "@/lib/capture"
 import { toast } from "sonner"
 
 const getGrade = (pct: number) => {
@@ -115,21 +115,33 @@ export default function ExamAnalysisPage() {
     ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000)
     : null
 
+  const fileName = `${exam?.title?.replace(/\s+/g, "_") || "Exam"}_Analysis`
+
   const handleExportPNG = async () => {
-    if (!reportRef.current) return
-    setExporting(true)
-    try {
-      const canvas = await captureElement(reportRef.current, { scale: 2, backgroundColor: "#ffffff" })
-      const link = document.createElement("a")
-      link.download = `Exam_Analysis_${exam.title.replace(/\s+/g, "_")}.png`
-      link.href = canvas.toDataURL("image/png")
-      link.click()
-      toast.success("Analysis exported as PNG")
-    } catch (err) {
-      console.error("PNG export error:", err)
-      toast.error("Export failed")
-    }
-    setExporting(false)
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, `${fileName}.png`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, `${fileName}.pdf`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDOC = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { downloadDoc(reportRef.current, `${fileName}.doc`, "Exam Analysis"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportCSV = () => {
+    const data = enrichedAnswers.map((a: any, i: number) => ({
+      "#": i + 1, "Question": a.question?.text || "", "Type": questionTypes[a.question?.type] || a.question?.type || "",
+      "Your Answer": a.answer || "", "Correct Answer": a.question?.correctAnswer || "",
+      "Max Points": a.maxPoints, "Score": a.score, "Result": a.isCorrect ? "Correct" : a.isPartial ? "Partial" : "Wrong",
+    }))
+    downloadCsv(data, `${fileName}.csv`)
   }
 
   return (
@@ -142,9 +154,12 @@ export default function ExamAnalysisPage() {
             <p className="text-xs text-muted-foreground">{exam.title}</p>
           </div>
         </div>
-          <Button variant="outline" onClick={handleExportPNG} disabled={exporting}>
-            <DownloadCloud className="h-4 w-4 mr-1" /> {exporting ? "Exporting..." : "Export"}
-          </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV}><FileSpreadsheet className="h-4 w-4 mr-1" />CSV</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPNG} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PNG</Button>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}><DownloadCloud className="h-4 w-4 mr-1" />PDF</Button>
+          <Button variant="outline" size="sm" onClick={handleExportDOC} disabled={exporting}><FileText className="h-4 w-4 mr-1" />DOC</Button>
+        </div>
       </div>
 
       <motion.div ref={reportRef} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-xl overflow-hidden border">
@@ -292,6 +307,41 @@ export default function ExamAnalysisPage() {
               </div>
             </>
           )}
+
+          {/* Topic Breakdown */}
+          {(() => {
+            const topicMap: Record<string, { correct: number; total: number; score: number; max: number }> = {}
+            enrichedAnswers.forEach((a: any) => {
+              const topic = a.question?.topic || "General"
+              if (!topicMap[topic]) topicMap[topic] = { correct: 0, total: 0, score: 0, max: 0 }
+              topicMap[topic].total++
+              topicMap[topic].score += a.score
+              topicMap[topic].max += a.maxPoints
+              if (a.isCorrect) topicMap[topic].correct++
+            })
+            const topics = Object.entries(topicMap)
+            if (topics.length <= 1) return null
+            return (
+              <><Separator /><div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2"><Target className="h-4 w-4" /> Topic Breakdown</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {topics.map(([topic, data]) => {
+                    const tpct = data.max > 0 ? Math.round((data.score / data.max) * 100) : 0
+                    return (
+                      <Card key={topic} className="border border-border/50">
+                        <CardContent className="p-4 text-center">
+                          <p className="text-xs text-muted-foreground font-medium truncate" title={topic}>{topic}</p>
+                          <p className="text-lg font-bold mt-1">{tpct}%</p>
+                          <p className="text-[10px] text-muted-foreground">{data.score}/{data.max} pts</p>
+                          <Progress value={tpct} className="h-1.5 mt-2" />
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div></>
+            )
+          })()}
 
           <Separator />
 
