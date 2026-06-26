@@ -24,6 +24,7 @@ export default function TeacherExamDetailPage() {
   const [questions, setQuestions] = useState<any[]>([])
   const [allQuestions, setAllQuestions] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
+  const [allTopics, setAllTopics] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
   const [selectedQ, setSelectedQ] = useState("")
@@ -51,14 +52,15 @@ export default function TeacherExamDetailPage() {
   const [editForm, setEditForm] = useState({ text: "", type: "mcq", options: ["", "", "", ""], answer: "", difficulty: "medium", topic: "", points: 5 })
 
   const fetchData = async () => {
-    const [examRes, allQRes, sRes] = await Promise.all([
-      fetch(`/api/exams/${params.id}`), fetch("/api/questions"), fetch("/api/subjects"),
+    const [examRes, allQRes, sRes, tRes] = await Promise.all([
+      fetch(`/api/exams/${params.id}`), fetch("/api/questions"), fetch("/api/subjects"), fetch("/api/topics"),
     ])
     const examData = await examRes.json()
     setExam(examData)
     const allQ = await allQRes.json()
     setAllQuestions(allQ)
     setSubjects(await sRes.json())
+    setAllTopics(await tRes.json())
     if (examData.questions) {
       const qIds = examData.questions.map((q: any) => q.questionId)
       setQuestions(allQ.filter((q: any) => qIds.includes(q.id)))
@@ -232,6 +234,7 @@ export default function TeacherExamDetailPage() {
   const totalPages = Math.max(1, Math.ceil(filteredBank.length / PAGE_SIZE))
   const paginated = filteredBank.slice((browsePage - 1) * PAGE_SIZE, browsePage * PAGE_SIZE)
 
+  const examFormTopics = allTopics.filter((t: any) => t.subjectId === exam?.subjectId)
   const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || "Unknown"
 
   if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-12", "h-32", "h-20", "h-20"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
@@ -609,7 +612,12 @@ export default function TeacherExamDetailPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Topic</Label>
-                <Input value={editForm.topic} onChange={(e) => setEditForm((p) => ({ ...p, topic: e.target.value }))} className="h-10" placeholder="e.g. Algebra" />
+                <Select value={editForm.topic} onValueChange={(v) => { if (v) setEditForm((p) => ({ ...p, topic: v })) }}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select topic" /></SelectTrigger>
+                  <SelectContent>
+                    {examFormTopics.map((t: any) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

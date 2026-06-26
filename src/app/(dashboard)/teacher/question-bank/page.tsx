@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2, HelpCircle, AlignLeft, CheckCircle, Search } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { generateQuestion } from "@/lib/content-generator"
 import { useSession } from "next-auth/react"
 
 const typeIcons: Record<string, any> = { mcq: HelpCircle, true_false: CheckCircle, theory: AlignLeft }
@@ -69,6 +70,8 @@ export default function QuestionBankPage() {
   const [assignments, setAssignments] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
+  const [allTopics, setAllTopics] = useState<any[]>([])
+  const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
@@ -85,16 +88,18 @@ export default function QuestionBankPage() {
   const assignedSubjects = useMemo(() => subjects.filter((s) => assignedSubjectIds.includes(s.id)), [subjects, assignedSubjectIds])
 
   const fetchData = async () => {
-    const [qRes, aRes, cRes, sRes] = await Promise.all([
+    const [qRes, aRes, cRes, sRes, tRes] = await Promise.all([
       fetch(`/api/question-bank?teacherId=${teacherId}`),
       fetch("/api/teacher-assignments"),
       fetch("/api/classes"),
       fetch("/api/subjects"),
+      fetch("/api/topics"),
     ])
     setQuestions(await qRes.json())
     setAssignments(await aRes.json())
     setClasses(await cRes.json())
     setSubjects(await sRes.json())
+    setAllTopics(await tRes.json())
     setLoading(false)
   }
 
@@ -112,6 +117,22 @@ export default function QuestionBankPage() {
   }, [teacherId])
 
   const update = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }))
+
+  const handleGenerateQuestion = () => {
+    if (!form.subjectId || !form.classId) { toast.error("Set subject and class first"); return }
+    setGenerating(true)
+    try {
+      const subjName = subjects.find((s: any) => s.id === form.subjectId)?.name || ""
+      const className = classes.find((c: any) => c.id === form.classId)?.name || ""
+      const q = generateQuestion(subjName, className, form.topic || subjName, form.type || "mcq")
+      if (!q) { toast.error("Failed to generate question"); return }
+      update("text", q.questionText)
+      if (q.options) update("options", q.options)
+      if (q.correctAnswer) update("correctAnswer", q.correctAnswer)
+      toast.success("Question generated")
+    } catch { toast.error("Failed to generate question") }
+    setGenerating(false)
+  }
 
   const openCreate = () => {
     setEditing(null)
@@ -346,7 +367,12 @@ export default function QuestionBankPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="text">Question Text</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="text">Question Text</Label>
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleGenerateQuestion} disabled={generating}>
+                  <HelpCircle className="h-3 w-3 mr-1" />{generating ? "Generating..." : "Generate"}
+                </Button>
+              </div>
               <Textarea
                 id="text"
                 placeholder="Enter the question..."
@@ -421,16 +447,15 @@ export default function QuestionBankPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="topic">Topic</Label>
-                <Input
-                  id="topic"
-                  value={form.topic}
-                  onChange={(e) => update("topic", e.target.value)}
-                  placeholder="e.g. Algebra"
-                  className="h-12"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="topic">Topic</Label>
+              <Select value={form.topic} onValueChange={(v) => { if (v) update("topic", v) }}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select topic" /></SelectTrigger>
+                <SelectContent>
+                  {allTopics.map((t: any) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
               <div className="space-y-2">
                 <Label>Difficulty</Label>
                 <Select value={form.difficulty} onValueChange={(v) => { if (v) update("difficulty", v) }}>

@@ -99,6 +99,13 @@ function copyCssVariables(sourceDoc: Document, targetDoc: Document): void {
   }
 }
 
+function resolveCssVar(value: string): string {
+  return value.replace(/hsl\(var\((--[\w-]+)\)\)/gi, (_m, varName) => {
+    const hex = TAILWIND_COLOR_MAP[varName]
+    return hex || _m
+  })
+}
+
 function sanitizeUnsupportedColors(doc: Document): void {
   const all = doc.querySelectorAll("*")
   for (const el of all) {
@@ -111,7 +118,15 @@ function sanitizeUnsupportedColors(doc: Document): void {
         .replace(/oklch\([^)]*\)/gi, "transparent")
         .replace(/color\([^)]*\)/gi, "transparent")
         .replace(/color-mix\([^)]*\)/gi, "transparent")
-      ;(el as HTMLElement).setAttribute("style", safe)
+      ;(el as HTMLElement).setAttribute("style", resolveCssVar(safe))
+    }
+    // Resolve CSS variable references in SVG stroke/fill attributes (e.g. hsl(var(--primary)))
+    for (const attr of ["stroke", "fill", "stop-color"]) {
+      const val = el.getAttribute(attr)
+      if (val) {
+        const resolved = resolveCssVar(val)
+        if (resolved !== val) el.setAttribute(attr, resolved)
+      }
     }
   }
   const styles = doc.querySelectorAll("style")

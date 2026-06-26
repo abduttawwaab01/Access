@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 
 import { EmptyState } from "@/components/admin/EmptyState"
+import { generateAssignmentDescription } from "@/lib/content-generator"
 import { cn } from "@/lib/utils"
 
 export default function AssignmentsPage() {
@@ -26,6 +27,8 @@ export default function AssignmentsPage() {
   const userId = (session?.user as any)?.id || ""
   const [items, setItems] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [generatingDesc, setGeneratingDesc] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [tab, setTab] = useState("all")
@@ -34,12 +37,14 @@ export default function AssignmentsPage() {
   const [myClassIds, setMyClassIds] = useState<string[]>([])
 
   const fetchData = async () => {
-    const [asgnsRes, classesRes] = await Promise.all([
+    const [asgnsRes, classesRes, subjectsRes] = await Promise.all([
       fetch("/api/assignments"),
       fetch("/api/classes"),
+      fetch("/api/subjects"),
     ])
     const allAssignments = await asgnsRes.json()
     const allClasses = await classesRes.json()
+    setSubjects(await subjectsRes.json())
     setItems(myClassIds.length > 0 ? allAssignments.filter((a: any) => myClassIds.includes(a.classId)) : allAssignments)
     setClasses(myClassIds.length > 0 ? allClasses.filter((c: any) => myClassIds.includes(c.id)) : allClasses)
     if (form.classId === "" && myClassIds.length > 0) setForm((p) => ({ ...p, classId: myClassIds[0] }))
@@ -64,6 +69,18 @@ export default function AssignmentsPage() {
   useEffect(() => { fetchData().catch(() => setLoading(false)) }, [myClassIds])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
+
+  const handleGenerateDescription = () => {
+    if (!form.subject || !form.classId || !form.title) { toast.error("Set subject, class, and title first"); return }
+    setGeneratingDesc(true)
+    try {
+      const className = classes.find((c: any) => c.id === form.classId)?.name || ""
+      const desc = generateAssignmentDescription(form.subject, className, form.title, form.type)
+      update("description", desc)
+      toast.success("Description generated")
+    } catch { toast.error("Failed to generate description") }
+    setGeneratingDesc(false)
+  }
 
   const openCreate = () => {
     setEditing(null)
@@ -182,7 +199,12 @@ export default function AssignmentsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Input value={form.subject} onChange={(e) => update("subject", e.target.value)} placeholder="e.g. Mathematics" className="h-12" />
+              <Select value={form.subject} onValueChange={(v) => { if (v) update("subject", v) }}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Class</Label>
@@ -212,7 +234,12 @@ export default function AssignmentsPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Description</Label>
+            <div className="flex items-center justify-between">
+              <Label>Description</Label>
+              <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleGenerateDescription} disabled={generatingDesc}>
+                <ClipboardCheck className="h-3 w-3 mr-1" />{generatingDesc ? "Generating..." : "Generate"}
+              </Button>
+            </div>
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} className="resize-none" placeholder="Describe the assignment..." />
           </div>
           <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">

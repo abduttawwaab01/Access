@@ -445,10 +445,18 @@ export default function AdminAdmissionsPage() {
                       <Button variant="outline" size="sm" onClick={() => whatsappShare(selectedApp, analysisData)} disabled={!selectedApp.phone && !selectedApp.parentPhone}>
                         <Share2 className="h-4 w-4 mr-1" /> Share via WhatsApp
                       </Button>
-                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPng(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.png`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") } }}>
+                      <Button variant="outline" size="sm" onClick={async () => {
+                        if (!analysisRef.current) return
+                        try { await downloadPng(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.png`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+                        catch { toast.error("PNG export failed. Check console for details.") }
+                      }}>
                         <DownloadCloud className="h-4 w-4 mr-1" /> PNG
                       </Button>
-                      <Button variant="outline" size="sm" onClick={async () => { if (analysisRef.current) { await downloadPdf(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.pdf`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") } }}>
+                      <Button variant="outline" size="sm" onClick={async () => {
+                        if (!analysisRef.current) return
+                        try { await downloadPdf(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.pdf`, { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+                        catch { toast.error("PDF export failed. Check console for details.") }
+                      }}>
                         <DownloadCloud className="h-4 w-4 mr-1" /> PDF
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => { if (analysisRef.current) downloadDoc(analysisRef.current, `Entrance_${selectedApp.firstName}_${selectedApp.lastName}.doc`, "Entrance Exam Analysis") }}>

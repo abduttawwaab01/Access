@@ -39,6 +39,7 @@ export default function AdminFeesPage() {
   const [savingFee, setSavingFee] = useState(false)
   const [bankForm, setBankForm] = useState({ bankName: "", accountName: "", accountNumber: "", swiftCode: "", branch: "" })
   const [feeForm, setFeeForm] = useState({ classId: "", type: "Tuition", amount: "", term: "First Term", dueDate: "", session: currentSession() })
+  const [sessions, setSessions] = useState<any[]>([])
 
   useEffect(() => {
     Promise.all([
@@ -48,8 +49,9 @@ export default function AdminFeesPage() {
       fetch("/api/payments").then((r) => r.json()),
       fetch("/api/fee-structures").then((r) => r.json()),
       fetch("/api/school/bank").then((r) => r.json()),
-    ]).then(([f, s, c, p, fs, b]) => {
-      setFees(f); setStudents(s); setClasses(c); setPayments(p); setFeeStructures(fs); setBankDetails(b)
+      fetch("/api/sessions").then((r) => r.json()).catch(() => []),
+    ]).then(([f, s, c, p, fs, b, sess]) => {
+      setFees(f); setStudents(s); setClasses(c); setPayments(p); setFeeStructures(fs); setBankDetails(b); setSessions(sess)
       setBankForm({ bankName: b.bankName, accountName: b.accountName, accountNumber: b.accountNumber, swiftCode: b.swiftCode, branch: b.branch })
       setLoading(false)
     })
@@ -268,7 +270,12 @@ export default function AdminFeesPage() {
                   <div><label className="text-xs">Amount (₦)</label><Input type="number" value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} /></div>
                   <div><label className="text-xs">Term</label><select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.term} onChange={(e) => setFeeForm({ ...feeForm, term: e.target.value })}>{TERMS.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
                   <div><label className="text-xs">Due Date</label><Input type="date" value={feeForm.dueDate} onChange={(e) => setFeeForm({ ...feeForm, dueDate: e.target.value })} /></div>
-                  <div><label className="text-xs">Session</label><Input value={feeForm.session} onChange={(e) => setFeeForm({ ...feeForm, session: e.target.value })} placeholder={`e.g. ${currentSession()}`} /></div>
+                  <div><label className="text-xs">Session</label>
+                    <select className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" value={feeForm.session} onChange={(e) => setFeeForm({ ...feeForm, session: e.target.value })}>
+                      <option value="">Select session</option>
+                      {sessions.map((s: any) => <option key={s.id} value={s.name}>{s.name}</option>)}
+                    </select>
+                  </div>
                   <div className="flex items-end gap-2">
                     <Button size="sm" onClick={saveFeeStructure} disabled={savingFee}>{savingFee ? "Saving..." : editingFeeId ? "Update" : "Save"}</Button>
                     <Button size="sm" variant="outline" onClick={resetFeeForm}>Cancel</Button>

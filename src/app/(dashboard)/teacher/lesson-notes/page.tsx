@@ -18,6 +18,7 @@ import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { generateLessonNote } from "@/lib/content-generator"
 import { cn } from "@/lib/utils"
 import { useSession } from "next-auth/react"
 
@@ -41,18 +42,22 @@ export default function LessonNotesPage() {
   const [viewerNote, setViewerNote] = useState<any>(null)
   const [school, setSchool] = useState<any>(null)
   const [sessions, setSessions] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [generating, setGenerating] = useState(false)
 
   const fetchData = async () => {
-    const [notesRes, classesRes, schoolRes, sessionsRes] = await Promise.all([
+    const [notesRes, classesRes, schoolRes, sessionsRes, subjectsRes] = await Promise.all([
       fetch(`/api/lesson-notes?teacherId=${teacherId}`),
       fetch("/api/classes"),
       fetch("/api/school"),
       fetch("/api/sessions"),
+      fetch("/api/subjects"),
     ])
     setItems(await notesRes.json())
     setClasses(await classesRes.json())
     setSchool(await schoolRes.json())
     setSessions(await sessionsRes.json())
+    setSubjects(await subjectsRes.json())
     setLoading(false)
   }
 
@@ -140,11 +145,25 @@ export default function LessonNotesPage() {
     setConfirmDelete(null)
   }
 
-  const handleAIGenerate = () => {
-    const subjects = ["Mathematics", "English", "Science", "History", "Geography"]
-    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)]
-    update("content", `This lesson covers the fundamental concepts of ${randomSubject} for Week ${form.week || "1"}. Students will learn about key principles, engage in practical exercises, and complete assessment tasks to demonstrate their understanding.`)
-    toast.success("AI-generated content added")
+  const handleAIGenerate = async () => {
+    const missing: string[] = []
+    if (!form.title) missing.push("topic/title")
+    if (!form.subject) missing.push("subject")
+    if (!form.classId) missing.push("class")
+    if (missing.length > 0) {
+      update("content", `⚠️ **Please set the following fields before generating:** ${missing.join(", ")}.\n\nFill in the above fields and click Generate again.`)
+      return
+    }
+    setGenerating(true)
+    try {
+      const className = classes.find((c: any) => c.id === form.classId)?.name || ""
+      const content = generateLessonNote(form.subject, form.title, className, form.term, form.week)
+      update("content", content)
+      toast.success("Lesson note generated")
+    } catch {
+      toast.error("Failed to generate lesson note")
+    }
+    setGenerating(false)
   }
 
   const filtered = items.filter((n) => {
@@ -303,7 +322,12 @@ export default function LessonNotesPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Input value={form.subject} onChange={(e) => update("subject", e.target.value)} placeholder="e.g. Mathematics" className="h-12" required />
+              <Select value={form.subject} onValueChange={(v) => v && update("subject", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Class</Label>
@@ -349,9 +373,9 @@ export default function LessonNotesPage() {
                   <ScanLine className="h-3 w-3 mr-1" />
                   Extract from Image
                 </Button>
-                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate}>
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  AI Generate
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate} disabled={generating}>
+                  <Sparkles className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />
+                  {generating ? "Generating..." : "Generate"}
                 </Button>
               </div>
             </div>

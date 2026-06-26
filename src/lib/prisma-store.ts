@@ -1669,4 +1669,161 @@ export const db = {
       }
     },
   },
+
+  dangerZone: {
+    async deleteAll(categories: string[]) {
+      const schoolId = await ensureSchoolId()
+      const catSet = new Set(categories)
+
+      await prisma.$transaction(async (tx) => {
+        // Group 1: Academic Records
+        if (catSet.has("academic-records")) {
+          await tx.lessonQuizResult.deleteMany({ where: { schoolId } })
+          await tx.attendanceRecord.deleteMany({ where: { schoolId } })
+          await tx.submission.deleteMany({ where: { schoolId } })
+          await tx.assignment.deleteMany({ where: { schoolId } })
+          await tx.result.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 2: Assessment Content
+        if (catSet.has("assessment-content")) {
+          await tx.examSession.deleteMany({ where: { schoolId } })
+          await tx.exam.deleteMany({ where: { schoolId } })
+          await tx.question.deleteMany({ where: { schoolId } })
+          await tx.topic.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 3: Finance
+        if (catSet.has("finance")) {
+          await tx.salaryRecord.deleteMany({ where: { schoolId } })
+          await tx.salaryStructure.deleteMany({ where: { schoolId } })
+          await tx.payment.deleteMany({ where: { schoolId } })
+          await tx.feeStructure.deleteMany({ where: { schoolId } })
+          await tx.fee.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 4: Communication & Reports
+        if (catSet.has("communication-reports")) {
+          await tx.message.deleteMany({ where: { conversation: { schoolId } } })
+          await tx.conversationParticipant.deleteMany({ where: { conversation: { schoolId } } })
+          await tx.conversation.deleteMany({ where: { schoolId } })
+          await tx.weeklyReport.deleteMany({ where: { schoolId } })
+          await tx.reportCardEntry.deleteMany({ where: { schoolId } })
+          await tx.reportCard.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 5: Schedule
+        if (catSet.has("schedule")) {
+          await tx.timetableEntry.deleteMany({ where: { schoolId } })
+          await tx.timetableSet.deleteMany({ where: { schoolId } })
+          await tx.attendanceQRCode.deleteMany({ where: { schoolId } })
+          await tx.attendanceLog.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 6: People Data
+        if (catSet.has("people")) {
+          await tx.parentLink.deleteMany({ where: { schoolId } })
+          await tx.teacherAssignment.deleteMany({ where: { schoolId } })
+          await tx.student.deleteMany({ where: { schoolId } })
+          await tx.staff.deleteMany({ where: { schoolId } })
+          await tx.user.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 7: Academic Setup
+        if (catSet.has("academic-setup")) {
+          await tx.lessonNote.deleteMany({ where: { schoolId } })
+          await tx.schemeOfWork.deleteMany({ where: { schoolId } })
+          await tx.subject.deleteMany({ where: { schoolId } })
+          await tx.term.deleteMany({ where: { session: { schoolId } } })
+          await tx.academicSession.deleteMany({ where: { schoolId } })
+          await tx.class.deleteMany({ where: { schoolId } })
+        }
+
+        // Group 8: Misc
+        if (catSet.has("misc")) {
+          await tx.event.deleteMany({ where: { schoolId } })
+          await tx.feedbackTicket.deleteMany({ where: { schoolId } })
+          await tx.document.deleteMany({ where: { schoolId } })
+          await tx.entranceExamCode.deleteMany({ where: { schoolId } })
+          await tx.admissionApplication.deleteMany({ where: { schoolId } })
+          await tx.admissionSettings.deleteMany({ where: { schoolId } })
+          await tx.gradingConfig.deleteMany({ where: { schoolId } })
+          await tx.bankDetails.deleteMany({ where: { schoolId } })
+          await tx.announcement.deleteMany({ where: { schoolId } })
+        }
+
+        // Count remaining records for confirmation
+        const remaining = await tx.school.findFirst({ where: { id: schoolId } })
+        return remaining
+      })
+
+      return { success: true, message: "Selected data deleted successfully" }
+    },
+
+    async getCounts() {
+      const schoolId = await ensureSchoolId()
+      const [results, attendance, assignments, submissions, quizzes, sessions, exams, questions, topics,
+        payments, fees, feeStructs, salaryRecs, salaryStructs,
+        messages, convos, weeklyRpts, reportCards, reportCardEntries,
+        ttEntries, ttSets, qrCodes, attLogs,
+        parentLinks, teacherAssigns, students, staff, users,
+        lessonNotes, schemes, subjects, terms, acadSessions, classes,
+        events, tickets, docs, examCodes, admissionApps, admissionSettings, gradingConfigs, bankDetails, announcements] = await Promise.all([
+        prisma.result.count({ where: { schoolId } }),
+        prisma.attendanceRecord.count({ where: { schoolId } }),
+        prisma.assignment.count({ where: { schoolId } }),
+        prisma.submission.count({ where: { schoolId } }),
+        prisma.lessonQuizResult.count({ where: { schoolId } }),
+        prisma.examSession.count({ where: { schoolId } }),
+        prisma.exam.count({ where: { schoolId } }),
+        prisma.question.count({ where: { schoolId } }),
+        prisma.topic.count({ where: { schoolId } }),
+        prisma.payment.count({ where: { schoolId } }),
+        prisma.fee.count({ where: { schoolId } }),
+        prisma.feeStructure.count({ where: { schoolId } }),
+        prisma.salaryRecord.count({ where: { schoolId } }),
+        prisma.salaryStructure.count({ where: { schoolId } }),
+        prisma.message.count({ where: { conversation: { schoolId } } }),
+        prisma.conversation.count({ where: { schoolId } }),
+        prisma.weeklyReport.count({ where: { schoolId } }),
+        prisma.reportCard.count({ where: { schoolId } }),
+        prisma.reportCardEntry.count({ where: { schoolId } }),
+        prisma.timetableEntry.count({ where: { schoolId } }),
+        prisma.timetableSet.count({ where: { schoolId } }),
+        prisma.attendanceQRCode.count({ where: { schoolId } }),
+        prisma.attendanceLog.count({ where: { schoolId } }),
+        prisma.parentLink.count({ where: { schoolId } }),
+        prisma.teacherAssignment.count({ where: { schoolId } }),
+        prisma.student.count({ where: { schoolId } }),
+        prisma.staff.count({ where: { schoolId } }),
+        prisma.user.count({ where: { schoolId } }),
+        prisma.lessonNote.count({ where: { schoolId } }),
+        prisma.schemeOfWork.count({ where: { schoolId } }),
+        prisma.subject.count({ where: { schoolId } }),
+        prisma.term.count({ where: { session: { schoolId } } }),
+        prisma.academicSession.count({ where: { schoolId } }),
+        prisma.class.count({ where: { schoolId } }),
+        prisma.event.count({ where: { schoolId } }),
+        prisma.feedbackTicket.count({ where: { schoolId } }),
+        prisma.document.count({ where: { schoolId } }),
+        prisma.entranceExamCode.count({ where: { schoolId } }),
+        prisma.admissionApplication.count({ where: { schoolId } }),
+        prisma.admissionSettings.count({ where: { schoolId } }),
+        prisma.gradingConfig.count({ where: { schoolId } }),
+        prisma.bankDetails.count({ where: { schoolId } }),
+        prisma.announcement.count({ where: { schoolId } }),
+      ])
+
+      return {
+        "academic-records": { results, attendance, assignments, submissions },
+        "assessment-content": { quizzes, sessions, exams, questions, topics },
+        finance: { payments, fees, feeStructs, salaryRecs, salaryStructs },
+        "communication-reports": { messages, convos, weeklyRpts, reportCards, reportCardEntries },
+        schedule: { ttEntries, ttSets, qrCodes, attLogs },
+        people: { parentLinks, teacherAssigns, students, staff, users },
+        "academic-setup": { lessonNotes, schemes, subjects, terms, acadSessions, classes },
+        misc: { events, tickets, docs, examCodes, admissionApps, admissionSettings, gradingConfigs, bankDetails, announcements },
+      }
+    },
+  },
 }

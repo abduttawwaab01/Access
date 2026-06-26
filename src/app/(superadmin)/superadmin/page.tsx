@@ -13,7 +13,7 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive, AlertTriangle
 } from "lucide-react"
 import { ConversationList } from "@/components/chat/ConversationList"
 import { ChatWindow } from "@/components/chat/ChatWindow"
@@ -74,6 +74,7 @@ export default function SuperAdminPage() {
       case "ai-assistant": return <AIAssistantSection />
       case "bank-details": return <BankDetailsSection />
       case "data-export": return <DataExportSection />
+      case "danger-zone": return <DangerZoneSection />
       default: return <DashboardSection />
     }
   }
@@ -2031,6 +2032,234 @@ function DataExportSection() {
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-800 p-4 text-sm font-semibold text-white hover:opacity-90">
         <Download className="h-5 w-5" /> Export All Data as JSON
       </button>
+    </div>
+  )
+}
+
+// ========================== DANGER ZONE ==========================
+const DANGER_CATEGORIES = [
+  { id: "academic-records", label: "Academic Records", desc: "Results, attendance, assignments, submissions" },
+  { id: "assessment-content", desc: "Exams, questions, topics, exam sessions" },
+  { id: "finance", label: "Finance", desc: "Payments, fees, fee structures, salary" },
+  { id: "communication-reports", label: "Communication & Reports", desc: "Messages, conversations, weekly reports, report cards" },
+  { id: "schedule", label: "Schedule", desc: "Timetable entries/sets, attendance QR codes & logs" },
+  { id: "people", label: "People", desc: "Students, staff, users, parents, teacher assignments" },
+  { id: "academic-setup", label: "Academic Setup", desc: "Classes, subjects, sessions, terms, lesson notes, schemes" },
+  { id: "misc", label: "Miscellaneous", desc: "Events, feedback, documents, admissions, announcements" },
+]
+
+function DangerZoneSection() {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [counts, setCounts] = useState<Record<string, any> | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
+  const [message, setMessage] = useState("")
+  const [msgType, setMsgType] = useState<"success" | "error" | "info">("info")
+  const [confirmAll, setConfirmAll] = useState("")
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [backupDone, setBackupDone] = useState(false)
+
+  useEffect(() => {
+    ;(async () => {
+      const res = await fetch("/api/superadmin/danger-zone", {
+        method: "POST",
+        body: JSON.stringify({ action: "get-counts", token: localStorage.getItem("sa_token") }),
+        headers: { "Content-Type": "application/json" },
+      })
+      const d = await res.json()
+      if (d.success) setCounts(d.data)
+      setLoading(false)
+    })()
+  }, [])
+
+  const toggle = (id: string) => {
+    setSelected((p) => {
+      const next = new Set(p)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const totalSelected = () => {
+    if (!counts) return 0
+    let total = 0
+    for (const id of selected) {
+      const group = (counts as any)[id]
+      if (group) for (const v of Object.values(group as Record<string, number>)) total += v as number
+    }
+    return total
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return
+    setShowConfirm(true)
+  }
+
+  const executeDelete = async (cats: string[], isFullWipe: boolean) => {
+    setDeleting(true)
+    setMessage("Deleting data...")
+    try {
+      const res = await fetch("/api/superadmin/danger-zone", {
+        method: "POST",
+        body: JSON.stringify({ action: "delete", token: localStorage.getItem("sa_token"), categories: cats }),
+        headers: { "Content-Type": "application/json" },
+      })
+      const d = await res.json()
+      if (d.success) {
+        setMessage(isFullWipe ? "All school data has been wiped successfully." : "Selected data deleted successfully.")
+        setMsgType("success")
+        setSelected(new Set())
+        setConfirmAll("")
+        setShowConfirm(false)
+        setBackupDone(false)
+        const refreshed = await fetch("/api/superadmin/danger-zone", {
+          method: "POST",
+          body: JSON.stringify({ action: "get-counts", token: localStorage.getItem("sa_token") }),
+          headers: { "Content-Type": "application/json" },
+        })
+        const rd = await refreshed.json()
+        if (rd.success) setCounts(rd.data)
+      } else {
+        setMessage(d.error || "Delete failed")
+        setMsgType("error")
+      }
+    } catch {
+      setMessage("Failed to delete data")
+      setMsgType("error")
+    }
+    setDeleting(false)
+  }
+
+  const handleConfirmDelete = () => executeDelete([...selected], false)
+
+  const handleWipeAll = () => {
+    if (confirmAll !== "DELETE SCHOOL") return
+    const allCats = DANGER_CATEGORIES.map((c) => c.id)
+    executeDelete(allCats, true)
+  }
+
+  const handleExportBackup = async () => {
+    try {
+      const res = await fetch("/api/export")
+      if (!res.ok) { setMessage("Backup failed — export API unavailable"); setMsgType("error"); return }
+      const blob = await res.blob()
+      const link = document.createElement("a")
+      link.href = URL.createObjectURL(blob)
+      link.download = `school-backup-${new Date().toISOString().split("T")[0]}.zip`
+      link.click()
+      URL.revokeObjectURL(link.href)
+      setBackupDone(true)
+      setMessage("Backup downloaded successfully")
+      setMsgType("success")
+    } catch {
+      setMessage("Backup failed")
+      setMsgType("error")
+    }
+  }
+
+  if (loading) return <Loading />
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <Toast message={message} type={msgType} onClose={() => setMessage("")} />
+
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="h-6 w-6 text-red-400" />
+        <div>
+          <h1 className="text-xl font-bold text-white">Danger Zone</h1>
+          <p className="text-sm text-zinc-500">Irreversible actions. Proceed with extreme caution.</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-red-900/40 bg-[#1a0a0a] p-5">
+        <div className="flex items-start gap-4">
+          <Archive className="h-6 w-6 text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-base font-semibold text-white">Step 1: Backup Your Data First</h3>
+            <p className="text-sm text-zinc-400 mt-1">Download a full ZIP backup before performing any destructive operation. This is strongly recommended.</p>
+            <button onClick={handleExportBackup}
+              className={`mt-3 flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-opacity ${
+                backupDone ? "bg-emerald-600/30 text-emerald-400 border border-emerald-700/50" : "bg-gradient-to-r from-amber-600 to-amber-800 text-white hover:opacity-90"
+              }`}>
+              <Download className="h-4 w-4" />
+              {backupDone ? "Backup Downloaded" : "Download Full Backup ZIP"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-5">
+        <h2 className="text-base font-semibold text-white mb-3">Delete Specific Data</h2>
+        <p className="text-sm text-zinc-500 mb-4">Select the data categories you want to delete. All related records will be removed permanently.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {DANGER_CATEGORIES.map((cat) => {
+            const group = counts ? (counts as any)[cat.id] : null
+            const totalInGroup = group ? Object.values(group as Record<string, number>).reduce((s, v) => s + v, 0) : 0
+            return (
+              <label key={cat.id}
+                className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
+                  selected.has(cat.id)
+                    ? "border-red-700/50 bg-red-900/15"
+                    : "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700"
+                }`}>
+                <input type="checkbox" checked={selected.has(cat.id)} onChange={() => toggle(cat.id)}
+                  className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-red-600 focus:ring-red-600" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-zinc-200">{cat.label}</span>
+                    <span className="text-xs text-zinc-500">{totalInGroup} records</span>
+                  </div>
+                  <p className="text-xs text-zinc-500 mt-0.5">{cat.desc}</p>
+                </div>
+              </label>
+            )
+          })}
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button onClick={handleDeleteSelected} disabled={selected.size === 0 || deleting}
+            className="flex items-center gap-2 rounded-lg bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-40 transition-opacity">
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Delete Selected ({totalSelected()} records)
+          </button>
+          {selected.size > 0 && (
+            <span className="text-xs text-zinc-500">{selected.size} category(s) selected</span>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-red-700/40 bg-[#1a0808] p-5">
+        <h2 className="text-base font-semibold text-red-300 mb-2">Wipe All School Data</h2>
+        <p className="text-sm text-zinc-400 mb-4">This will delete every record from every table except the school profile and its settings. This action cannot be undone.</p>
+        <div className="flex gap-2">
+          <input type="text" value={confirmAll} onChange={(e) => setConfirmAll(e.target.value)}
+            placeholder='Type "DELETE SCHOOL" to confirm'
+            className="flex-1 rounded-lg border border-red-800 bg-black/50 px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-red-500 max-w-xs" />
+          <button onClick={handleWipeAll} disabled={confirmAll !== "DELETE SCHOOL" || deleting}
+            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-700 to-red-900 px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-30 transition-opacity">
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Wipe Everything
+          </button>
+        </div>
+      </div>
+
+      <Modal open={showConfirm} onClose={() => !deleting && setShowConfirm(false)} title="Confirm Deletion">
+        <p className="text-sm text-zinc-300 mb-4">
+          You are about to delete <strong className="text-red-400">{totalSelected()} records</strong> across {selected.size} category(s).
+          This action is <strong className="text-red-400">permanent and irreversible</strong>.
+        </p>
+        <p className="text-xs text-zinc-500 mb-6">Make sure you have backed up your data before proceeding.</p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={() => setShowConfirm(false)} disabled={deleting}
+            className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-40">
+            Cancel
+          </button>
+          <button onClick={handleConfirmDelete} disabled={deleting}
+            className="flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-40">
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Yes, Delete
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

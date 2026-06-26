@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { CalendarCheck, Plus, Trash2, DownloadCloud, FileSpreadsheet, FileText, Save, CalendarDays, GraduationCap, Users, School, Palette, CheckCircle, XCircle, Clock, Edit3, Eye, RefreshCw } from "lucide-react"
 import { downloadCsv, downloadPng, downloadPdf, downloadDoc } from "@/lib/capture"
 import { TimetableExport } from "@/components/timetable/TimetableExport"
+import { detectTimetableConflicts } from "@/lib/content-generator"
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 const TIME_SLOTS = [
@@ -35,6 +36,8 @@ export default function AdminTimetablePage() {
   const [entries, setEntries] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
   const [school, setSchool] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [selectedSetId, setSelectedSetId] = useState<string>("")
@@ -52,16 +55,20 @@ export default function AdminTimetablePage() {
 
   const load = async () => {
     setLoading(true)
-    const [s, c, sch, t] = await Promise.all([
+    const [s, c, sch, t, subj, sess] = await Promise.all([
       fetch("/api/timetable/sets").then((r) => r.json()),
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()).catch(() => null),
       fetch("/api/staff").then((r) => r.json()).catch(() => []),
+      fetch("/api/subjects").then((r) => r.json()).catch(() => []),
+      fetch("/api/sessions").then((r) => r.json()).catch(() => []),
     ])
     setSets(Array.isArray(s) ? s : [])
     setClasses(Array.isArray(c) ? c : [])
     setSchool(sch)
     setTeachers(Array.isArray(t) ? t : [])
+    setSubjects(Array.isArray(subj) ? subj : [])
+    setSessions(Array.isArray(sess) ? sess : [])
     if (!selectedSetId && Array.isArray(s) && s.length > 0) setSelectedSetId(s[0].id)
     setLoading(false)
   }
@@ -104,12 +111,34 @@ export default function AdminTimetablePage() {
   const saveEntry = async () => {
     if (!selectedSetId) return
     setSaving(true)
+
+    // Build a preview of the new entry for conflict detection
+    const newEntry = {
+      day: entryForm.day,
+      startTime: entryForm.startTime,
+      endTime: entryForm.endTime,
+      teacherId: entryForm.teacherId || undefined,
+      room: entryForm.room || undefined,
+      classId: selectedSet?.classId || "",
+      id: editingEntry?.id,
+    }
+    const allForDetection = editingEntry
+      ? entries.filter((e: any) => e.id !== editingEntry.id).concat(newEntry)
+      : entries.concat(newEntry)
+    const conflicts = detectTimetableConflicts(allForDetection)
+    if (conflicts.length > 0) {
+      setSaving(false)
+      toast.error(conflicts[0])
+      return
+    }
+
     const body: Record<string, any> = {
       setId: selectedSetId,
       day: entryForm.day,
       startTime: entryForm.startTime,
       endTime: entryForm.endTime,
       subjectName: entryForm.isBreak ? "Break" : entryForm.subject,
+      subjectId: subjects.find((s: any) => s.name === entryForm.subject)?.id || "",
       room: entryForm.room,
       teacherName: entryForm.teacherName,
       isBreak: entryForm.isBreak,
@@ -122,6 +151,9 @@ export default function AdminTimetablePage() {
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     if (res.ok) {
       toast.success(editingEntry ? "Entry updated" : "Entry created")
+      if (conflicts.length > 0) {
+        toast.warning(`${conflicts.length} conflict(s) detected`)
+      }
       setShowEntryForm(false)
       setEditingEntry(null)
       const data = await fetch(`/api/timetable?setId=${selectedSetId}`).then((r) => r.json())
@@ -293,11 +325,23 @@ export default function AdminTimetablePage() {
                   </div>
                   <div>
                     <Label className="text-xs">Term (optional)</Label>
-                    <Input value={setForm.term} onChange={(e) => setSetForm({ ...setForm, term: e.target.value })} placeholder="e.g. First Term" />
+                    <Select value={setForm.term} onValueChange={(v) => { if (v) setSetForm({ ...setForm, term: v }) }}>
+                      <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="First Term">First Term</SelectItem>
+                        <SelectItem value="Second Term">Second Term</SelectItem>
+                        <SelectItem value="Third Term">Third Term</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-xs">Session (optional)</Label>
-                    <Input value={setForm.session} onChange={(e) => setSetForm({ ...setForm, session: e.target.value })} placeholder="e.g. 2025/2026" />
+                    <Select value={setForm.session} onValueChange={(v) => { if (v) setSetForm({ ...setForm, session: v }) }}>
+                      <SelectTrigger><SelectValue placeholder="Select session" /></SelectTrigger>
+                      <SelectContent>
+                        {sessions.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -355,7 +399,12 @@ export default function AdminTimetablePage() {
                     <>
                       <div>
                         <Label className="text-xs">Subject</Label>
-                        <Input value={entryForm.subject} onChange={(e) => setEntryForm({ ...entryForm, subject: e.target.value })} placeholder="e.g. Mathematics" />
+                        <Select value={entryForm.subject} onValueChange={(v) => { if (v) setEntryForm({ ...entryForm, subject: v }) }}>
+                          <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                          <SelectContent>
+                            {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label className="text-xs">Room / Venue</Label>

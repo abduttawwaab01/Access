@@ -16,6 +16,7 @@ import { Plus, Pencil, Trash2, BookOpen, ChevronDown, ChevronUp, Layers, X, Grip
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
+import { generateSchemeOfWeeks } from "@/lib/content-generator"
 import { cn } from "@/lib/utils"
 
 interface WeekEntry {
@@ -49,6 +50,8 @@ export default function SchemeOfWorkPage() {
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sessions, setSessions] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [generatingWeeks, setGeneratingWeeks] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Scheme | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -65,14 +68,16 @@ export default function SchemeOfWorkPage() {
   ])
 
   const fetchData = async () => {
-    const [schemesRes, classesRes, sessionsRes] = await Promise.all([
+    const [schemesRes, classesRes, sessionsRes, subjectsRes] = await Promise.all([
       fetch(`/api/scheme-of-work?teacherId=${teacherId}`),
       fetch("/api/classes"),
       fetch("/api/sessions"),
+      fetch("/api/subjects"),
     ])
     setItems(await schemesRes.json())
     setClasses(await classesRes.json())
     setSessions(await sessionsRes.json())
+    setSubjects(await subjectsRes.json())
     setLoading(false)
   }
 
@@ -90,6 +95,26 @@ export default function SchemeOfWorkPage() {
   }, [teacherId])
 
   const updateForm = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
+
+  const handleGenerateWeeks = async () => {
+    if (!form.subject || !form.classId) { toast.error("Set subject and class first"); return }
+    setGeneratingWeeks(true)
+    try {
+      const className = classes.find((c: any) => c.id === form.classId)?.name || ""
+      const generatedWeeks = generateSchemeOfWeeks(form.subject, className, form.term)
+      const mapped = generatedWeeks.map((w, i) => ({
+        id: crypto.randomUUID(),
+        week: i + 1,
+        topic: w.topic,
+        objectives: w.objectives,
+        content: w.content,
+        resources: w.resources,
+      }))
+      setWeeks(mapped)
+      toast.success(`Generated ${mapped.length} weeks`)
+    } catch { toast.error("Failed to generate weeks") }
+    setGeneratingWeeks(false)
+  }
 
   const updateWeek = (id: string, field: string, value: string) =>
     setWeeks((prev) => prev.map((w) => (w.id === id ? { ...w, [field]: value } : w)))
@@ -304,7 +329,12 @@ export default function SchemeOfWorkPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Input value={form.subject} onChange={(e) => updateForm("subject", e.target.value)} placeholder="e.g. Mathematics" className="h-12" required />
+              <Select value={form.subject} onValueChange={(v) => { if (v) updateForm("subject", v) }}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Class</Label>
@@ -342,9 +372,14 @@ export default function SchemeOfWorkPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-base font-semibold">Weeks</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addWeek}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add Week
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={handleGenerateWeeks} disabled={generatingWeeks}>
+                  <Layers className="h-3.5 w-3.5 mr-1" />{generatingWeeks ? "Generating..." : "Generate"}
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={addWeek}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Week
+                </Button>
+              </div>
             </div>
             <AnimatePresence>
               {weeks.map((w, wi) => (

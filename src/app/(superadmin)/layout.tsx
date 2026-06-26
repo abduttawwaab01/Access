@@ -5,7 +5,8 @@ import { useRouter, usePathname } from "next/navigation"
 import {
   Shield, LayoutDashboard, Settings, BookOpen, Calendar, Users,
   GraduationCap, HelpCircle, ClipboardCheck, FileText, CreditCard,
-  Wallet, Building2, Download, Megaphone, MessageSquare, ScanLine, Bot
+  Wallet, Building2, Download, Megaphone, MessageSquare, ScanLine, Bot,
+  AlertTriangle
 } from "lucide-react"
 
 interface NavItem { id: string; icon: any; label: string }
@@ -52,6 +53,9 @@ const navGroups: NavGroup[] = [
   { label: "System", items: [
     { id: "bank-details", icon: Building2, label: "Bank Details" },
     { id: "data-export", icon: Download, label: "Data Export" },
+  ]},
+  { label: "Danger Zone", items: [
+    { id: "danger-zone", icon: AlertTriangle, label: "Danger Zone" },
   ]},
 ]
 

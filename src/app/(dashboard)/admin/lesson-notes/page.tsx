@@ -18,6 +18,7 @@ import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { currentSession } from "@/lib/utils"
+import { generateLessonNote } from "@/lib/content-generator"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function AdminLessonNotes() {
@@ -38,6 +39,8 @@ export default function AdminLessonNotes() {
   const [viewerNote, setViewerNote] = useState<any>(null)
   const [school, setSchool] = useState<any>(null)
   const [sessions, setSessions] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -46,7 +49,8 @@ export default function AdminLessonNotes() {
       fetch("/api/staff").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()),
       fetch("/api/sessions").then((r) => r.json()),
-    ]).then(([d, c, s, sch, sess]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setSchool(sch); setSessions(Array.isArray(sess) ? sess : []); setLoading(false) })
+      fetch("/api/subjects").then((r) => r.json()),
+    ]).then(([d, c, s, sch, sess, sub]) => { setNotes(Array.isArray(d) ? d : []); setClasses(c); setStaff(s); setSchool(sch); setSessions(Array.isArray(sess) ? sess : []); setSubjects(Array.isArray(sub) ? sub : []); setLoading(false) })
   }, [])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
@@ -138,11 +142,25 @@ export default function AdminLessonNotes() {
     }
   }
 
-  const handleAIGenerate = () => {
-    const subjects = ["Mathematics", "English", "Science", "History", "Geography"]
-    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)]
-    update("content", `## ${form.title || "Lesson Note"}\n\n### Learning Objectives\nBy the end of this lesson, students will be able to:\n- Define and explain key concepts of ${randomSubject}\n- Apply ${randomSubject} principles to solve practical problems\n- Analyze and evaluate ${randomSubject}-related scenarios\n\n### Lesson Content\nThis lesson covers the fundamental concepts of ${randomSubject} for Week ${form.week || "1"}. Students will learn about key principles, engage in practical exercises, and complete assessment tasks to demonstrate their understanding.\n\n### Key Points\n1. Understanding the basic principles\n2. Practical applications in real-world scenarios\n3. Common misconceptions and how to avoid them\n\n### Activities\n- Group discussion on key concepts\n- Practical exercise: Solve ${randomSubject} problems in pairs\n- Individual assessment: Complete the quiz questions`)
-    toast.success("Lesson content generated")
+  const handleAIGenerate = async () => {
+    const missing: string[] = []
+    if (!form.title) missing.push("topic/title")
+    if (!form.subject) missing.push("subject")
+    if (!form.classId) missing.push("class")
+    if (missing.length > 0) {
+      update("content", `⚠️ **Please set the following fields before generating:** ${missing.join(", ")}.\n\nFill in the above fields and click Generate again.`)
+      return
+    }
+    setGenerating(true)
+    try {
+      const className = classes.find((c: any) => c.id === form.classId)?.name || ""
+      const content = generateLessonNote(form.subject, form.title, className, form.term, form.week)
+      update("content", content)
+      toast.success("Lesson note generated")
+    } catch {
+      toast.error("Failed to generate lesson note")
+    }
+    setGenerating(false)
   }
 
   const getStaffName = (id: string) => {
@@ -324,7 +342,12 @@ export default function AdminLessonNotes() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Input value={form.subject} onChange={(e) => update("subject", e.target.value)} placeholder="e.g. Mathematics" className="h-12" required />
+              <Select value={form.subject} onValueChange={(v) => v && update("subject", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Class</Label>
@@ -369,8 +392,8 @@ export default function AdminLessonNotes() {
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setOcrOpen(!ocrOpen)}>
                   <ScanLine className="h-3 w-3 mr-1" /><span>Extract Image</span>
                 </Button>
-                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate}>
-                  <Sparkles className="h-3 w-3 mr-1" /><span>Generate</span>
+                <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate} disabled={generating}>
+                  <Sparkles className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} /><span>{generating ? "Generating..." : "Generate"}</span>
                 </Button>
               </div>
             </div>
