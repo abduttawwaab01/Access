@@ -62,20 +62,25 @@ const GRADE_COLORS: Record<string, string> = {
 
 export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData; gradeBoundaries?: GradeBoundary[] }>(({ data, gradeBoundaries }, ref) => {
   const boundaries = gradeBoundaries || DEFAULT_GRADE_BOUNDARIES
-  const totals = data.subjects.reduce((s, r) => s + r.score, 0)
-  const maxTotal = data.subjects.reduce((s, r) => s + r.total, 0)
+  const subjects = data.subjects.map((r) => {
+    const pct = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0
+    const computed = getGradeFromBoundaries(pct, boundaries)
+    return { ...r, grade: computed.grade, remark: computed.remark }
+  })
+  const totals = subjects.reduce((s, r) => s + r.score, 0)
+  const maxTotal = subjects.reduce((s, r) => s + r.total, 0)
   const average = maxTotal > 0 ? Math.round((totals / maxTotal) * 100) : 0
   const letterGrade = getGradeFromBoundaries(average, boundaries)
-  const subjectCount = data.subjects.length
+  const subjectCount = subjects.length
   const compact = subjectCount > 8
 
-  const radarData = data.subjects.map((r) => {
+  const radarData = subjects.map((r) => {
     const pct = Math.round((r.score / r.total) * 100)
     const gradeColor = GRADE_COLORS[r.grade] || "#6b7280"
     return { subject: r.subject.length > 8 ? r.subject.substring(0, 7) + "..." : r.subject, score: pct, fullMark: 100, gradeColor }
   })
 
-  const barData = data.subjects.map((r) => {
+  const barData = subjects.map((r) => {
     const pct = Math.round((r.score / r.total) * 100)
     return { subject: r.subject, score: pct, grade: r.grade }
   })
@@ -144,35 +149,35 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData; gra
           <table className="w-full border-collapse" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>
             <thead>
               <tr className="bg-indigo-50 text-left">
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700" style={{ width: "4%" }}>#</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "3%" }}>#</th>
                 <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700">Subject</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "9%" }}>CA Score</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "9%" }}>Exam Score</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "9%" }}>Total</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "7%" }}>%</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>CA Score</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>Exam Score</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>Total</th>
+                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>%</th>
                 <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "7%" }}>Grade</th>
                 <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700">Remark</th>
               </tr>
             </thead>
             <tbody>
-              {data.subjects.map((r, i) => {
+              {subjects.map((r, i) => {
                 const pct = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0
                 return (
                   <tr key={r.subject} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center text-muted-foreground">{i + 1}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-center text-muted-foreground" style={{ whiteSpace: "nowrap" }}>{i + 1}</td>
                     <td className="border border-gray-200 px-1.5 py-1 font-medium">{r.subject}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.caScore ?? "-"}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.examScore ?? "-"}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{r.score}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono">{pct}%</td>
-    <td className="border border-gray-200 px-1.5 py-1 text-center">
+                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.caScore ?? "-"}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.examScore ?? "-"}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.score}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{pct}%</td>
+    <td className="border border-gray-200 px-1.5 py-1 text-center" style={{ whiteSpace: "nowrap" }}>
       <span className="inline-block font-bold px-1.5 py-0.5 rounded" style={{
         color: (GRADE_COLORS[r.grade] || "#6b7280"),
         backgroundColor: `${(GRADE_COLORS[r.grade] || "#6b7280")}15`,
         fontSize: compact ? "5pt" : "6pt"
       }}>{r.grade}</span>
     </td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-muted-foreground" style={{ fontSize: compact ? "5pt" : "6pt" }}>{r.remark}</td>
+                    <td className="border border-gray-200 px-1.5 py-1 text-muted-foreground" style={{ fontSize: compact ? "5pt" : "6pt", whiteSpace: "nowrap" }}>{r.remark}</td>
                   </tr>
                 )
               })}

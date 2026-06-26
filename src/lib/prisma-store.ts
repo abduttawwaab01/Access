@@ -712,7 +712,15 @@ export const db = {
       }
       return prisma.result.update({
         where: { id },
-        data: { ...data, caScore, examScore, caTotal, examTotal, total, score: total, totalMax, grade, remark },
+        data: {
+          studentId: data.studentId,
+          subjectId: data.subjectId,
+          classId: data.classId,
+          term: data.term,
+          session: data.session || null,
+          examId: data.examId || null,
+          caScore, examScore, caTotal, examTotal, total, score: total, totalMax, grade, remark,
+        },
       })
     },
     delete: async (id: string) => {

@@ -16,7 +16,7 @@ import { currentSession } from "@/lib/utils"
 
 const tabs = ["Score Entry", "Dashboard"]
 
-const gradeColors: Record<string, string> = { A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", F: "#ef4444" }
+const gradeColors: Record<string, string> = { A: "#22c55e", B: "#3b82f6", C: "#f59e0b", D: "#f97316", E: "#ef4444", F: "#dc2626" }
 
 export default function TeacherResultsPage() {
   const { data: session } = useSession()
@@ -143,7 +143,7 @@ export default function TeacherResultsPage() {
   const getTotal = (sId: string) => { const sc = scores[sId]; return (Number(sc?.caScore) || 0) + (Number(sc?.examScore) || 0) }
 
   const getGrade = (total: number) => {
-    const boundaries = gradingConfig?.gradeBoundaries || []
+    const boundaries = [...(gradingConfig?.gradeBoundaries || [])].sort((a, b) => b.min - a.min)
     const pct = total / (caMax + examMax) * 100
     for (const b of boundaries) { if (pct >= b.min) return b.grade }
     return "F"
@@ -155,11 +155,11 @@ export default function TeacherResultsPage() {
   const passMark = (caMax + examMax) * 0.5
   const passedCount = scoredStudents.filter((r) => (r.total || 0) >= passMark).length
   const passRate = scoredStudents.length > 0 ? Math.round((passedCount / scoredStudents.length) * 100) : 0
-  const gradeDist = { A: 0, B: 0, C: 0, D: 0, F: 0 }
-  const boundaries = gradingConfig?.gradeBoundaries || []
+  const gradeDist = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 }
+  const sortedBoundaries = [...(gradingConfig?.gradeBoundaries || [])].sort((a, b) => b.min - a.min)
   const getGradeFromTotal = (total: number) => {
     const pct = total / (caMax + examMax) * 100
-    for (const b of boundaries) { if (pct >= b.min) return b.grade }
+    for (const b of sortedBoundaries) { if (pct >= b.min) return b.grade }
     return "F"
   }
   scoredStudents.forEach((r) => { const g = getGradeFromTotal(r.total || 0); if (gradeDist[g as keyof typeof gradeDist] !== undefined) gradeDist[g as keyof typeof gradeDist]++ })
