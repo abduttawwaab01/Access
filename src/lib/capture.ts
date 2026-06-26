@@ -120,7 +120,7 @@ function sanitizeUnsupportedColors(doc: Document): void {
         .replace(/color-mix\([^)]*\)/gi, "transparent")
       ;(el as HTMLElement).setAttribute("style", resolveCssVar(safe))
     }
-    // Resolve CSS variable references in SVG stroke/fill attributes (e.g. hsl(var(--primary)))
+    // Strip oklab/oklch/lab/lch directly from SVG attributes
     for (const attr of ["stroke", "fill", "stop-color"]) {
       const val = el.getAttribute(attr)
       if (val) {
@@ -128,22 +128,44 @@ function sanitizeUnsupportedColors(doc: Document): void {
         if (resolved !== val) el.setAttribute(attr, resolved)
       }
     }
+    // Brute-force override any computed color property containing unsupported color functions
+    const computed = (el as HTMLElement).style
+    if (computed) {
+      for (let i = 0; i < computed.length; i++) {
+        const prop = computed[i]
+        const value = computed.getPropertyValue(prop)
+        if (hasUnsupportedColor(value)) {
+          if (isColorProperty(prop)) {
+            try { computed.setProperty(prop, getFallbackForProperty(prop), "important") } catch {}
+          } else {
+            try { computed.removeProperty(prop) } catch {}
+          }
+        }
+      }
+    }
   }
   const styles = doc.querySelectorAll("style")
   for (const style of styles) {
     style.textContent = style.textContent
+      .replace(/lab\([^)]*\)/gi, "transparent")
+      .replace(/lch\([^)]*\)/gi, "transparent")
       .replace(/oklab\([^)]*\)/gi, "transparent")
       .replace(/oklch\([^)]*\)/gi, "transparent")
+      .replace(/color\([^)]*\)/gi, "transparent")
       .replace(/color-mix\([^)]*\)/gi, "transparent")
   }
+  // Links are already removed in onclone before this runs, but handle any remaining
   const links = doc.querySelectorAll('link[rel="stylesheet"]')
   for (const link of links) {
     const href = link.getAttribute("href")
     if (href) {
       fetch(href).then((r) => r.text()).then((css) => {
         const cleaned = css
+          .replace(/lab\([^)]*\)/gi, "transparent")
+          .replace(/lch\([^)]*\)/gi, "transparent")
           .replace(/oklab\([^)]*\)/gi, "transparent")
           .replace(/oklch\([^)]*\)/gi, "transparent")
+          .replace(/color\([^)]*\)/gi, "transparent")
           .replace(/color-mix\([^)]*\)/gi, "transparent")
         const style = doc.createElement("style")
         style.textContent = cleaned

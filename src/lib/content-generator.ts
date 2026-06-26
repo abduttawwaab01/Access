@@ -1,4 +1,4 @@
-function getLevel(className: string): "nursery" | "primary" | "jss" | "sss" {
+export function getLevel(className: string): "nursery" | "primary" | "jss" | "sss" {
   const c = className.toLowerCase()
   if (c.includes("nursery")) return "nursery"
   if (c.includes("primary")) return "primary"
@@ -6,9 +6,9 @@ function getLevel(className: string): "nursery" | "primary" | "jss" | "sss" {
   return "sss"
 }
 
-function getSubjectCategory(subject: string): string {
+export function getSubjectCategory(subject: string): string {
   const s = subject.toLowerCase()
-  if (["mathematics", "further mathematics", "additional mathematics", "numeracy", "number work"].some((x) => s.includes(x))) return "mathematics"
+  if (["mathematics", "further mathematics", "additional mathematics", "numeracy", "number work", "quantitative reasoning", "quantitative"].some((x) => s.includes(x))) return "mathematics"
   if (["physics", "chemistry", "biology", "science", "integrated science", "basic science", "general science"].some((x) => s.includes(x))) return "science"
   if (["english", "english language", "literacy", "letter work", "verbal reasoning", "comprehension"].some((x) => s.includes(x))) return "english"
   if (["yoruba", "french", "arabic", "igbo", "hausa"].some((x) => s.includes(x))) return "language"
@@ -19,11 +19,10 @@ function getSubjectCategory(subject: string): string {
   if (["crs", "christian", "islamic", "religious", "moral", "moral instruction"].some((x) => s.includes(x))) return "religious"
   if (["business", "commerce", "accounting", "economics", "entrepreneurship", "office practice"].some((x) => s.includes(x))) return "business"
   if (["phe", "physical", "health", "sport"].some((x) => s.includes(x))) return "physical"
-  if (["quantitative reasoning", "quantitative"].some((x) => s.includes(x))) return "mathematics"
   return "general"
 }
 
-function getLevelAdjective(level: string): string {
+export function getLevelAdjective(level: string): string {
   const map: Record<string, string> = {
     nursery: "basic foundational",
     primary: "elementary",
@@ -33,7 +32,7 @@ function getLevelAdjective(level: string): string {
   return map[level] || "standard"
 }
 
-function getDuration(level: string): string {
+export function getDuration(level: string): string {
   const map: Record<string, string> = {
     nursery: "30",
     primary: "35",
@@ -43,7 +42,7 @@ function getDuration(level: string): string {
   return map[level] || "40"
 }
 
-function getStudentTitle(level: string): string {
+export function getStudentTitle(level: string): string {
   const map: Record<string, string> = {
     nursery: "pupils",
     primary: "pupils",
@@ -70,11 +69,33 @@ const summaryStatements = [
   "Mastery of this topic requires regular practice and revision.",
 ]
 
+import { fetchWikipediaExtract } from "./content-fetcher"
+import { parseExtractToLesson } from "./content-to-lesson"
+import { generateQuestionsFromText } from "./question-generator"
+
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-export function generateLessonNote(
+async function tryWikipediaLesson(
+  subject: string,
+  topic: string,
+  className: string,
+  term: string,
+  week: string | number
+): Promise<string | null> {
+  try {
+    const wiki = await fetchWikipediaExtract(topic)
+    if (wiki.found && wiki.extract.length > 50) {
+      return parseExtractToLesson(wiki.extract, subject, wiki.title, className, term, week)
+    }
+  } catch {
+    // fall through to template
+  }
+  return null
+}
+
+function generateTemplateLesson(
   subject: string,
   topic: string,
   className: string,
@@ -83,16 +104,15 @@ export function generateLessonNote(
 ): string {
   const level = getLevel(className)
   const category = getSubjectCategory(subject)
-  const adj = getLevelAdjective(level)
   const dur = getDuration(level)
   const students = getStudentTitle(level)
 
-  const objectives = generateObjectives(category, topic, level)
+  const objectives = generateObjectives(category, topic)
   const materials = generateMaterials(category, level)
   const prevKnowledge = `Students have learned basic concepts in ${subject} in previous lessons. They are familiar with foundational topics that prepare them for this lesson.`
   const intro = pick(introTopics)
   const steps = generateLessonSteps(category, topic, level)
-  const evalQs = generateEvaluation(category, topic, level)
+  const evalQs = generateEvaluation(category, topic)
   const summary = pick(summaryStatements)
   const assignment = generateAssignment(category, topic, level)
 
@@ -128,8 +148,45 @@ ${summary}
 ${assignment}`
 }
 
-function generateObjectives(category: string, topic: string, level: string): string {
-  const students = getStudentTitle(level)
+export async function generateLessonNote(
+  subject: string,
+  topic: string,
+  className: string,
+  term: string,
+  week: string | number
+): Promise<string> {
+  const wikiContent = await tryWikipediaLesson(subject, topic, className, term, week)
+  if (wikiContent) return wikiContent
+  return generateTemplateLesson(subject, topic, className, term, week)
+}
+
+export async function generateLessonNoteWithQuestions(
+  subject: string,
+  topic: string,
+  className: string,
+  term: string,
+  week: string | number
+): Promise<{ content: string; questions: { questionText: string; type: string; options: string[]; correctAnswer: string; points: number }[]; source: "wikipedia" | "template" }> {
+  let content: string
+  let source: "wikipedia" | "template" = "template"
+
+  try {
+    const wiki = await fetchWikipediaExtract(topic)
+    if (wiki.found && wiki.extract.length > 50) {
+      content = parseExtractToLesson(wiki.extract, subject, wiki.title, className, term, week)
+      source = "wikipedia"
+      const questions = generateQuestionsFromText(wiki.extract, 5)
+      return { content, questions, source }
+    }
+  } catch {
+    // fall through
+  }
+
+  content = generateTemplateLesson(subject, topic, className, term, week)
+  return { content, questions: [], source }
+}
+
+function generateObjectives(category: string, topic: string): string {
   const common = [
     `Define and explain the key concepts of ${topic}`,
     `Identify and describe the main features of ${topic}`,
@@ -167,7 +224,7 @@ function generateObjectives(category: string, topic: string, level: string): str
   return common.map((o) => `- ${o}.`).join("\n")
 }
 
-function generateMaterials(category: string, level: string): string {
+export function generateMaterials(category: string, level: string): string {
   const common = [
     "- Whiteboard and markers",
     "- Textbook",
@@ -245,7 +302,7 @@ function generateLessonSteps(category: string, topic: string, level: string): st
   return steps.map((s, i) => `**Step ${i + 1}:** ${s.split("**Step")[1] || s}`).join("\n\n")
 }
 
-function generateEvaluation(category: string, topic: string, level: string): string {
+function generateEvaluation(category: string, topic: string): string {
   const qs = [
     `1. What is ${topic}? Explain in your own words.`,
     `2. List three key features of ${topic}.`,
@@ -265,7 +322,7 @@ function generateEvaluation(category: string, topic: string, level: string): str
   return qs.join("\n")
 }
 
-function generateAssignment(category: string, topic: string, level: string): string {
+export function generateAssignment(category: string, topic: string, level: string): string {
   if (level === "nursery") {
     return `1. Draw and color a picture related to ${topic}.\n2. Practice the new words you learned today with your parents.\n3. Bring an object related to ${topic} to the next class.`
   }
@@ -341,7 +398,6 @@ export function generateQuestion(
   type: string
 ): { questionText: string; options: string[]; correctAnswer: string } | null {
   const cat = getSubjectCategory(subject)
-  const level = getLevel(className)
 
   if (type === "True-False") {
     const qs = [

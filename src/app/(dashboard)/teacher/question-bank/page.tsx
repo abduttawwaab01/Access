@@ -16,6 +16,8 @@ import { Plus, Pencil, Trash2, HelpCircle, AlignLeft, CheckCircle, Search } from
 import { PageHeader } from "@/components/admin/PageHeader"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { generateQuestion } from "@/lib/content-generator"
+import { fetchWikipediaExtract } from "@/lib/content-fetcher"
+import { generateQuestionsFromText } from "@/lib/question-generator"
 import { useSession } from "next-auth/react"
 
 const typeIcons: Record<string, any> = { mcq: HelpCircle, true_false: CheckCircle, theory: AlignLeft }
@@ -118,13 +120,29 @@ export default function QuestionBankPage() {
 
   const update = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }))
 
-  const handleGenerateQuestion = () => {
+  const handleGenerateQuestion = async () => {
     if (!form.subjectId || !form.classId) { toast.error("Set subject and class first"); return }
     setGenerating(true)
     try {
       const subjName = subjects.find((s: any) => s.id === form.subjectId)?.name || ""
       const className = classes.find((c: any) => c.id === form.classId)?.name || ""
-      const q = generateQuestion(subjName, className, form.topic || subjName, form.type || "mcq")
+      const topic = form.topic || subjName
+
+      const wiki = await fetchWikipediaExtract(topic)
+      if (wiki.found && wiki.extract.length > 50) {
+        const questions = generateQuestionsFromText(wiki.extract, 1)
+        if (questions.length > 0) {
+          const q = questions[0]
+          update("text", q.questionText)
+          update("options", q.options)
+          update("correctAnswer", q.correctAnswer)
+          toast.success("Question generated from Wikipedia content")
+          setGenerating(false)
+          return
+        }
+      }
+
+      const q = generateQuestion(subjName, className, topic, form.type || "mcq")
       if (!q) { toast.error("Failed to generate question"); return }
       update("text", q.questionText)
       if (q.options) update("options", q.options)

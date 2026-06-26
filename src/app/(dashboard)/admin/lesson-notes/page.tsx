@@ -18,7 +18,7 @@ import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { currentSession } from "@/lib/utils"
-import { generateLessonNote } from "@/lib/content-generator"
+import { generateLessonNoteWithQuestions } from "@/lib/content-generator"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function AdminLessonNotes() {
@@ -154,9 +154,19 @@ export default function AdminLessonNotes() {
     setGenerating(true)
     try {
       const className = classes.find((c: any) => c.id === form.classId)?.name || ""
-      const content = generateLessonNote(form.subject, form.title, className, form.term, form.week)
+      const { content, questions, source } = await generateLessonNoteWithQuestions(form.subject, form.title, className, form.term, form.week)
       update("content", content)
-      toast.success("Lesson note generated")
+      if (questions.length > 0) {
+        setQuiz(questions.map((q: any) => ({
+          id: Math.random().toString(36).substring(2, 11),
+          questionText: q.questionText,
+          type: q.type,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+          points: q.points,
+        })))
+      }
+      toast.success(source === "wikipedia" ? "Lesson note generated from Wikipedia" : "Lesson note generated (template)")
     } catch {
       toast.error("Failed to generate lesson note")
     }
