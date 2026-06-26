@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { FileText, ChevronDown, ChevronUp, BookOpen, CheckCircle2, XCircle, RotateCcw, Trophy, ArrowRight, HelpCircle } from "lucide-react"
+import { FileText, ChevronDown, ChevronUp, BookOpen, CheckCircle2, XCircle, RotateCcw, Trophy, ArrowRight, HelpCircle, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession } from "next-auth/react"
+import { StudentNoteContent } from "@/components/StudentNoteContent"
+import { getContentVersion, extractStudentContent } from "@/lib/content-generator"
 
 export default function StudentLessonNotesPage() {
   const { data: session } = useSession()
@@ -28,6 +30,7 @@ export default function StudentLessonNotesPage() {
   const [quizResult, setQuizResult] = useState<any>(null)
   const [existingResult, setExistingResult] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [readingProgress, setReadingProgress] = useState<Record<string, boolean>>({})
 
   const [studentId, setStudentId] = useState("")
 
@@ -167,6 +170,11 @@ export default function StudentLessonNotesPage() {
     setCurrentQuestion(0)
     setAnswers({})
     setQuizResult(null)
+  }
+
+  const handleMarkAsRead = (noteId: string) => {
+    setReadingProgress((prev) => ({ ...prev, [noteId]: true }))
+    toast.success("Marked as read")
   }
 
   const containerVariants = {
@@ -338,7 +346,7 @@ export default function StudentLessonNotesPage() {
     <div className="p-4 md:p-6 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="text-2xl font-bold">Lesson Notes</h2>
-        <p className="text-sm text-muted-foreground">Browse published lesson notes for your class</p>
+        <p className="text-sm text-muted-foreground">Browse published lesson notes for your class. Read and study each note, then take the quiz.</p>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
@@ -373,8 +381,12 @@ export default function StudentLessonNotesPage() {
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-2">
           <AnimatePresence>
             {sortedNotes.map((note, i) => {
+              const version = getContentVersion(note.content)
+              const studentContent = extractStudentContent(note.content)
+              const hasStudentNote = version === "v2" && note.content?.studentNote
               const hasQuiz = note.quiz && note.quiz.length > 0
               const isExpanded = expandedId === note.id
+              const isRead = readingProgress[note.id]
               return (
                 <motion.div key={note.id} variants={itemVariants} layout>
                   <Card
@@ -387,8 +399,11 @@ export default function StudentLessonNotesPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex gap-3 flex-1 min-w-0">
-                          <div className="flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                            <FileText className="h-5 w-5 text-primary" />
+                          <div className={cn(
+                            "flex h-9 w-9 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-xl",
+                            isRead ? "bg-emerald-500/10" : "bg-primary/10"
+                          )}>
+                            {isRead ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <FileText className="h-5 w-5 text-primary" />}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-semibold truncate">{note.title}</p>
@@ -401,11 +416,28 @@ export default function StudentLessonNotesPage() {
                             <p className="text-xs text-muted-foreground/70 mt-1">
                               by {note.creatorName || "Unknown"}
                             </p>
-                            {hasQuiz && (
-                              <Badge variant="outline" className="mt-1.5 text-[10px] text-primary bg-primary/5">
-                                {note.quiz.length} question{note.quiz.length > 1 ? "s" : ""}
-                              </Badge>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              {hasStudentNote && (
+                                <Badge variant="outline" className="text-[10px] text-indigo-600 bg-indigo-500/10 border-indigo-200">
+                                  <BookOpen className="h-3 w-3 mr-0.5" /> Study Note
+                                </Badge>
+                              )}
+                              {version === "v1" && (
+                                <Badge variant="outline" className="text-[10px] text-amber-600 bg-amber-500/10 border-amber-200">
+                                  Lesson Plan
+                                </Badge>
+                              )}
+                              {hasQuiz && (
+                                <Badge variant="outline" className="text-[10px] text-primary bg-primary/5">
+                                  {note.quiz.length} question{note.quiz.length > 1 ? "s" : ""}
+                                </Badge>
+                              )}
+                              {isRead && (
+                                <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/10">
+                                  Read
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="shrink-0 ml-2">
@@ -423,26 +455,38 @@ export default function StudentLessonNotesPage() {
                             className="overflow-hidden"
                           >
                             <div className="pt-4 border-t mt-3" onClick={(e) => e.stopPropagation()}>
-                              <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap">
-                                {note.content}
-                              </div>
+                              {hasStudentNote ? (
+                                <div className="max-w-none">
+                                  <StudentNoteContent content={studentContent} />
+                                </div>
+                              ) : (
+                                <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap">
+                                  {note.content}
+                                </div>
+                              )}
                               {note.resources && (
                                 <div className="mt-3 rounded-lg bg-muted/50 p-3">
                                   <p className="text-xs font-semibold text-muted-foreground mb-1">Resources</p>
                                   <p className="text-xs text-muted-foreground/70">{note.resources}</p>
                                 </div>
                               )}
-                              {hasQuiz && (
-                                <div className="mt-3">
+                              <div className="flex flex-wrap items-center gap-2 mt-4">
+                                {!isRead && (
+                                  <Button variant="outline" size="sm" onClick={() => handleMarkAsRead(note.id)}>
+                                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark as Read
+                                  </Button>
+                                )}
+                                {hasQuiz && (
                                   <Button
+                                    size="sm"
                                     className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]"
                                     onClick={() => handleStartQuiz(note)}
                                   >
                                     <HelpCircle className="h-4 w-4 mr-1" />
                                     {existingResult?.lessonNoteId === note.id ? "View Quiz" : "Take Quiz"}
                                   </Button>
-                                </div>
-                              )}
+                                )}
+                              </div>
                               {quizState?.lessonNoteId === note.id && renderQuizUI(note)}
                             </div>
                           </motion.div>

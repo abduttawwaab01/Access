@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts"
 import { Save, Loader2, User, BookOpen, DownloadCloud, FileSpreadsheet, BarChart3 } from "lucide-react"
 import { downloadCsv, downloadPng, downloadPdf } from "@/lib/capture"
+import { currentSession } from "@/lib/utils"
 
 const tabs = ["Score Entry", "Dashboard"]
 
@@ -32,10 +33,10 @@ export default function TeacherResultsPage() {
   const [selectedClassId, setSelectedClassId] = useState("")
   const [selectedSubjectId, setSelectedSubjectId] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("")
-  const [selectedExamId, setSelectedExamId] = useState("")
+  const [selectedSession, setSelectedSession] = useState(currentSession())
   const [scores, setScores] = useState<Record<string, { caScore: string; examScore: string }>>({})
   const [terms, setTerms] = useState<any[]>([])
-  const [exams, setExams] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
   const [exporting, setExporting] = useState(false)
   const dashboardRef = useRef<HTMLDivElement>(null)
 
@@ -52,27 +53,26 @@ export default function TeacherResultsPage() {
           fetch("/api/students").then((r) => r.json()),
           fetch("/api/terms").then((r) => r.json()),
           fetch("/api/grading-config").then((r) => r.json()),
-          fetch("/api/exams?type=regular").then((r) => r.json()),
+          fetch("/api/sessions").then((r) => r.json()),
           staffId,
         ])
       })
-      .then(([assignments, cls, sub, stu, trm, gc, examsData, staffId]) => {
+      .then(([assignments, cls, sub, stu, trm, gc, sessData, staffId]) => {
         const assigns = Array.isArray(assignments) ? assignments : []
         const myAssignment = assigns.find((a: any) => a.teacherId === staffId)
         setAssignment(myAssignment)
         const allClasses = Array.isArray(cls) ? cls : []
         const allSubjects = Array.isArray(sub) ? sub : []
         const allStudents = Array.isArray(stu) ? stu : []
-        const allExams = Array.isArray(examsData) ? examsData : []
       if (myAssignment) {
         setClasses(allClasses.filter((c: any) => myAssignment.classIds?.includes(c.id)))
         setSubjects(allSubjects.filter((s: any) => myAssignment.subjectIds?.includes(s.id)))
         setStudents(allStudents.filter((s: any) => myAssignment.classIds?.includes(s.classId)))
-        setExams(allExams.filter((e: any) => myAssignment.classIds?.includes(e.classId) && myAssignment.subjectIds?.includes(e.subjectId)))
       } else {
-        setClasses(allClasses); setSubjects(allSubjects); setStudents(allStudents); setExams(allExams)
+        setClasses(allClasses); setSubjects(allSubjects); setStudents(allStudents)
       }
       setTerms(Array.isArray(trm) ? trm : [])
+      setSessions(Array.isArray(sessData) ? sessData : [])
       setGradingConfig(gc)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -81,14 +81,15 @@ export default function TeacherResultsPage() {
   useEffect(() => {
     if (!selectedClassId || !selectedSubjectId || !selectedTerm) return
     setScores({})
-    const url = `/api/results?classId=${selectedClassId}&subjectId=${selectedSubjectId}&term=${selectedTerm}${selectedExamId ? `&examId=${selectedExamId}` : ""}`
-    fetch(url).then((r) => r.json()).then((data) => {
+    const params = new URLSearchParams({ classId: selectedClassId, subjectId: selectedSubjectId, term: selectedTerm })
+    if (selectedSession) params.set("session", selectedSession)
+    fetch(`/api/results?${params}`).then((r) => r.json()).then((data) => {
       setResults(Array.isArray(data) ? data : [])
       const initial: Record<string, { caScore: string; examScore: string }> = {}
       ;(Array.isArray(data) ? data : []).forEach((r: any) => { initial[r.studentId] = { caScore: r.caScore?.toString() ?? "", examScore: r.examScore?.toString() ?? "" } })
       setScores(initial)
     }).catch(() => {})
-  }, [selectedClassId, selectedSubjectId, selectedTerm, selectedExamId])
+  }, [selectedClassId, selectedSubjectId, selectedTerm, selectedSession])
 
   const classSubjects = subjects.filter((s) => s.classId === selectedClassId)
   const classStudents = students.filter((s) => s.classId === selectedClassId).sort((a, b) => a.firstName?.localeCompare(b.firstName))
@@ -112,12 +113,12 @@ export default function TeacherResultsPage() {
           id: existing?.id || undefined,
           studentId: s.id,
           subjectId: selectedSubjectId,
-          examId: selectedExamId,
+          classId: selectedClassId,
           subject: subjects.find((sub) => sub.id === selectedSubjectId)?.name || "",
           caScore: Number(sc?.caScore) || 0,
           examScore: Number(sc?.examScore) || 0,
           term: selectedTerm,
-          session: new Date().getFullYear() + "/" + (new Date().getFullYear() + 1),
+          session: selectedSession || currentSession(),
         }
       })
       const res = await fetch("/api/results", {
@@ -125,11 +126,15 @@ export default function TeacherResultsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       })
-      if (!res.ok) throw new Error("Save failed")
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Unknown error")
+        throw new Error(errText)
+      }
       const saved = await res.json()
       toast.success(`Saved ${saved.length} results`)
-      const url = `/api/results?classId=${selectedClassId}&subjectId=${selectedSubjectId}&term=${selectedTerm}${selectedExamId ? `&examId=${selectedExamId}` : ""}`
-      const fresh = await fetch(url); const freshData = await fresh.json()
+      const params = new URLSearchParams({ classId: selectedClassId, subjectId: selectedSubjectId, term: selectedTerm })
+      if (selectedSession) params.set("session", selectedSession)
+      const fresh = await fetch(`/api/results?${params}`); const freshData = await fresh.json()
       setResults(Array.isArray(freshData) ? freshData : [])
     } catch (err) { toast.error("Failed to save results") }
     setSaving(false)
@@ -185,7 +190,7 @@ export default function TeacherResultsPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div><h2 className="text-xl md:text-2xl font-bold">Results</h2><p className="text-sm text-muted-foreground">Manage and analyze your students' scores</p></div>
+      <div><h2 className="text-xl md:text-2xl font-bold">Results</h2><p className="text-sm text-muted-foreground">Manage and analyze your students&apos; scores</p></div>
 
       <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
         {tabs.map((t) => (
@@ -200,23 +205,16 @@ export default function TeacherResultsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Class</Label>
-                  <select value={selectedClassId} onChange={(e) => { setSelectedClassId(e.target.value); setSelectedSubjectId(""); setSelectedExamId(""); setResults([]); setScores({}) }} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
+                  <select value={selectedClassId} onChange={(e) => { setSelectedClassId(e.target.value); setSelectedSubjectId(""); setResults([]); setScores({}) }} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
                     <option value="">Select class...</option>
                     {classes.map((c: any) => <option key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Subject</Label>
-                  <select value={selectedSubjectId} onChange={(e) => { setSelectedSubjectId(e.target.value); setSelectedExamId("") }} disabled={!selectedClassId} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
+                  <select value={selectedSubjectId} onChange={(e) => { setSelectedSubjectId(e.target.value) }} disabled={!selectedClassId} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
                     <option value="">Select subject...</option>
                     {classSubjects.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Exam</Label>
-                  <select value={selectedExamId} onChange={(e) => setSelectedExamId(e.target.value)} disabled={!selectedSubjectId} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
-                    <option value="">Select exam...</option>
-                    {exams.filter((e: any) => e.subjectId === selectedSubjectId && e.status === "published").map((e: any) => <option key={e.id} value={e.id}>{e.title}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
@@ -224,6 +222,13 @@ export default function TeacherResultsPage() {
                   <select value={selectedTerm} onChange={(e) => setSelectedTerm(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
                     <option value="">Select term...</option>
                     {terms.map((t: any) => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Session</Label>
+                  <select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm h-11">
+                    <option value="">Select session...</option>
+                    {sessions.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -276,7 +281,7 @@ export default function TeacherResultsPage() {
         <div ref={dashboardRef} className="space-y-6 bg-white rounded-2xl p-6 border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <select value={selectedClassId} onChange={(e) => { setSelectedClassId(e.target.value); setSelectedSubjectId(""); setSelectedExamId("") }} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
+              <select value={selectedClassId} onChange={(e) => { setSelectedClassId(e.target.value); setSelectedSubjectId("") }} className="rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
                 <option value="">All classes</option>
                 {classes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>

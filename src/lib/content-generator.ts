@@ -70,7 +70,7 @@ const summaryStatements = [
 ]
 
 import { fetchWikipediaExtract } from "./content-fetcher"
-import { parseExtractToLesson } from "./content-to-lesson"
+import { parseExtractToLesson, parseExtractToStudentNote } from "./content-to-lesson"
 import { generateQuestionsFromText } from "./question-generator"
 
 function pick<T>(arr: T[]): T {
@@ -148,6 +148,74 @@ ${summary}
 ${assignment}`
 }
 
+function generateTemplateStudentNote(
+  subject: string,
+  topic: string,
+  className: string,
+  term: string,
+  week: string | number
+): string {
+  const level = getLevel(className)
+  const category = getSubjectCategory(subject)
+  const students = getStudentTitle(level)
+
+  return `## ${topic}
+
+### Introduction
+${topic} is an important topic in ${subject}. In this note, you will learn everything you need to know about ${topic} in a simple and clear way. Understanding this topic will help you build a strong foundation for more advanced concepts in ${subject}.
+
+### What You Will Learn
+By the end of this note, you will be able to:
+- Define and explain ${topic} in your own words
+- Identify the key concepts and ideas related to ${topic}
+- Apply what you have learned to solve problems and answer questions
+- Connect ${topic} to real-life situations
+
+### What is ${topic}?
+${topic} is a key concept in ${subject}. It involves understanding important ideas that help us make sense of the world around us. When we study ${topic}, we learn about the principles and practices that are essential for this subject.
+
+The study of ${topic} covers several important areas. First, we look at the basic definition and what makes ${topic} unique. Then we explore how ${topic} relates to other concepts we already know.
+
+### Key Concepts
+The main ideas covered in ${topic} include:
+1. **Definition and Meaning** — Understanding what ${topic} is all about
+2. **Key Principles** — The fundamental rules and ideas that guide this topic
+3. **Applications** — How ${topic} is used in everyday life
+4. **Importance** — Why learning ${topic} matters
+
+### Important Definitions
+- **${topic}**: The main subject or concept we are studying
+- **Key Terms**: Important vocabulary related to this topic will be explained as you study
+
+### Examples
+**Example 1:**
+Consider how ${topic} applies in real life. For instance, when we look at everyday situations, we can see ${topic} at work in many ways that affect our daily lives.
+
+**Example 2:**
+Another example of ${topic} can be seen in how professionals use these concepts to solve problems and make decisions in their work.
+
+### Key Points to Remember
+- ${topic} is an important concept in ${subject}
+- The main ideas help us understand more complex topics later
+- Practice and review are essential for mastering this topic
+- Real-life applications make ${topic} relevant and useful
+
+### Practice Questions
+1. What is ${topic}? Write a short explanation in your own words.
+2. List three important facts about ${topic}.
+3. How does ${topic} apply to real-life situations?
+4. Why is it important to study ${topic}?
+5. What questions do you still have about ${topic}?
+
+### Answer Key
+1. (Answer will vary based on the specific topic studied)
+2. (Answers should reflect the key points covered in the note)
+3. (Students should identify real-world applications)
+4. (Students should explain the importance of the topic)
+5. (Open-ended — students should identify areas for further clarification)
+`
+}
+
 export async function generateLessonNote(
   subject: string,
   topic: string,
@@ -160,15 +228,68 @@ export async function generateLessonNote(
   return generateTemplateLesson(subject, topic, className, term, week)
 }
 
+export async function generateComprehensiveLessonNote(
+  subject: string,
+  topic: string,
+  className: string,
+  term: string,
+  week: string | number
+): Promise<{
+  studentNote: string
+  lessonPlan: string
+  questions: { questionText: string; type: string; options: string[]; correctAnswer: string; points: number }[]
+  source: "ai" | "wikipedia" | "template"
+}> {
+  try {
+    const res = await fetch("/api/ai/generate-lesson", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject, topic, className, term, week: String(week) }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.studentNote && data.lessonPlan) {
+        return {
+          studentNote: data.studentNote,
+          lessonPlan: data.lessonPlan,
+          questions: data.questions || [],
+          source: "ai",
+        }
+      }
+    }
+  } catch {
+    // fall through to Wikipedia
+  }
+
+  try {
+    const wiki = await fetchWikipediaExtract(topic)
+    if (wiki.found && wiki.extract.length > 50) {
+      const studentNote = parseExtractToStudentNote(wiki.extract, subject, wiki.title, className, term, week)
+      const lessonPlan = parseExtractToLesson(wiki.extract, subject, wiki.title, className, term, week)
+      const questions = generateQuestionsFromText(wiki.extract, 5)
+      return { studentNote, lessonPlan, questions, source: "wikipedia" }
+    }
+  } catch {
+    // fall through to template
+  }
+
+  return {
+    studentNote: generateTemplateStudentNote(subject, topic, className, term, week),
+    lessonPlan: generateTemplateLesson(subject, topic, className, term, week),
+    questions: [],
+    source: "template",
+  }
+}
+
 export async function generateLessonNoteWithQuestions(
   subject: string,
   topic: string,
   className: string,
   term: string,
   week: string | number
-): Promise<{ content: string; questions: { questionText: string; type: string; options: string[]; correctAnswer: string; points: number }[]; source: "wikipedia" | "template" }> {
+): Promise<{ content: string; questions: { questionText: string; type: string; options: string[]; correctAnswer: string; points: number }[]; source: "wikipedia" | "template" | "ai" }> {
   let content: string
-  let source: "wikipedia" | "template" = "template"
+  let source: "wikipedia" | "template" | "ai" = "template"
 
   try {
     const wiki = await fetchWikipediaExtract(topic)
@@ -184,6 +305,26 @@ export async function generateLessonNoteWithQuestions(
 
   content = generateTemplateLesson(subject, topic, className, term, week)
   return { content, questions: [], source }
+}
+
+export function getContentVersion(content: any): "v1" | "v2" {
+  if (typeof content === "string") return "v1"
+  if (content && typeof content === "object" && content.format === "v2") return "v2"
+  return "v1"
+}
+
+export function extractStudentContent(content: any): string {
+  const version = getContentVersion(content)
+  if (version === "v2") return content.studentNote || content.lessonPlan || ""
+  if (typeof content === "string") return content
+  return ""
+}
+
+export function extractLessonPlan(content: any): string {
+  const version = getContentVersion(content)
+  if (version === "v2") return content.lessonPlan || content.studentNote || ""
+  if (typeof content === "string") return content
+  return ""
 }
 
 function generateObjectives(category: string, topic: string): string {

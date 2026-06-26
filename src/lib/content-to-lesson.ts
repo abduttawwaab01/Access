@@ -190,3 +190,92 @@ function buildSummary(extract: string, topic: string): string {
   }
   return `Today we learned about ${topic}. The key ideas covered form the foundation for understanding more advanced concepts in this subject. Students should review their notes and practice regularly.`
 }
+
+export function parseExtractToStudentNote(
+  extract: string,
+  subject: string,
+  topic: string,
+  className: string,
+  term: string,
+  week: string | number
+): string {
+  const paragraphs = splitIntoParagraphs(extract)
+  const keyTerms = extractKeyTerms(extract)
+  const definitions = extractDefinitions(extract)
+
+  const firstPara = paragraphs[0] || extract
+  const introSentence = firstPara.split(". ").slice(0, 3).join(". ") + "."
+
+  const bodyParagraphs = paragraphs.slice(0, 5).filter((p) => p.trim().length > 30)
+  const bodyText = bodyParagraphs.length > 0
+    ? bodyParagraphs.map((p) => p.trim()).join("\n\n")
+    : extract.slice(0, 1000)
+
+  const defSection = definitions.length > 0
+    ? definitions.slice(0, 5).map((d) => `- **${d.split(" ").slice(0, 3).join(" ")}...** — ${d}`).join("\n")
+    : ""
+
+  const termSection = keyTerms.length > 0
+    ? keyTerms.slice(0, 8).map((t) => `- **${t}**`).join("\n")
+    : ""
+
+  const practiceQuestions = [
+    `1. What is ${topic}? Explain in your own words.`,
+    `2. List three important facts you learned about ${topic}.`,
+    `3. How does ${topic} relate to what you already know?`,
+    `4. Give two real-life examples of ${topic}.`,
+    `5. What was the most interesting thing you learned about ${topic}?`,
+  ].join("\n")
+
+  return `## ${topic}
+
+### Introduction
+${introSentence}
+
+In this note, you will learn about ${topic} in ${subject}. This topic is important because it helps us understand key ideas that we encounter in our daily lives. By studying ${topic}, you will build knowledge that will be useful in your future lessons and beyond.
+
+### What You Will Learn
+By reading this note, you will be able to:
+- Define and explain ${topic} clearly
+- Identify the main ideas and concepts related to ${topic}
+- Apply your understanding to answer questions and solve problems
+- Connect ${topic} to real-world situations
+
+### What is ${topic}?
+Let's explore ${topic} in detail. The following information will help you understand what ${topic} is all about:
+
+${bodyText}
+
+### Key Concepts
+Here are the main ideas you need to understand about ${topic}:
+
+${paragraphs.slice(1, 4).map((p, i) => `${i + 1}. **${p.split(".")[0]}.** ${p.split(". ").slice(1).join(". ")}`).join("\n\n")}
+
+${defSection ? `### Important Definitions\n${defSection}\n` : ""}
+
+${termSection ? `### Key Terms to Remember\n${termSection}\n` : ""}
+
+### Examples
+Let's look at some examples to help you understand ${topic} better:
+
+${paragraphs.slice(0, 2).map((p) => `**Example:** ${p.split(". ").slice(0, 2).join(". ")}.`).join("\n\n")}
+
+### Key Points to Remember
+- ${topic} is an important concept in ${subject}
+- The main ideas help build a foundation for advanced topics
+- Practice and review will help you master this topic
+- Try to connect what you learn to real-life situations
+
+### Practice Questions
+Test your understanding of ${topic} with these questions:
+
+${practiceQuestions}
+
+### Answer Key
+1. (Your answer should include a clear definition of ${topic})
+2. (List three facts from the note above)
+3. (Think about how ${topic} connects to other topics you've studied)
+4. (Identify real-world examples of ${topic})
+5. (Share what you found most interesting)
+`
+}

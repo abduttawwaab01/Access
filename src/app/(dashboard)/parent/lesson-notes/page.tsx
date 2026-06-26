@@ -10,6 +10,8 @@ import { toast } from "sonner"
 import { FileText, ChevronDown, ChevronUp, BookOpen, CheckCircle2, XCircle, RotateCcw, Trophy, ArrowRight, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useParentChildren } from "@/hooks/useParentChildren"
+import { StudentNoteContent } from "@/components/StudentNoteContent"
+import { getContentVersion, extractStudentContent } from "@/lib/content-generator"
 
 export default function ParentLessonNotesPage() {
   const { children, activeChild, activeChildId, setActiveChildId, loading: childrenLoading } = useParentChildren()
@@ -27,45 +29,29 @@ export default function ParentLessonNotesPage() {
   const [existingResult, setExistingResult] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (children.length > 0 && !selectedClassId) {
-      fetch("/api/classes").then((r) => r.json()).then((cls) => {
-        setClasses(cls)
-        const child = children.find((c) => c.id === activeChildId) || children[0]
-        if (child?.classId) {
-          setSelectedClassId(child.classId)
-        }
-      })
-    }
-  }, [children, activeChildId])
+  const studentClassId = activeChild?.classId || ""
 
   useEffect(() => {
-    if (selectedClassId) {
-      setLoading(true)
-      fetch(`/api/lesson-notes?classId=${selectedClassId}`)
-        .then((r) => r.json())
-        .then((data) => {
-          setNotes(data.filter((n: any) => n.status === "published"))
-          setLoading(false)
-        })
-        .catch(() => setLoading(false))
+    if (!activeChildId || !selectedClassId) {
+      setLoading(false)
+      return
     }
-  }, [selectedClassId])
+    setLoading(true)
+    Promise.all([
+      fetch("/api/classes").then((r) => r.json()),
+      fetch(`/api/lesson-notes?classId=${selectedClassId}`).then((r) => r.json()),
+    ]).then(([cls, nts]) => {
+      setClasses(cls)
+      setNotes(nts.filter((n: any) => n.status === "published"))
+      setLoading(false)
+    })
+  }, [activeChildId, selectedClassId])
 
-  const handleChildChange = (childId: string) => {
-    setActiveChildId(childId)
-    const child = children.find((c) => c.id === childId)
-    if (child?.classId) {
-      setSelectedClassId(child.classId)
+  useEffect(() => {
+    if (activeChild && activeChild.classId) {
+      setSelectedClassId(activeChild.classId)
     }
-    setExpandedId(null)
-    setQuizState(null)
-    setQuizStep("start")
-    setCurrentQuestion(0)
-    setAnswers({})
-    setQuizResult(null)
-    setExistingResult(null)
-  }
+  }, [activeChild])
 
   const getClassName = (id: string) => classes.find((c) => c.id === id)
   const sortedNotes = [...notes].sort((a, b) => (a.week || 0) - (b.week || 0))
@@ -81,6 +67,7 @@ export default function ParentLessonNotesPage() {
   }
 
   const handleStartQuiz = async (note: any) => {
+    if (!activeChildId) return
     setQuizState({
       lessonNoteId: note.id,
       lessonTitle: note.title,
@@ -95,7 +82,11 @@ export default function ParentLessonNotesPage() {
     const res = await fetch(`/api/lesson-quiz-results?studentId=${activeChildId}&lessonNoteId=${note.id}`)
     if (res.ok) {
       const data = await res.json()
-      setExistingResult(data || null)
+      if (data) {
+        setExistingResult(data)
+      } else {
+        setExistingResult(null)
+      }
     }
   }
 
@@ -115,7 +106,7 @@ export default function ParentLessonNotesPage() {
   }
 
   const submitQuiz = async () => {
-    if (!quizState || !quizState.questions.length) return
+    if (!quizState || !quizState.questions.length || !activeChildId) return
     setSubmitting(true)
     let correct = 0
     const detailedAnswers = quizState.questions.map((q, i) => {
@@ -182,15 +173,15 @@ export default function ParentLessonNotesPage() {
             {existingResult && (
               <div className="flex items-center gap-2 text-sm mb-3">
                 <Trophy className="h-4 w-4 text-amber-500" />
-                <span>Previous score: <strong>{existingResult.score}%</strong> ({existingResult.correctAnswers}/{existingResult.totalQuestions})</span>
+                <span>{activeChild?.firstName}&apos;s score: <strong>{existingResult.score}%</strong> ({existingResult.correctAnswers}/{existingResult.totalQuestions})</span>
               </div>
             )}
             <div className="flex gap-2">
-              <Button size="sm" className="animated-gradient border-0 text-white shadow-lg shadow-primary/25" onClick={beginQuiz}>
-                {existingResult ? "Retake Quiz" : "Take Quiz"} <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              <Button className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]" onClick={beginQuiz}>
+                {existingResult ? "Retake Quiz" : "Take Quiz"} <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
               {existingResult && (
-                <Button size="sm" variant="outline" onClick={() => { setQuizStep("results"); setQuizResult(existingResult) }}>
+                <Button variant="outline" onClick={() => { setQuizStep("results"); setQuizResult(existingResult) }}>
                   View Previous
                 </Button>
               )}
@@ -253,16 +244,15 @@ export default function ParentLessonNotesPage() {
               <div className="flex justify-end">
                 {isLast ? (
                   <Button
-                    size="sm"
                     disabled={!hasAnswer || submitting}
                     onClick={submitQuiz}
-                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25"
+                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]"
                   >
                     {submitting ? "Submitting..." : "Submit"}
                   </Button>
                 ) : (
-                  <Button size="sm" disabled={!hasAnswer} onClick={nextQuestion}>
-                    Next <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  <Button disabled={!hasAnswer} onClick={nextQuestion}>
+                    Next <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 )}
               </div>
@@ -302,7 +292,7 @@ export default function ParentLessonNotesPage() {
                     <div>
                       <p className="font-medium">{a.question}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Your answer: {a.userAnswer || "(none)"}
+                        {activeChild?.firstName}&apos;s answer: {a.userAnswer || "(none)"}
                         {!a.isCorrect && <span className="text-emerald-600"> (Correct: {a.correctAnswer})</span>}
                       </p>
                     </div>
@@ -322,9 +312,19 @@ export default function ParentLessonNotesPage() {
   }
 
   if (childrenLoading) {
+    return <div className="p-4 md:p-6"><div className="h-24 rounded-xl bg-muted animate-pulse" /></div>
+  }
+
+  if (!children?.length) {
     return (
-      <div className="p-4 md:p-6 space-y-4">
-        {[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}
+      <div className="p-4 md:p-6">
+        <Card className="glass-card border-0">
+          <CardContent className="p-8 text-center">
+            <FileText className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm font-medium">No children linked</p>
+            <p className="text-xs text-muted-foreground">No student accounts are linked to your parent profile.</p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -333,24 +333,9 @@ export default function ParentLessonNotesPage() {
     <div className="p-4 md:p-6 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="text-2xl font-bold">Lesson Notes</h2>
-        <p className="text-sm text-muted-foreground">Browse published lesson notes for your children</p>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
-          {children.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => handleChildChange(c.id)}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-all snap-start",
-                activeChildId === c.id
-                  ? "bg-primary text-white shadow-lg shadow-primary/25"
-                  : "bg-muted text-muted-foreground hover:bg-primary/10"
-              )}
-            >{c.name.split(" ")[0]}</button>
-          ))}
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Viewing lesson notes for {activeChild?.firstName} {activeChild?.lastName}
+        </p>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
@@ -384,7 +369,10 @@ export default function ParentLessonNotesPage() {
       ) : (
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-2">
           <AnimatePresence>
-            {sortedNotes.map((note) => {
+            {sortedNotes.map((note, i) => {
+              const version = getContentVersion(note.content)
+              const studentContent = extractStudentContent(note.content)
+              const hasStudentNote = version === "v2" && note.content?.studentNote
               const hasQuiz = note.quiz && note.quiz.length > 0
               const isExpanded = expandedId === note.id
               return (
@@ -413,11 +401,23 @@ export default function ParentLessonNotesPage() {
                             <p className="text-xs text-muted-foreground/70 mt-1">
                               by {note.creatorName || "Unknown"}
                             </p>
-                            {hasQuiz && (
-                              <Badge variant="outline" className="mt-1.5 text-[10px] text-primary bg-primary/5">
-                                {note.quiz.length} question{note.quiz.length > 1 ? "s" : ""}
-                              </Badge>
-                            )}
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              {hasStudentNote && (
+                                <Badge variant="outline" className="text-[10px] text-indigo-600 bg-indigo-500/10 border-indigo-200">
+                                  Study Note
+                                </Badge>
+                              )}
+                              {version === "v1" && (
+                                <Badge variant="outline" className="text-[10px] text-amber-600 bg-amber-500/10 border-amber-200">
+                                  Lesson Plan
+                                </Badge>
+                              )}
+                              {hasQuiz && (
+                                <Badge variant="outline" className="text-[10px] text-primary bg-primary/5">
+                                  {note.quiz.length} question{note.quiz.length > 1 ? "s" : ""}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="shrink-0 ml-2">
@@ -435,9 +435,15 @@ export default function ParentLessonNotesPage() {
                             className="overflow-hidden"
                           >
                             <div className="pt-4 border-t mt-3" onClick={(e) => e.stopPropagation()}>
-                              <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap">
-                                {note.content}
-                              </div>
+                              {hasStudentNote ? (
+                                <div className="max-w-none">
+                                  <StudentNoteContent content={studentContent} />
+                                </div>
+                              ) : (
+                                <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap">
+                                  {note.content}
+                                </div>
+                              )}
                               {note.resources && (
                                 <div className="mt-3 rounded-lg bg-muted/50 p-3">
                                   <p className="text-xs font-semibold text-muted-foreground mb-1">Resources</p>
@@ -447,11 +453,10 @@ export default function ParentLessonNotesPage() {
                               {hasQuiz && (
                                 <div className="mt-3">
                                   <Button
-                                    size="sm"
-                                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25"
+                                    className="animated-gradient border-0 text-white shadow-lg shadow-primary/25 min-h-[44px]"
                                     onClick={() => handleStartQuiz(note)}
                                   >
-                                    <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                                    <HelpCircle className="h-4 w-4 mr-1" />
                                     {existingResult?.lessonNoteId === note.id ? "View Quiz" : "Take Quiz"}
                                   </Button>
                                 </div>

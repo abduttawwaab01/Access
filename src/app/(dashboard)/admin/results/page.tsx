@@ -96,6 +96,7 @@ export default function AdminResultsPage() {
           id: existing?.id || undefined,
           studentId: s.id,
           subjectId: selectedSubjectId,
+          classId: selectedClassId,
           subject: subjects.find((sub) => sub.id === selectedSubjectId)?.name || "",
           caScore: Number(sc?.caScore) || 0,
           examScore: Number(sc?.examScore) || 0,
@@ -104,7 +105,7 @@ export default function AdminResultsPage() {
         }
       })
       const res = await fetch("/api/results", {
-        method: existingResult(classStudents[0]?.id)?.id ? "PUT" : "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Array.isArray(updates) ? updates : updates[0]),
       })

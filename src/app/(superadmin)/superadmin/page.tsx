@@ -1202,6 +1202,19 @@ function OcrSection() {
 }
 
 // ========================== LESSON NOTES ==========================
+function getContentVersion(content: any): "v1" | "v2" {
+  if (typeof content === "string") return "v1"
+  if (content && typeof content === "object" && content.format === "v2") return "v2"
+  return "v1"
+}
+
+function extractContentDisplay(item: any): string {
+  const content = item.content
+  const version = getContentVersion(content)
+  if (version === "v2") return content.studentNote || content.lessonPlan || ""
+  return typeof content === "string" ? content : ""
+}
+
 function LessonNotesSection() {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -1209,7 +1222,8 @@ function LessonNotesSection() {
   const [editNote, setEditNote] = useState<any | null>(null)
   const [ocrOpen, setOcrOpen] = useState(false)
   const [editContent, setEditContent] = useState("")
-  const [editForm, setEditForm] = useState({ title: "", subject: "", content: "", resources: "" })
+  const [editTab, setEditTab] = useState<"student" | "plan">("student")
+  const [editForm, setEditForm] = useState({ title: "", subject: "", studentNote: "", lessonPlan: "", resources: "" })
 
   const load = useCallback(async () => { setLoading(true); const d = await saFetch("/api/lesson-notes"); setItems(Array.isArray(d) ? d : []); setLoading(false) }, [])
   useEffect(() => { load() }, [load])
@@ -1226,16 +1240,29 @@ function LessonNotesSection() {
 
   const openEdit = (n: any) => {
     setEditNote(n)
-    setEditForm({ title: n.title || "", subject: n.subject || "", content: n.content || "", resources: n.resources || "" })
-    setEditContent(n.content || "")
+    const version = getContentVersion(n.content)
+    if (version === "v2") {
+      setEditForm({ title: n.title || "", subject: n.subject || "", studentNote: n.content.studentNote || "", lessonPlan: n.content.lessonPlan || "", resources: n.resources || "" })
+      setEditContent(n.content.studentNote || n.content.lessonPlan || "")
+    } else {
+      setEditForm({ title: n.title || "", subject: n.subject || "", studentNote: n.content || "", lessonPlan: n.content || "", resources: n.resources || "" })
+      setEditContent(n.content || "")
+    }
     setOcrOpen(false)
   }
 
   const saveEdit = async () => {
     if (!editNote) return
+    const version = getContentVersion(editNote.content)
+    let contentPayload: any
+    if (version === "v2") {
+      contentPayload = { studentNote: editForm.studentNote, lessonPlan: editForm.lessonPlan, format: "v2" }
+    } else {
+      contentPayload = editContent
+    }
     await saFetch("/api/lesson-notes", {
       method: "PUT",
-      body: JSON.stringify({ id: editNote.id, data: { ...editForm, content: editContent } }),
+      body: JSON.stringify({ id: editNote.id, data: { title: editForm.title, subject: editForm.subject, content: contentPayload, resources: editForm.resources } }),
     })
     setMessage("Updated!"); setEditNote(null); setOcrOpen(false); load()
   }
@@ -1269,7 +1296,10 @@ function LessonNotesSection() {
                 Creator: {n.creatorName || n.createdBy}
               </p>
               {n.content && (
-                <p className="text-xs text-zinc-600 mt-1 line-clamp-1">{n.content.replace(/<[^>]+>/g, "").substring(0, 120)}...</p>
+                <p className="text-xs text-zinc-600 mt-1 line-clamp-1">{extractContentDisplay(n).replace(/<[^>]+>/g, "").substring(0, 120)}...</p>
+              )}
+              {getContentVersion(n.content) === "v2" && (
+                <span className="text-[10px] text-zinc-600 mt-0.5 inline-block">Has student note + lesson plan</span>
               )}
             </div>
             <div className="flex gap-1.5 shrink-0 items-center">
@@ -1296,20 +1326,62 @@ function LessonNotesSection() {
               <label className="mb-1 block text-xs font-medium text-zinc-400">Resources</label>
               <input value={editForm.resources} onChange={(e) => setEditForm((p) => ({ ...p, resources: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500" />
             </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-zinc-400">Content</label>
-                <button onClick={() => setOcrOpen(!ocrOpen)} className="flex items-center gap-1 rounded bg-zinc-800 px-2.5 py-1 text-xs text-primary transition-colors hover:bg-zinc-700">
-                  <ScanLine className="h-3 w-3" /> OCR from Image
-                </button>
-              </div>
-              {ocrOpen && (
-                <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4 mb-3">
-                  <ImageToText multiple onUseText={(text) => { setEditContent((prev) => prev + "\n" + text); setOcrOpen(false) }} />
+            {getContentVersion(editNote.content) === "v2" ? (
+              <>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <button onClick={() => setEditTab("student")} className={`rounded px-3 py-1 text-xs ${editTab === "student" ? "bg-red-600 text-white" : "bg-zinc-800 text-zinc-400"}`}>Student Note</button>
+                    <button onClick={() => setEditTab("plan")} className={`rounded px-3 py-1 text-xs ${editTab === "plan" ? "bg-red-600 text-white" : "bg-zinc-800 text-zinc-400"}`}>Lesson Plan</button>
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-zinc-400">{editTab === "student" ? "Student Note Content" : "Lesson Plan Content"}</label>
+                    <button onClick={() => setOcrOpen(!ocrOpen)} className="flex items-center gap-1 rounded bg-zinc-800 px-2.5 py-1 text-xs text-primary transition-colors hover:bg-zinc-700">
+                      <ScanLine className="h-3 w-3" /> OCR from Image
+                    </button>
+                  </div>
+                  {ocrOpen && (
+                    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4 mb-3">
+                      <ImageToText multiple onUseText={(text) => {
+                        if (editTab === "student") {
+                          setEditForm((p) => ({ ...p, studentNote: p.studentNote + "\n" + text }))
+                        } else {
+                          setEditForm((p) => ({ ...p, lessonPlan: p.lessonPlan + "\n" + text }))
+                        }
+                        setOcrOpen(false)
+                      }} />
+                    </div>
+                  )}
+                  <textarea
+                    value={editTab === "student" ? editForm.studentNote : editForm.lessonPlan}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (editTab === "student") {
+                        setEditForm((p) => ({ ...p, studentNote: val }))
+                      } else {
+                        setEditForm((p) => ({ ...p, lessonPlan: val }))
+                      }
+                    }}
+                    rows={10}
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500 resize-y"
+                  />
                 </div>
-              )}
-              <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={10} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500 resize-y" />
-            </div>
+              </>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-zinc-400">Content</label>
+                  <button onClick={() => setOcrOpen(!ocrOpen)} className="flex items-center gap-1 rounded bg-zinc-800 px-2.5 py-1 text-xs text-primary transition-colors hover:bg-zinc-700">
+                    <ScanLine className="h-3 w-3" /> OCR from Image
+                  </button>
+                </div>
+                {ocrOpen && (
+                  <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4 mb-3">
+                    <ImageToText multiple onUseText={(text) => { setEditContent((prev) => prev + "\n" + text); setOcrOpen(false) }} />
+                  </div>
+                )}
+                <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={10} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-red-500 resize-y" />
+              </div>
+            )}
             <div className="flex gap-2">
               <button onClick={saveEdit} className="flex-1 rounded-lg bg-gradient-to-r from-red-600 to-red-800 py-2 text-sm font-medium text-white">Save Changes</button>
               <button onClick={() => { setEditNote(null); setOcrOpen(false) }} className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-400">Cancel</button>

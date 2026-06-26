@@ -45,11 +45,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const body = await request.json()
   if (Array.isArray(body)) {
-    const items = await Promise.all(body.map((data: any) => db.results.create(data)))
-    return NextResponse.json(items, { status: 201 })
+    const items = await Promise.all(body.map((data: any) => db.results.upsert(data)))
+    return NextResponse.json(items)
   }
-  const item = await db.results.create(body)
-  return NextResponse.json(item, { status: 201 })
+  const item = await db.results.upsert(body)
+  return NextResponse.json(item)
 }
 
 export async function PUT(request: Request) {

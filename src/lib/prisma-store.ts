@@ -680,6 +680,20 @@ export const db = {
         },
       })
     },
+    upsert: async (data: any) => {
+      const existing = await prisma.result.findFirst({
+        where: {
+          studentId: data.studentId,
+          subjectId: data.subjectId,
+          classId: data.classId,
+          term: data.term,
+        },
+      })
+      if (existing) {
+        return db.results.update(existing.id, data)
+      }
+      return db.results.create(data)
+    },
     update: async (id: string, data: any) => {
       const existing = await prisma.result.findUnique({ where: { id } })
       if (!existing) return null

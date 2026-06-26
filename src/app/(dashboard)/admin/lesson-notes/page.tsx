@@ -10,15 +10,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Pencil, FileText, Search, X, CheckCircle, XCircle, ChevronDown, ChevronRight, HelpCircle, ScanLine, Sparkles, Eye, EyeOff, Clock, Plus, Trash2, BookOpen } from "lucide-react"
+import { Pencil, FileText, Search, X, CheckCircle, XCircle, ChevronDown, ChevronRight, HelpCircle, ScanLine, Sparkles, Eye, EyeOff, Clock, Plus, Trash2, BookOpen, RefreshCw } from "lucide-react"
 import ImageToText from "@/components/ImageToText"
 import { LessonNoteViewer } from "@/components/LessonNoteViewer"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { currentSession } from "@/lib/utils"
-import { generateLessonNoteWithQuestions } from "@/lib/content-generator"
+import { generateComprehensiveLessonNote, getContentVersion, extractStudentContent, extractLessonPlan } from "@/lib/content-generator"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 export default function AdminLessonNotes() {
@@ -33,7 +33,8 @@ export default function AdminLessonNotes() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [ocrOpen, setOcrOpen] = useState(false)
   const [quizOpen, setQuizOpen] = useState(true)
-  const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", content: "", resources: "", status: "draft", createdBy: "" })
+  const [contentTab, setContentTab] = useState<"student" | "plan">("student")
+  const [form, setForm] = useState({ title: "", subject: "", classId: "", week: "", term: "", session: "", studentNote: "", lessonPlan: "", resources: "", status: "draft", createdBy: "" })
   const [quiz, setQuiz] = useState<any[]>([])
   const [viewerOpen, setViewerOpen] = useState(false)
   const [viewerNote, setViewerNote] = useState<any>(null)
@@ -89,9 +90,18 @@ export default function AdminLessonNotes() {
     if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "rejected" } : n))); toast.success("Rejected") }
   }
 
+  const getContentValue = (item: any, type: "student" | "plan"): string => {
+    if (!item.content) return ""
+    const version = getContentVersion(item.content)
+    if (version === "v2") {
+      return type === "student" ? (item.content.studentNote || "") : (item.content.lessonPlan || "")
+    }
+    return item.content
+  }
+
   const openCreate = () => {
     setEditing(null)
-    setForm({ title: "", subject: "", classId: "", week: "", term: "First Term", session: currentSession(), content: "", resources: "", status: "draft", createdBy: "" })
+    setForm({ title: "", subject: "", classId: "", week: "", term: "First Term", session: currentSession(), studentNote: "", lessonPlan: "", resources: "", status: "draft", createdBy: "" })
     setQuiz([])
     setSheetOpen(true)
   }
@@ -105,7 +115,8 @@ export default function AdminLessonNotes() {
       week: String(item.week),
       term: item.term,
       session: item.session || "",
-      content: item.content,
+      studentNote: getContentValue(item, "student"),
+      lessonPlan: getContentValue(item, "plan"),
       resources: item.resources || "",
       status: item.status,
       createdBy: item.createdBy || "",
@@ -116,7 +127,12 @@ export default function AdminLessonNotes() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const payload = { ...form, week: Number(form.week), quiz }
+    const content = {
+      studentNote: form.studentNote,
+      lessonPlan: form.lessonPlan,
+      format: "v2",
+    }
+    const payload: any = { ...form, week: Number(form.week), content, quiz }
     if (editing) {
       const res = await fetch("/api/lesson-notes", {
         method: "PUT", headers: { "Content-Type": "application/json" },
@@ -148,16 +164,17 @@ export default function AdminLessonNotes() {
     if (!form.subject) missing.push("subject")
     if (!form.classId) missing.push("class")
     if (missing.length > 0) {
-      update("content", `⚠️ **Please set the following fields before generating:** ${missing.join(", ")}.\n\nFill in the above fields and click Generate again.`)
+      toast.error(`Please set the following fields before generating: ${missing.join(", ")}`)
       return
     }
     setGenerating(true)
     try {
       const className = classes.find((c: any) => c.id === form.classId)?.name || ""
-      const { content, questions, source } = await generateLessonNoteWithQuestions(form.subject, form.title, className, form.term, form.week)
-      update("content", content)
-      if (questions.length > 0) {
-        setQuiz(questions.map((q: any) => ({
+      const result = await generateComprehensiveLessonNote(form.subject, form.title, className, form.term || "First Term", form.week || "1")
+      update("studentNote", result.studentNote)
+      update("lessonPlan", result.lessonPlan)
+      if (result.questions.length > 0) {
+        setQuiz(result.questions.map((q: any) => ({
           id: Math.random().toString(36).substring(2, 11),
           questionText: q.questionText,
           type: q.type,
@@ -166,7 +183,8 @@ export default function AdminLessonNotes() {
           points: q.points,
         })))
       }
-      toast.success(source === "wikipedia" ? "Lesson note generated from Wikipedia" : "Lesson note generated (template)")
+      setContentTab("student")
+      toast.success(`Lesson note generated using ${result.source === "ai" ? "AI" : result.source === "wikipedia" ? "Wikipedia" : "template"}`)
     } catch {
       toast.error("Failed to generate lesson note")
     }
@@ -188,6 +206,34 @@ export default function AdminLessonNotes() {
     if (search && !n.title?.toLowerCase().includes(search.toLowerCase()) && !n.subject?.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
+
+  const buildViewerData = (item: any) => {
+    const content = item.content || ""
+    const version = getContentVersion(content)
+    const studentNote = version === "v2" ? content.studentNote || "" : ""
+    const lessonPlan = version === "v2" ? content.lessonPlan || "" : (typeof content === "string" ? content : "")
+    return {
+      schoolName: school?.name || "Access School",
+      schoolLogo: school?.logo || "",
+      schoolMotto: school?.motto || "",
+      schoolAddress: school?.address || "",
+      schoolPhone: school?.phone || "",
+      schoolEmail: school?.email || "",
+      title: item.title,
+      subject: item.subject,
+      className: getClassName(item.classId)?.name + (getClassName(item.classId)?.arm ? ` ${getClassName(item.classId).arm}` : "") || "",
+      week: item.week,
+      term: item.term,
+      session: item.session || "",
+      teacherName: item.creatorName || getStaffName(item.createdBy),
+      studentNote,
+      lessonPlan,
+      contentFormat: version,
+      resources: item.resources || "",
+      quiz: item.quiz || [],
+      createdAt: item.createdAt,
+    }
+  }
 
   return (
     <div className="p-4 md:p-6">
@@ -221,7 +267,9 @@ export default function AdminLessonNotes() {
       ) : (
         <div className="space-y-2">
           <AnimatePresence>
-            {filtered.map((item, i) => (
+            {filtered.map((item, i) => {
+              const version = getContentVersion(item.content)
+              return (
               <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
                 <Card className="glass-card border-0">
                   <CardContent className="p-4">
@@ -236,6 +284,7 @@ export default function AdminLessonNotes() {
                             <Badge className={item.status === "published" ? "bg-green-500/15 text-green-600" : item.status === "rejected" ? "bg-red-500/15 text-red-600" : "bg-amber-500/15 text-amber-600"}>
                               {item.status === "published" ? <><Eye className="h-3 w-3 mr-1" /> Approved</> : item.status === "rejected" ? <><XCircle className="h-3 w-3 mr-1" /> Rejected</> : <><Clock className="h-3 w-3 mr-1" /> Pending</>}
                             </Badge>
+                            {version === "v2" && <Badge variant="outline" className="text-[10px] bg-primary/5">Student Note</Badge>}
                             {item.quiz && item.quiz.length > 0 && <Badge variant="outline" className="text-[10px]"><HelpCircle className="h-3 w-3 mr-1" /> Quiz: {item.quiz.length}Q</Badge>}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
@@ -256,7 +305,7 @@ export default function AdminLessonNotes() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => { setViewerNote(item); setViewerOpen(true) }} title="View / Teach">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-600" onClick={() => { setViewerNote(buildViewerData(item)); setViewerOpen(true) }} title="View / Teach">
                           <BookOpen className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)} title="Edit note">
@@ -276,7 +325,26 @@ export default function AdminLessonNotes() {
                     </div>
                     {expanded === item.id && (
                       <div className="mt-3 pt-3 border-t space-y-3">
-                        <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: item.content }} />
+                        {version === "v2" ? (
+                          <Tabs value={contentTab} onValueChange={(v) => setContentTab(v as "student" | "plan")}>
+                            <TabsList className="w-full">
+                              <TabsTrigger value="student" className="flex-1 text-xs">Student Note</TabsTrigger>
+                              <TabsTrigger value="plan" className="flex-1 text-xs">Lesson Plan</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="student">
+                              <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap text-sm text-muted-foreground">
+                                {extractStudentContent(item.content)}
+                              </div>
+                            </TabsContent>
+                            <TabsContent value="plan">
+                              <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap text-sm text-muted-foreground">
+                                {extractLessonPlan(item.content)}
+                              </div>
+                            </TabsContent>
+                          </Tabs>
+                        ) : (
+                          <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: item.content }} />
+                        )}
                         {item.resources && (
                           <div className="text-xs text-muted-foreground">
                             <span className="font-medium">Resources:</span> {item.resources}
@@ -301,7 +369,7 @@ export default function AdminLessonNotes() {
                   </CardContent>
                 </Card>
               </motion.div>
-            ))}
+            )})}
           </AnimatePresence>
         </div>
       )}
@@ -310,25 +378,7 @@ export default function AdminLessonNotes() {
         <LessonNoteViewer
           open={viewerOpen}
           onOpenChange={setViewerOpen}
-          data={{
-            schoolName: school?.name || "Access School",
-            schoolLogo: school?.logo || "",
-            schoolMotto: school?.motto || "",
-            schoolAddress: school?.address || "",
-            schoolPhone: school?.phone || "",
-            schoolEmail: school?.email || "",
-            title: viewerNote.title,
-            subject: viewerNote.subject,
-            className: getClassName(viewerNote.classId)?.name + (getClassName(viewerNote.classId)?.arm ? ` ${getClassName(viewerNote.classId).arm}` : "") || "",
-            week: viewerNote.week,
-            term: viewerNote.term,
-            session: viewerNote.session || "",
-            teacherName: viewerNote.creatorName || getStaffName(viewerNote.createdBy),
-            content: viewerNote.content || "",
-            resources: viewerNote.resources || "",
-            quiz: viewerNote.quiz || [],
-            createdAt: viewerNote.createdAt,
-          }}
+          data={viewerNote}
         />
       )}
 
@@ -395,15 +445,16 @@ export default function AdminLessonNotes() {
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center justify-between">
               <Label>Content</Label>
               <div className="flex items-center gap-1">
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={() => setOcrOpen(!ocrOpen)}>
-                  <ScanLine className="h-3 w-3 mr-1" /><span>Extract Image</span>
+                  <ScanLine className="h-3 w-3 mr-1" />Extract Image
                 </Button>
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleAIGenerate} disabled={generating}>
-                  <Sparkles className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} /><span>{generating ? "Generating..." : "Generate"}</span>
+                  <Sparkles className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />{generating ? "Generating..." : "Generate with AI"}
                 </Button>
               </div>
             </div>
@@ -413,14 +464,31 @@ export default function AdminLessonNotes() {
                   <span className="text-xs font-medium text-muted-foreground">Picture to Text</span>
                   <button onClick={() => setOcrOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
                 </div>
-                <ImageToText multiple onUseText={(text) => { update("content", text); setOcrOpen(false) }} />
+                <ImageToText multiple onUseText={(text) => { update("studentNote", form.studentNote + (form.studentNote ? "\n\n" : "") + text); update("lessonPlan", form.lessonPlan + (form.lessonPlan ? "\n\n" : "") + text); setOcrOpen(false) }} />
               </div>
             )}
-            <Textarea value={form.content} onChange={(e) => update("content", e.target.value)} rows={8} className="resize-none" placeholder="Write your lesson content here..." />
+            <Tabs value={contentTab} onValueChange={(v) => setContentTab(v as "student" | "plan")}>
+              <TabsList className="w-full">
+                <TabsTrigger value="student" className="flex-1 text-xs">Student Note</TabsTrigger>
+                <TabsTrigger value="plan" className="flex-1 text-xs">Lesson Plan (derived)</TabsTrigger>
+              </TabsList>
+              <TabsContent value="student">
+                <Textarea value={form.studentNote} onChange={(e) => update("studentNote", e.target.value)} rows={12} className="resize-none font-mono text-sm" placeholder="Student-facing lesson note content..." />
+              </TabsContent>
+              <TabsContent value="plan">
+                <Textarea value={form.lessonPlan} onChange={(e) => update("lessonPlan", e.target.value)} rows={12} className="resize-none font-mono text-sm" placeholder="Auto-derived lesson plan..." />
+              </TabsContent>
+            </Tabs>
           </div>
           <div className="space-y-2">
             <Label>Resources</Label>
             <Input value={form.resources} onChange={(e) => update("resources", e.target.value)} placeholder="e.g. Textbook Ch. 3, Worksheet 1" className="h-12" />
+          </div>
+          <div className="flex items-center gap-1 mb-2">
+            <Button type="button" variant="ghost" size="sm" onClick={handleAIGenerate} disabled={generating} className="text-xs">
+              <RefreshCw className={`h-3 w-3 mr-1 ${generating ? "animate-spin" : ""}`} />
+              {generating ? "Regenerating..." : "Regenerate with AI"}
+            </Button>
           </div>
           <div className="space-y-2 border rounded-lg p-3">
             <button type="button" onClick={() => setQuizOpen(!quizOpen)} className="flex items-center justify-between w-full text-left">
