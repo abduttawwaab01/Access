@@ -13,7 +13,7 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive, AlertTriangle
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive, AlertTriangle, Star
 } from "lucide-react"
 import { ConversationList } from "@/components/chat/ConversationList"
 import { ChatWindow } from "@/components/chat/ChatWindow"
@@ -69,6 +69,7 @@ export default function SuperAdminPage() {
       case "attendance": return <AttendanceSection />
       case "documents": return <DocumentsSection />
       case "announcements": return <AnnouncementsSection />
+      case "announcement-reviews": return <AnnouncementReviewsSection />
       case "feedback": return <FeedbackSection />
       case "communication": return <CommunicationSection />
       case "ai-assistant": return <AIAssistantSection />
@@ -1760,7 +1761,7 @@ function AnnouncementsSection() {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterDisplay, setFilterDisplay] = useState<string>("all")
   const [filterAudience, setFilterAudience] = useState<string>("all")
-  const [form, setForm] = useState({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "" })
+  const [form, setForm] = useState({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "", buttonLabel: "", buttonUrl: "", mediaUrl: "", mediaType: "image", reviewEnabled: false })
 
   const audienceLabels: Record<string, string> = { all: "Everyone", admin: "Admin", teachers: "Teachers", parents: "Parents", students: "Students" }
   const displayLabels: Record<string, string> = { banner: "Banner", ticker: "Ticker", overlay: "Overlay" }
@@ -1775,10 +1776,10 @@ function AnnouncementsSection() {
 
   useEffect(() => { load() }, [load])
 
-  const resetForm = () => { setForm({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "" }); setEditingId(null) }
+  const resetForm = () => { setForm({ title: "", content: "", displayType: "banner", targetAudience: "all", priority: "normal", startDate: "", endDate: "", buttonLabel: "", buttonUrl: "", mediaUrl: "", mediaType: "image", reviewEnabled: false }); setEditingId(null) }
 
   const openEdit = (a: any) => {
-    setForm({ title: a.title, content: a.content, displayType: a.displayType || "banner", targetAudience: a.targetAudience || "all", priority: a.priority || "normal", startDate: a.startDate || "", endDate: a.endDate || "" })
+    setForm({ title: a.title, content: a.content, displayType: a.displayType || "banner", targetAudience: a.targetAudience || "all", priority: a.priority || "normal", startDate: a.startDate || "", endDate: a.endDate || "", buttonLabel: a.buttonLabel || "", buttonUrl: a.buttonUrl || "", mediaUrl: a.mediaUrl || "", mediaType: a.mediaType || "image", reviewEnabled: a.reviewEnabled || false })
     setEditingId(a.id)
     setShowForm(true)
   }
@@ -1846,6 +1847,29 @@ function AnnouncementsSection() {
             <Input label="Start Date" value={form.startDate} onChange={(v) => setForm((p) => ({ ...p, startDate: v }))} type="date" />
             <Input label="End Date" value={form.endDate} onChange={(v) => setForm((p) => ({ ...p, endDate: v }))} type="date" />
           </div>
+
+          <details className="rounded-lg border border-zinc-800 bg-zinc-900/50">
+            <summary className="cursor-pointer px-4 py-2.5 text-xs font-medium text-zinc-400 hover:text-zinc-200 select-none">Call to Action &amp; Media</summary>
+            <div className="space-y-3 p-4 border-t border-zinc-800">
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Button Label" value={form.buttonLabel} onChange={(v) => setForm((p) => ({ ...p, buttonLabel: v }))} placeholder="e.g. Apply Now" />
+                <Input label="Button URL" value={form.buttonUrl} onChange={(v) => setForm((p) => ({ ...p, buttonUrl: v }))} placeholder="e.g. https://..." />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Media URL" value={form.mediaUrl} onChange={(v) => setForm((p) => ({ ...p, mediaUrl: v }))} placeholder="Image or video URL" />
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-zinc-400">Media Type</label>
+                  <select value={form.mediaType} onChange={(e) => setForm((p) => ({ ...p, mediaType: e.target.value }))} className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-red-500">
+                    <option value="image">Image</option><option value="video">Video</option>
+                  </select>
+                </div>
+              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={form.reviewEnabled} onChange={(e) => setForm((p) => ({ ...p, reviewEnabled: e.target.checked }))} className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-red-600 focus:ring-red-500" />
+                <span className="text-xs text-zinc-300">Enable user reviews / feedback on this announcement</span>
+              </label>
+            </div>
+          </details>
           <button onClick={save} className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-800 py-2.5 text-sm font-semibold text-white">
             {editingId ? "Update" : "Create"}
           </button>
@@ -1896,6 +1920,91 @@ function AnnouncementsSection() {
                   <button onClick={() => openEdit(a)} className="rounded-lg bg-blue-600/20 px-2.5 py-1.5 text-xs text-blue-400 hover:bg-blue-600/30"><Pencil className="h-3 w-3" /></button>
                   <button onClick={() => remove(a.id)} className="rounded-lg bg-red-600/20 px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-600/30"><Trash2 className="h-3 w-3" /></button>
                 </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ========================== ANNOUNCEMENT REVIEWS ==========================
+function AnnouncementReviewsSection() {
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState("")
+  const [filterAnnouncement, setFilterAnnouncement] = useState<string>("all")
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const d = await saFetch("/api/superadmin?action=getReviews")
+    setItems(Array.isArray(d) ? d : [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const remove = async (id: string) => {
+    const d = await saApi("deleteReview", { id })
+    if (d.success) { setMessage("Review deleted"); load() }
+    else { setMessage(d.error || "Failed") }
+  }
+
+  const announcementIds = [...new Set(items.map((r: any) => r.announcementId))]
+  const announcementTitles: Record<string, string> = {}
+  items.forEach((r: any) => {
+    if (r.announcement?.title) announcementTitles[r.announcementId] = r.announcement.title
+  })
+
+  const filtered = filterAnnouncement === "all"
+    ? items
+    : items.filter((r: any) => r.announcementId === filterAnnouncement)
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <Toast message={message} type="success" onClose={() => setMessage("")} />
+      <h1 className="text-xl font-bold text-white">Announcement Reviews</h1>
+
+      <div className="flex items-center gap-3">
+        <select value={filterAnnouncement} onChange={(e) => setFilterAnnouncement(e.target.value)}
+          className="rounded-lg border border-zinc-800 bg-[#12121a] px-3 py-1.5 text-xs text-zinc-300 outline-none focus:border-red-500">
+          <option value="all">All Announcements</option>
+          {announcementIds.map((id) => (
+            <option key={id} value={id}>{announcementTitles[id] || id}</option>
+          ))}
+        </select>
+        <span className="text-xs text-zinc-500">{filtered.length} review{filtered.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      {loading ? <Loading /> : filtered.length === 0 ? (
+        <div className="rounded-xl border border-zinc-800 bg-[#12121a] p-8 text-center text-sm text-zinc-500">No reviews yet</div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((r: any) => (
+            <div key={r.id} className="rounded-xl border border-zinc-800 bg-[#12121a] p-4 transition-colors hover:border-zinc-700">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium text-zinc-200">{r.userName || "Anonymous"}</p>
+                    {r.rating && (
+                      <span className="flex items-center gap-0.5 text-amber-400 text-xs">
+                        {Array.from({ length: r.rating }, (_, i) => <Star key={i} className="h-3 w-3 fill-amber-400" />)}
+                      </span>
+                    )}
+                    <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                      {announcementTitles[r.announcementId] || r.announcementId?.slice(0, 8)}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-zinc-400">{r.content}</p>
+                  <p className="mt-1 text-[10px] text-zinc-600">
+                    {r.createdAt ? new Date(r.createdAt).toLocaleString() : ""}
+                  </p>
+                </div>
+                <button onClick={() => remove(r.id)}
+                  className="rounded-lg bg-red-600/20 px-2.5 py-1.5 text-xs text-red-400 hover:bg-red-600/30 shrink-0">
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
             </div>
           ))}

@@ -1486,6 +1486,11 @@ export const db = {
           displayType: data.displayType || "banner",
           active: data.active !== undefined ? data.active : true,
           endDate: data.endDate ? new Date(data.endDate) : null,
+          buttonLabel: data.buttonLabel || null,
+          buttonUrl: data.buttonUrl || null,
+          mediaUrl: data.mediaUrl || null,
+          mediaType: data.mediaType || "image",
+          reviewEnabled: data.reviewEnabled || false,
           source: "super",
           author: data.author || "Super Admin",
           schoolId,
@@ -1501,6 +1506,28 @@ export const db = {
     },
     delete: async (id: string) => {
       await prisma.announcement.delete({ where: { id } })
+      return true
+    },
+  },
+
+  announcementReviews: {
+    getAll: async () => {
+      return prisma.announcementReview.findMany({
+        orderBy: { createdAt: "desc" },
+        include: { announcement: { select: { title: true } } },
+      })
+    },
+    getByAnnouncement: async (announcementId: string) => {
+      return prisma.announcementReview.findMany({
+        where: { announcementId },
+        orderBy: { createdAt: "desc" },
+      })
+    },
+    create: async (data: { announcementId: string; userId?: string; userName?: string; content: string; rating?: number }) => {
+      return prisma.announcementReview.create({ data })
+    },
+    delete: async (id: string) => {
+      await prisma.announcementReview.delete({ where: { id } })
       return true
     },
   },

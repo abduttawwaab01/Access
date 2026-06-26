@@ -49,6 +49,7 @@ const navGroups: NavGroup[] = [
     { id: "documents", icon: FileText, label: "Documents" },
     { id: "communication", icon: MessageSquare, label: "Communication" },
     { id: "announcements", icon: Megaphone, label: "Announcements" },
+    { id: "announcement-reviews", icon: MessageSquare, label: "Announcement Reviews" },
   ]},
   { label: "System", items: [
     { id: "bank-details", icon: Building2, label: "Bank Details" },

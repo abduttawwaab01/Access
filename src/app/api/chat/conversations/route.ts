@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   }))
 
   const result = withUnread.map((c: any) => {
-    const others = c.participants.filter((p: any) => p.userId !== user.id).map((p: any) => userMap[p.userId] || { id: p.userId, name: p.userId, email: "", role: "unknown" })
+    const others = c.participants.filter((p: any) => p.userId !== user.id).map((p: any) => userMap[p.userId] || { id: p.userId, name: p.userId, email: "", role: "unknown" }).filter((o: any) => o.role !== "student")
     const lastMsg = c.messages[0] || null
     return { id: c.id, type: c.type, others, lastMsg: lastMsg ? { id: lastMsg.id, content: lastMsg.content, senderId: lastMsg.senderId, createdAt: lastMsg.createdAt } : null, unread: c.unread, updatedAt: c.updatedAt }
   })
@@ -48,6 +48,10 @@ export async function POST(request: Request) {
 
   const { participantIds }: { participantIds: string[] } = await request.json()
   if (!participantIds?.length) return NextResponse.json({ error: "No participants" }, { status: 400 })
+
+  const participants = await prisma.user.findMany({ where: { id: { in: participantIds } }, select: { id: true, role: true } })
+  const studentParticipant = participants.find((p) => p.role === "student")
+  if (studentParticipant) return NextResponse.json({ error: "Students cannot be contacted via chat" }, { status: 403 })
 
   const allIds = [...new Set([user.id, ...participantIds])]
   const schoolId = user.role === "superadmin" ? (await prisma.school.findFirst())?.id || "" : user.schoolId

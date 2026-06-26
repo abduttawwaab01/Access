@@ -87,20 +87,39 @@ model User {
 }
 
 model Announcement {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  audience    String   @default("all")
-  priority    String   @default("normal")
-  displayType String   @default("banner")
-  author      String?
-  active      Boolean  @default(true)
-  endDate     DateTime?
-  source      String   @default("regular")
-  schoolId    String?
-  school      School?  @relation(fields: [schoolId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String               @id @default(cuid())
+  title          String
+  content        String
+  audience       String               @default("all")
+  priority       String               @default("normal")
+  displayType    String               @default("banner")
+  author         String?
+  active         Boolean              @default(true)
+  endDate        DateTime?
+  source         String               @default("regular")
+  buttonLabel    String?
+  buttonUrl      String?
+  mediaUrl       String?
+  mediaType      String?              @default("image")
+  reviewEnabled  Boolean?             @default(false)
+  schoolId       String?
+  school         School?              @relation(fields: [schoolId], references: [id])
+  reviews        AnnouncementReview[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+}
+
+model AnnouncementReview {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id])
+  userId         String?
+  userName       String?
+  content        String
+  rating         Int?
+  createdAt      DateTime     @default(now())
+
+  @@index([announcementId])
 }
 
 enum Role {

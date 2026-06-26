@@ -27,6 +27,13 @@ export async function GET(request: NextRequest) {
   if (action === "feedback") {
     return NextResponse.json(await db.feedbackTickets.getAll())
   }
+  if (action === "getReviews") {
+    const announcementId = request.nextUrl.searchParams.get("announcementId")
+    if (announcementId) {
+      return NextResponse.json(await db.announcementReviews.getByAnnouncement(announcementId))
+    }
+    return NextResponse.json(await db.announcementReviews.getAll())
+  }
   if (action === "updateFeedback") {
     const body = await request.json()
     const { id, subject, message, priority } = body
@@ -186,6 +193,11 @@ export async function POST(request: NextRequest) {
         title: body.title, content: body.content, audience: body.targetAudience || "all", priority: body.priority || "normal",
         displayType: body.displayType || "banner",
         endDate: body.endDate || null,
+        buttonLabel: body.buttonLabel || null,
+        buttonUrl: body.buttonUrl || null,
+        mediaUrl: body.mediaUrl || null,
+        mediaType: body.mediaType || "image",
+        reviewEnabled: body.reviewEnabled || false,
       })
       return NextResponse.json({ success: true, message: "Announcement created", data: { announcements: await db.superAnnouncements.getAll() } })
     }
@@ -193,11 +205,36 @@ export async function POST(request: NextRequest) {
       const ann = await db.superAnnouncements.getById(body.id)
       if (!ann) return NextResponse.json({ success: false, error: "Not found" })
       if (body.title) {
-        await db.superAnnouncements.update(body.id, { title: body.title, content: body.content, displayType: body.displayType, endDate: body.endDate })
+        await db.superAnnouncements.update(body.id, {
+          title: body.title, content: body.content, displayType: body.displayType, endDate: body.endDate,
+          buttonLabel: body.buttonLabel || null,
+          buttonUrl: body.buttonUrl || null,
+          mediaUrl: body.mediaUrl || null,
+          mediaType: body.mediaType || "image",
+          reviewEnabled: body.reviewEnabled || false,
+        })
       } else {
         await db.superAnnouncements.update(body.id, { active: !ann.active })
       }
       return NextResponse.json({ success: true, message: body.title ? "Updated" : "Toggled", data: { announcements: await db.superAnnouncements.getAll() } })
+    }
+    case "submitReview": {
+      if (!body.announcementId || !body.content) return NextResponse.json({ success: false, error: "Announcement ID and content required" })
+      const ann = await db.superAnnouncements.getById(body.announcementId)
+      if (!ann || !ann.reviewEnabled) return NextResponse.json({ success: false, error: "Reviews not enabled for this announcement" })
+      const review = await db.announcementReviews.create({
+        announcementId: body.announcementId,
+        userId: body.userId || null,
+        userName: body.userName || null,
+        content: body.content,
+        rating: body.rating ? parseInt(body.rating) : undefined,
+      })
+      return NextResponse.json({ success: true, data: { review } })
+    }
+    case "deleteReview": {
+      if (!body.id) return NextResponse.json({ success: false, error: "Review ID required" })
+      await db.announcementReviews.delete(body.id)
+      return NextResponse.json({ success: true, message: "Review deleted" })
     }
     case "deleteAnnouncement": {
       await db.superAnnouncements.delete(body.id)

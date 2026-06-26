@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   let contacts: { id: string; name: string; email: string; role: string; image?: string | null }[] = []
 
   if (user.role === "superadmin") {
-    const all = await prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, image: true }, orderBy: { name: "asc" as const } })
+    const all = await prisma.user.findMany({ where: { role: { not: "student" as const } }, select: { id: true, name: true, email: true, role: true, image: true }, orderBy: { name: "asc" as const } })
     contacts = all.map((u: { id: string; name: string; email: string; role: string; image?: string | null }) => ({ ...u, role: u.role }))
     contacts.unshift({ id: "superadmin", name: "Super Admin", email: "superadmin@skoolar.com", role: "superadmin", image: null })
   } else if (user.role === "admin") {
