@@ -27,7 +27,7 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
           </div>
         </div>
         <div className="flex-1 p-5 flex flex-col">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 flex-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
             {student.email && <InfoRow label="Email" value={student.email} />}
             {student.phone && <InfoRow label="Phone" value={student.phone} />}
             {cfg.showAddress && (cfg.customAddress || student.address) && <InfoRow label="Address" value={cfg.customAddress || student.address || ""} />}

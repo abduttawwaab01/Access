@@ -27,7 +27,7 @@ export function StaffIDCardBack({ staff, school, config, orientation = "portrait
           </div>
         </div>
         <div className="flex-1 p-5 flex flex-col">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 flex-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
             {staff.qualification && <InfoRow label="Qualification" value={staff.qualification} />}
             {staff.employmentDate && <InfoRow label="Employed" value={new Date(staff.employmentDate).toLocaleDateString()} />}
             {staff.address && <InfoRow label="Address" value={staff.address} />}

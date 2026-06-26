@@ -562,10 +562,18 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
-      return prisma.timetableEntry.create({ data: { ...data, schoolId } })
+      const clean: any = {}
+      for (const [k, v] of Object.entries(data)) {
+        if (v !== undefined) clean[k] = v
+      }
+      return prisma.timetableEntry.create({ data: { ...clean, schoolId } })
     },
     update: async (id: string, data: any) => {
-      return prisma.timetableEntry.update({ where: { id }, data })
+      const clean: any = {}
+      for (const [k, v] of Object.entries(data)) {
+        if (v !== undefined) clean[k] = v
+      }
+      return prisma.timetableEntry.update({ where: { id }, data: clean })
     },
     delete: async (id: string) => {
       await prisma.timetableEntry.delete({ where: { id } })
@@ -687,6 +695,7 @@ export const db = {
           subjectId: data.subjectId,
           classId: data.classId,
           term: data.term,
+          session: data.session || undefined,
         },
       })
       if (existing) {
@@ -725,6 +734,11 @@ export const db = {
     },
     delete: async (id: string) => {
       await prisma.result.delete({ where: { id } })
+      return true
+    },
+    deleteAll: async () => {
+      const schoolId = await ensureSchoolId()
+      await prisma.result.deleteMany({ where: { schoolId } })
       return true
     },
   },

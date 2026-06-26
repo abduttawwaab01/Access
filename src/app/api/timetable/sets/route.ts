@@ -12,7 +12,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  const item = await db.timetableSets.create(body)
-  return NextResponse.json(item, { status: 201 })
+  try {
+    const body = await request.json()
+    const item = await db.timetableSets.create(body)
+    return NextResponse.json(item, { status: 201 })
+  } catch (err: any) {
+    console.error("POST /api/timetable/sets error:", err?.message || err, err?.stack || "")
+    return NextResponse.json({ error: err?.message || "Internal server error" }, { status: 500 })
+  }
 }

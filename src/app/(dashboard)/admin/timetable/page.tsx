@@ -112,53 +112,60 @@ export default function AdminTimetablePage() {
     if (!selectedSetId) return
     setSaving(true)
 
-    // Build a preview of the new entry for conflict detection
-    const newEntry = {
-      day: entryForm.day,
-      startTime: entryForm.startTime,
-      endTime: entryForm.endTime,
-      teacherId: entryForm.teacherId || undefined,
-      room: entryForm.room || undefined,
-      classId: selectedSet?.classId || "",
-      id: editingEntry?.id,
-    }
-    const allForDetection = editingEntry
-      ? entries.filter((e: any) => e.id !== editingEntry.id).concat(newEntry)
-      : entries.concat(newEntry)
-    const conflicts = detectTimetableConflicts(allForDetection)
-    if (conflicts.length > 0) {
-      setSaving(false)
-      toast.error(conflicts[0])
-      return
-    }
-
-    const body: Record<string, any> = {
-      setId: selectedSetId,
-      day: entryForm.day,
-      startTime: entryForm.startTime,
-      endTime: entryForm.endTime,
-      subjectName: entryForm.isBreak ? "Break" : entryForm.subject,
-      subjectId: subjects.find((s: any) => s.name === entryForm.subject)?.id || "",
-      room: entryForm.room,
-      teacherName: entryForm.teacherName,
-      isBreak: entryForm.isBreak,
-      classId: selectedSet?.classId || "",
-      date: entryForm.date || undefined,
-    }
-    if (entryForm.teacherId) body.teacherId = entryForm.teacherId
-    const url = editingEntry ? `/api/timetable/${editingEntry.id}` : "/api/timetable"
-    const method = editingEntry ? "PUT" : "POST"
-    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-    if (res.ok) {
-      toast.success(editingEntry ? "Entry updated" : "Entry created")
-      if (conflicts.length > 0) {
-        toast.warning(`${conflicts.length} conflict(s) detected`)
+    try {
+      // Build a preview of the new entry for conflict detection
+      const newEntry = {
+        day: entryForm.day,
+        startTime: entryForm.startTime,
+        endTime: entryForm.endTime,
+        teacherId: entryForm.teacherId || undefined,
+        room: entryForm.room || undefined,
+        classId: selectedSet?.classId || "",
+        id: editingEntry?.id,
       }
-      setShowEntryForm(false)
-      setEditingEntry(null)
-      const data = await fetch(`/api/timetable?setId=${selectedSetId}`).then((r) => r.json())
-      setEntries(Array.isArray(data) ? data : [])
-    } else toast.error("Failed to save entry")
+      const allForDetection = editingEntry
+        ? entries.filter((e: any) => e.id !== editingEntry.id).concat(newEntry)
+        : entries.concat(newEntry)
+      const conflicts = detectTimetableConflicts(allForDetection)
+      if (conflicts.length > 0) {
+        toast.error(conflicts[0])
+        return
+      }
+
+      const body: Record<string, any> = {
+        setId: selectedSetId,
+        day: entryForm.day,
+        startTime: entryForm.startTime,
+        endTime: entryForm.endTime,
+        subjectName: entryForm.isBreak ? "Break" : entryForm.subject,
+        subjectId: subjects.find((s: any) => s.name === entryForm.subject)?.id || "",
+        room: entryForm.room,
+        teacherName: entryForm.teacherName,
+        isBreak: entryForm.isBreak,
+        classId: selectedSet?.classId || "",
+      }
+      if (entryForm.date) body.date = entryForm.date
+      if (entryForm.teacherId) body.teacherId = entryForm.teacherId
+      const url = editingEntry ? `/api/timetable/${editingEntry.id}` : "/api/timetable"
+      const method = editingEntry ? "PUT" : "POST"
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      if (res.ok) {
+        toast.success(editingEntry ? "Entry updated" : "Entry created")
+        if (conflicts.length > 0) {
+          toast.warning(`${conflicts.length} conflict(s) detected`)
+        }
+        setShowEntryForm(false)
+        setEditingEntry(null)
+        const data = await fetch(`/api/timetable?setId=${selectedSetId}`).then((r) => r.json())
+        setEntries(Array.isArray(data) ? data : [])
+      } else {
+        const errBody = await res.json().catch(() => null)
+        toast.error(errBody?.error || "Failed to save entry")
+      }
+    } catch (err) {
+      toast.error("Failed to save entry")
+      console.error("saveEntry error:", err)
+    }
     setSaving(false)
   }
 
@@ -513,9 +520,9 @@ export default function AdminTimetablePage() {
         <Card className="glass-card border-0"><CardContent className="p-8 text-center text-muted-foreground">Select or create a timetable set to begin editing</CardContent></Card>
       )}
 
-      {/* Hidden export reference */}
+      {/* Hidden export reference - off-screen so html2canvas can measure it */}
       {selectedSet && (
-        <div className="hidden">
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px", visibility: "hidden" }}>
           <div ref={exportRef}>
             <TimetableExport
               set={selectedSet}

@@ -65,6 +65,11 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
+  const all = searchParams.get("all")
+  if (all === "true") {
+    await db.results.deleteAll()
+    return NextResponse.json({ success: true })
+  }
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 })
   const ok = await db.results.delete(id)
   if (!ok) return NextResponse.json({ error: "Result not found" }, { status: 404 })

@@ -27,10 +27,10 @@ export function StaffIDCardFront({ staff, school, orientation = "portrait" }: Pr
             <QRCodeSVG value={qrData} size={90} level="M" />
           </div>
         </div>
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-5 flex flex-col justify-center">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-20 w-20 rounded-xl border-2 border-indigo-200 shadow overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 shrink-0">
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 p-5 flex flex-col justify-center">
+              <div className="flex items-center gap-4 mb-4" style={{ position: "relative", zIndex: 2 }}>
+                <div className="h-20 w-20 rounded-xl border-2 border-indigo-200 shadow overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 shrink-0">
                 {staff.photo ? (
                   <img src={staff.photo} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -85,7 +85,7 @@ export function StaffIDCardFront({ staff, school, orientation = "portrait" }: Pr
         </div>
       </div>
       <div className="relative px-5 pb-4">
-        <div className="flex justify-center -mt-10 mb-3">
+        <div className="flex justify-center -mt-10 mb-3" style={{ position: "relative", zIndex: 2 }}>
           <div className="h-24 w-24 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100">
             {staff.photo ? (
               <img src={staff.photo} alt="" className="h-full w-full object-cover" />

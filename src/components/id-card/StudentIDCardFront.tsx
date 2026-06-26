@@ -9,10 +9,10 @@ interface StudentData {
 
 interface SchoolData { name: string; shortName?: string; logo?: string; address?: string; phone?: string; email?: string }
 
-interface Props { student: StudentData; school: SchoolData; classes?: { id: string; name: string }[]; orientation?: "portrait" | "landscape" }
+interface Props { student: StudentData; school: SchoolData; classes?: { id: string; name: string }[]; orientation?: "portrait" | "landscape"; showClassOnFront?: boolean }
 
-export function StudentIDCardFront({ student, school, classes, orientation = "portrait" }: Props) {
-  const studentClass = classes?.find((c) => c.id === student.classId)?.name || student.className || "N/A"
+export function StudentIDCardFront({ student, school, classes, orientation = "portrait", showClassOnFront = false }: Props) {
+  const studentClass = showClassOnFront ? (classes?.find((c) => c.id === student.classId)?.name || student.className || "N/A") : "Student"
   const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase()
   const qrData = JSON.stringify({ type: "student", id: student.id, code: student.studentId })
 
@@ -33,10 +33,10 @@ export function StudentIDCardFront({ student, school, classes, orientation = "po
             <QRCodeSVG value={qrData} size={90} level="M" />
           </div>
         </div>
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-5 flex flex-col justify-center">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-20 w-20 rounded-xl border-2 border-primary/20 shadow overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10 shrink-0">
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 p-5 flex flex-col justify-center">
+              <div className="flex items-center gap-4 mb-4" style={{ position: "relative", zIndex: 2 }}>
+                <div className="h-20 w-20 rounded-xl border-2 border-primary/20 shadow overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10 shrink-0">
                 {student.passportPhoto ? (
                   <img src={student.passportPhoto} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -90,7 +90,7 @@ export function StudentIDCardFront({ student, school, classes, orientation = "po
         </div>
       </div>
       <div className="relative px-5 pb-4">
-        <div className="flex justify-center -mt-10 mb-3">
+        <div className="flex justify-center -mt-10 mb-3" style={{ position: "relative", zIndex: 2 }}>
           <div className="h-24 w-24 rounded-xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-primary/10 to-secondary/10">
             {student.passportPhoto ? (
               <img src={student.passportPhoto} alt="" className="h-full w-full object-cover" />

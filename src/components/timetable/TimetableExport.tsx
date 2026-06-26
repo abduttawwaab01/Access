@@ -39,7 +39,7 @@ export function TimetableExport({ set: timetableSet, entries, school, classMap, 
     entries.filter((e) => e.day === day && e.startTime === startTime)
 
   return (
-    <div style={{ width: "1120px", padding: "2rem", fontFamily: "Arial, sans-serif", background: "#ffffff", color: "#1a1a2e" }}>
+    <div style={{ width: "1120px", margin: "0 auto", padding: "2rem", fontFamily: "Arial, sans-serif", background: "#ffffff", color: "#1a1a2e" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", paddingBottom: "1rem", borderBottom: "3px solid #4f46e5" }}>
         {schoolLogo && (

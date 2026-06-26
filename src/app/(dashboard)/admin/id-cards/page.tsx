@@ -38,6 +38,22 @@ export default function AdminIDCardsPage() {
   const cardInnerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!selectedStudent?.id) return
+    fetch(`/api/students/${selectedStudent.id}`)
+      .then((r) => r.json())
+      .then((data) => setSelectedStudent(data))
+      .catch(() => {})
+  }, [selectedStudent?.id])
+
+  useEffect(() => {
+    if (!selectedStaff?.id) return
+    fetch(`/api/staff/${selectedStaff.id}`)
+      .then((r) => r.json())
+      .then((data) => setSelectedStaff(data))
+      .catch(() => {})
+  }, [selectedStaff?.id])
+
+  useEffect(() => {
     Promise.all([
       fetch("/api/students").then((r) => r.json()),
       fetch("/api/staff").then((r) => r.json()),
@@ -86,7 +102,7 @@ export default function AdminIDCardsPage() {
     const root = createRoot(el)
     if (tab === "students") {
       if (side === "front") {
-        root.render(<StudentIDCardFront student={item} school={school!} classes={classes} orientation={orientation} />)
+        root.render(<StudentIDCardFront student={item} school={school!} classes={classes} orientation={orientation} showClassOnFront={idCardConfig?.showClassOnFront} />)
       } else {
         root.render(<StudentIDCardBack student={item} school={school!} config={idCardConfig} orientation={orientation} />)
       }
@@ -102,11 +118,10 @@ export default function AdminIDCardsPage() {
 
   const captureCardCanvas = async (item: any, side: "front" | "back"): Promise<HTMLCanvasElement> => {
     const cardW = orientation === "landscape" ? 600 : 340
-    const cardH = orientation === "landscape" ? 300 : 510
     const container = document.createElement("div")
     container.style.width = `${cardW}px`
-    container.style.height = `${cardH}px`
-    container.style.overflow = "hidden"
+    container.style.height = "auto"
+    container.style.overflow = "visible"
     container.style.position = "absolute"
     container.style.left = "-9999px"
     container.style.top = "0"
@@ -372,7 +387,7 @@ export default function AdminIDCardsPage() {
                   showBack ? (
                     <StudentIDCardBack student={selectedStudent} school={school} config={idCardConfig} orientation={orientation} />
                   ) : (
-                    <StudentIDCardFront student={selectedStudent} school={school} classes={classes} orientation={orientation} />
+                    <StudentIDCardFront student={selectedStudent} school={school} classes={classes} orientation={orientation} showClassOnFront={idCardConfig?.showClassOnFront} />
                   )
                 ) : selectedStaff && school ? (
                   showBack ? (
@@ -404,6 +419,17 @@ export default function AdminIDCardsPage() {
                     }} />
                 </div>
                 <div className="space-y-4">
+                  {!selectedStaff && (
+                    <div className="space-y-1.5 rounded-lg border border-border/50 p-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" checked={(idCardConfig as any)?.showClassOnFront ?? false}
+                          onChange={(e) => setIdCardConfig({ ...idCardConfig, showClassOnFront: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                        <span className="text-sm font-medium">Show Class on Front Card</span>
+                      </label>
+                      <p className="text-[10px] text-muted-foreground">When disabled, shows &quot;Student&quot; instead of the class name so the card never expires.</p>
+                    </div>
+                  )}
                   {selectedStaff
                     ? ([
                         { key: "showDepartment", label: "Department", customKey: "customDepartment" },
