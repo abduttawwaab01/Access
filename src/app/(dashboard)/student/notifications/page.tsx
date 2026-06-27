@@ -12,10 +12,15 @@ export default function StudentNotificationsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/announcements").then((r) => r.json()).then((data) => {
-      setItems(data.filter((a: any) => a.audience === "all" || a.audience === "students"))
-      setLoading(false)
-    })
+    fetch("/api/announcements")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setItems(data.filter((a: any) => a.audience === "all" || a.audience === "students"))
+        }
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [])
 
   const priorityIcon: Record<string, any> = { high: AlertTriangle, normal: Bell, low: Info }

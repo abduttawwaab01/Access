@@ -486,10 +486,27 @@ export const db = {
 
   assignments: {
     getAll: async (classId?: string) => {
-      return prisma.assignment.findMany({
+      const assignments = await prisma.assignment.findMany({
         where: classId ? { classId } : undefined,
         orderBy: { createdAt: "desc" },
       })
+      const assignmentIds = assignments.map((a) => a.id)
+      const classIds = [...new Set(assignments.map((a) => a.classId))]
+      const [submissionCounts, studentCounts] = await Promise.all([
+        assignmentIds.length > 0
+          ? prisma.submission.groupBy({ by: ["assignmentId"], _count: true, where: { assignmentId: { in: assignmentIds } } })
+          : Promise.resolve([]),
+        classIds.length > 0
+          ? Promise.all(classIds.map((cid) => prisma.student.count({ where: { classId: cid } }).then((c) => ({ classId: cid, count: c }))))
+          : Promise.resolve([]),
+      ])
+      const subMap = Object.fromEntries(submissionCounts.map((s) => [s.assignmentId, s._count]))
+      const studentMap = Object.fromEntries(studentCounts.map((s) => [s.classId, s.count]))
+      return assignments.map((a) => ({
+        ...a,
+        submissions: subMap[a.id] || 0,
+        total: studentMap[a.classId] || 0,
+      }))
     },
     getById: async (id: string) => {
       return prisma.assignment.findUnique({ where: { id } })
@@ -505,6 +522,7 @@ export const db = {
           title: data.title,
           description: data.description || null,
           dueDate: data.dueDate ? new Date(data.dueDate) : null,
+          status: data.status || "active",
           createdBy: data.createdBy || null,
           schoolId,
         },
@@ -519,6 +537,7 @@ export const db = {
       if (data.subject !== undefined) updateData.subject = data.subject
       if (data.type !== undefined) updateData.type = data.type
       if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
+      if (data.status !== undefined) updateData.status = data.status
       if (data.createdBy !== undefined) updateData.createdBy = data.createdBy
       return prisma.assignment.update({ where: { id }, data: updateData })
     },
@@ -1054,7 +1073,7 @@ export const db = {
         },
       })
       if (data.userType === "student" || data.userType === "Student") {
-        const student = await prisma.student.findUnique({ where: { userId: data.userId } })
+        const student = await prisma.student.findFirst({ where: { OR: [{ id: data.userId }, { userId: data.userId }] } })
         if (student) {
           const recordDate = new Date(data.date + "T00:00:00Z")
           await prisma.attendanceRecord.upsert({

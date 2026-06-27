@@ -350,3 +350,86 @@ export const CATEGORY_PRESETS: Record<string, BehaviourCategory[]> = {
     { id: "manners", label: "Good Manners", emoji: "🌷", maxScore: 3 },
   ],
 }
+
+// Handwriting Sheet Types
+export type HandwritingLineStyle = "solid" | "dashed" | "dotted"
+export type HandwritingSheetSize = "a4" | "letter"
+export type HandwritingOrientation = "portrait" | "landscape"
+export type HandwritingLineSpacing = "narrow" | "medium" | "wide"
+export type HandwritingContentType = "blank" | "tracing-text" | "tracing-letters" | "custom-text"
+
+export interface HandwritingConfig {
+  templateId: string
+  sheetTitle: string
+  studentName: string
+  date: string
+  lineStyle: HandwritingLineStyle
+  lineSpacing: HandwritingLineSpacing
+  lineColor: string
+  orientation: HandwritingOrientation
+  paperSize: HandwritingSheetSize
+  margins: number
+  primaryColor: string
+  backgroundColor: string
+  textColor: string
+  contentType: HandwritingContentType
+  tracingText: string
+  fontSize: number
+  showNameField: boolean
+  showDateField: boolean
+  showTitleField: boolean
+  lineCount: number
+  showMarginLine: boolean
+  marginLineColor: string
+  pictureBox: boolean
+  pictureBoxHeight: number
+  theme: "light" | "dark" | "custom"
+}
+
+export interface HandwritingTemplate {
+  id: string
+  name: string
+  description: string
+  preview: string
+  tags: string[]
+}
+
+export const DEFAULT_HANDWRITING_CONFIG: HandwritingConfig = {
+  templateId: "classic-ruled",
+  sheetTitle: "Handwriting Practice",
+  studentName: "",
+  date: new Date().toISOString().split("T")[0],
+  lineStyle: "solid",
+  lineSpacing: "medium",
+  lineColor: "#d1d5db",
+  orientation: "portrait",
+  paperSize: "a4",
+  margins: 20,
+  primaryColor: "#6366f1",
+  backgroundColor: "#ffffff",
+  textColor: "#1a1a2e",
+  contentType: "blank",
+  tracingText: "The quick brown fox jumps over the lazy dog.",
+  fontSize: 18,
+  showNameField: true,
+  showDateField: true,
+  showTitleField: true,
+  lineCount: 14,
+  showMarginLine: true,
+  marginLineColor: "#ef4444",
+  pictureBox: false,
+  pictureBoxHeight: 120,
+  theme: "light",
+}
+
+export const LINE_SPACING_MAP: Record<HandwritingLineSpacing, number> = {
+  narrow: 24,
+  medium: 36,
+  wide: 48,
+}
+
+export const HANDWRITING_LETTERS = [
+  "Aa", "Bb", "Cc", "Dd", "Ee", "Ff", "Gg", "Hh", "Ii",
+  "Jj", "Kk", "Ll", "Mm", "Nn", "Oo", "Pp", "Qq", "Rr",
+  "Ss", "Tt", "Uu", "Vv", "Ww", "Xx", "Yy", "Zz",
+]

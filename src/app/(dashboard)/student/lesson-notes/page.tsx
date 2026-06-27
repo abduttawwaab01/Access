@@ -38,42 +38,32 @@ export default function StudentLessonNotesPage() {
   const studentClassId = student?.classId || ""
 
   useEffect(() => {
-    if (selectedClassId) {
-      setLoading(true)
-      Promise.all([
-        fetch("/api/students").then((r) => r.json()),
-        fetch("/api/classes").then((r) => r.json()),
-        fetch(`/api/lesson-notes?classId=${selectedClassId}`).then((r) => r.json()),
-      ]).then(([stu, cls, nts]) => {
-        setStudents(stu)
-        setClasses(cls)
-        setNotes(nts.filter((n: any) => n.status === "published"))
+    if (!selectedClassId) return
+    setLoading(true)
+    fetch(`/api/lesson-notes?classId=${selectedClassId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setNotes(data.filter((n: any) => n.status === "published"))
         setLoading(false)
       })
-    }
+      .catch(() => setLoading(false))
   }, [selectedClassId])
 
   useEffect(() => {
     const fetchInitial = async () => {
       if (!userId) return
       const [stuRes, clsRes] = await Promise.all([
-        fetch("/api/students").then((r) => r.json()),
-        fetch("/api/classes").then((r) => r.json()),
+        fetch(`/api/students?userId=${userId}`),
+        fetch("/api/classes"),
       ])
-      setStudents(stuRes)
-      setClasses(clsRes)
-      const found = stuRes.find((s: any) => s.id === userId)
-      if (found?.id) {
-        setStudentId(found.id)
-        if (found.classId) setSelectedClassId(found.classId)
-      } else {
-        const resolved = await fetch(`/api/students?userId=${userId}`).then((r) => r.json())
-        if (resolved?.id) {
-          setStudentId(resolved.id)
-          if (resolved.classId) setSelectedClassId(resolved.classId)
-        }
-        setLoading(false)
+      const student = stuRes.ok ? await stuRes.json() : null
+      const allClasses = await clsRes.json()
+      setClasses(Array.isArray(allClasses) ? allClasses : [])
+      if (student?.id) {
+        setStudentId(student.id)
+        if (student.classId) setSelectedClassId(student.classId)
       }
+      setLoading(false)
     }
     fetchInitial()
   }, [userId])

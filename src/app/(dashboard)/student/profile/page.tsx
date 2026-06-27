@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react"
 import ProfilePage from "@/components/profile/ProfilePage"
+import { useSession } from "next-auth/react"
 
 export default function StudentProfilePage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [userData, setUserData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/student/profile")
+    if (!userId) return
+    fetch(`/api/student/profile?userId=${userId}`)
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || "Failed to fetch profile")

@@ -45,6 +45,7 @@ const teacherNav: NavItem[] = [
   { label: "Dashboard", href: "/teacher", icon: "LayoutDashboard" },
   { label: "AI Assistant", href: "/teacher/ai-assistant", icon: "BotMessageSquare" },
   { label: "Lesson Notes", href: "/teacher/lesson-notes", icon: "FileText" },
+  { label: "Handwriting Sheets", href: "/teacher/handwriting-sheets", icon: "PenLine" },
   { label: "Scheme of Work", href: "/teacher/scheme-of-work", icon: "BookOpen" },
   { label: "Assignments", href: "/teacher/assignments", icon: "ClipboardCheck" },
   { label: "Timetable", href: "/teacher/timetable", icon: "Calendar" },

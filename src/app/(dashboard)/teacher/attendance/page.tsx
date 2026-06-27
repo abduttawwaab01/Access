@@ -61,14 +61,14 @@ export default function TeacherAttendancePage() {
 
   const isMarked = (studentId: string) => logs.some((l) => l.userId === studentId && l.date === today)
 
-  const markStudent = async (studentId: string, status: "present" | "late") => {
+  const markStudent = async (studentId: string, status: "present" | "late", method: "manual" | "qr" = "manual") => {
     if (isMarked(studentId)) { playFailure(); toast.error("Already marked today"); return false }
     const now = new Date()
     const time = now.toTimeString().split(" ")[0].substring(0, 5)
     const res = await fetch("/api/attendance-logs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: studentId, userType: "student", date: today, time, status, method: "manual" }),
+      body: JSON.stringify({ userId: studentId, userType: "student", date: today, time, status, method }),
     })
     if (res.ok) {
       const newLog = await res.json()
@@ -92,7 +92,7 @@ export default function TeacherAttendancePage() {
         if (!student) { playFailure(); toast.error("Student not found"); return }
         const hour = new Date().getHours()
         const status = hour >= 9 ? "late" : "present"
-        const ok = await markStudent(data.id, status)
+        const ok = await markStudent(data.id, status, "qr")
         if (ok) toast.success(`${student.firstName} ${student.lastName} marked ${status} via QR`)
       } else {
         playFailure()

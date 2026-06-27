@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { CheckCircle2, QrCode } from "lucide-react"
+import { CheckCircle2, QrCode, Loader2 } from "lucide-react"
 import { QRScanner } from "@/components/QRScanner"
 import { useSession } from "next-auth/react"
 import { playSuccess, playFailure } from "@/lib/sounds"
@@ -15,8 +15,29 @@ export default function StaffAttendanceCheckInPage() {
   const [checkedIn, setCheckedIn] = useState(false)
   const [checkInTime, setCheckInTime] = useState<string | null>(null)
   const [checkInStatus, setCheckInStatus] = useState<"present" | "late" | null>(null)
+  const [staffId, setStaffId] = useState<string | null>(null)
+  const [loadingStaff, setLoadingStaff] = useState(true)
+
+  const authUserId = (session?.user as any)?.id
+
+  useEffect(() => {
+    if (!authUserId) { setLoadingStaff(false); return }
+    fetch("/api/staff?userId=" + authUserId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        if (staffData?.id) setStaffId(staffData.id)
+        setLoadingStaff(false)
+      })
+      .catch(() => setLoadingStaff(false))
+  }, [authUserId])
 
   const handleQRScan = async (decodedText: string) => {
+    if (!staffId) {
+      playFailure()
+      toast.error("Staff record not found. Please contact admin.")
+      return
+    }
+
     try {
       const data = JSON.parse(decodedText)
       if (data.type !== "school_attendance") {
@@ -30,13 +51,6 @@ export default function StaffAttendanceCheckInPage() {
       return
     }
 
-    const userId = (session?.user as any)?.id
-    if (!userId) {
-      playFailure()
-      toast.error("You must be logged in to check in")
-      return
-    }
-
     const now = new Date()
     const date = now.toISOString().split("T")[0]
     const time = now.toTimeString().split(" ")[0].substring(0, 5)
@@ -47,7 +61,7 @@ export default function StaffAttendanceCheckInPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId,
+        userId: staffId,
         userType: "staff",
         date,
         time,
@@ -75,6 +89,17 @@ export default function StaffAttendanceCheckInPage() {
   }
 
   const userName = session?.user?.name || "Staff"
+
+  if (loadingStaff) {
+    return (
+      <div className="p-4 md:p-6 flex items-center justify-center min-h-[70dvh]">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm">Loading staff profile...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (checkedIn) {
     return (

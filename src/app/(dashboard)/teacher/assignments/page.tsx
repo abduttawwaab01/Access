@@ -33,7 +33,7 @@ export default function AssignmentsPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [tab, setTab] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ title: "", subject: "", classId: "", dueDate: "", type: "homework", description: "" })
+  const [form, setForm] = useState({ title: "", subject: "", subjectId: "", classId: "", dueDate: "", type: "homework", description: "" })
   const [myClassIds, setMyClassIds] = useState<string[]>([])
 
   const fetchData = async () => {
@@ -84,13 +84,14 @@ export default function AssignmentsPage() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ title: "", subject: "", classId: "", dueDate: "", type: "homework", description: "" })
+    setForm({ title: "", subject: "", subjectId: "", classId: "", dueDate: "", type: "homework", description: "" })
     setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
     setEditing(item)
-    setForm({ title: item.title, subject: item.subject, classId: item.classId, dueDate: item.dueDate, type: item.type, description: item.description || "" })
+    const subj = subjects.find((s: any) => s.name === item.subject)
+    setForm({ title: item.title, subject: item.subject, subjectId: subj?.id || "", classId: item.classId, dueDate: item.dueDate, type: item.type, description: item.description || "" })
     setSheetOpen(true)
   }
 
@@ -138,9 +139,10 @@ export default function AssignmentsPage() {
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
-            {filtered.map((item, i) => {
+              {filtered.map((item, i) => {
               const pct = item.total > 0 ? Math.round((item.submissions / item.total) * 100) : 0
-              const overdue = new Date(item.dueDate) < new Date() && item.status !== "closed"
+              const due = item.dueDate ? new Date(item.dueDate) : null
+              const overdue = due && due < new Date() && item.status !== "closed"
               return (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                   <Card className="glass-card border-0">
@@ -199,10 +201,10 @@ export default function AssignmentsPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Select value={form.subject} onValueChange={(v) => { if (v) update("subject", v) }}>
+              <Select value={form.subjectId} onValueChange={(v) => { if (v) { const subj = subjects.find((s: any) => s.id === v); update("subjectId", v); if (subj) update("subject", subj.name) } }}>
                 <SelectTrigger className="h-12"><SelectValue placeholder="Select subject" /></SelectTrigger>
                 <SelectContent>
-                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -229,8 +231,8 @@ export default function AssignmentsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Due Date</Label>
-              <Input type="date" value={form.dueDate} onChange={(e) => update("dueDate", e.target.value)} className="h-12" />
+              <Label>Due Date <span className="text-destructive">*</span></Label>
+              <Input type="date" value={form.dueDate} onChange={(e) => update("dueDate", e.target.value)} className="h-12" required />
             </div>
           </div>
           <div className="space-y-2">

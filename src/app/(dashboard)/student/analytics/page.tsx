@@ -38,12 +38,15 @@ export default function StudentAnalyticsPage() {
 
   useEffect(() => {
     if (!userId) return
-    fetch(`/api/students?userId=${userId}`).then((r) => r.json()).then((s) => {
-      if (s?.id) {
-        setStudentId(s.id)
-        setStudent(s)
-      }
-    })
+    fetch(`/api/students?userId=${userId}`)
+      .then((r) => r.json())
+      .then((s) => {
+        if (s?.id) {
+          setStudentId(s.id)
+          setStudent(s)
+        }
+      })
+      .catch(() => setLoading(false))
   }, [userId])
 
   useEffect(() => {
@@ -53,7 +56,8 @@ export default function StudentAnalyticsPage() {
         fetch(`/api/results?studentId=${studentId}`),
         fetch(`/api/attendance-records?studentId=${studentId}`),
       ])
-      setResults(Array.isArray(await r.json()) ? await r.json() : [])
+      const resultsData = await r.json()
+      setResults(Array.isArray(resultsData) ? resultsData : [])
       const attData = await a.json()
       setAttendance(Array.isArray(attData) ? attData : [])
       setLoading(false)

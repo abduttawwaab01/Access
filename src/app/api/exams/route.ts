@@ -18,10 +18,12 @@ export async function GET(request: Request) {
         const studentSubjects = await db.subjects.getAll(studentClassId)
         const studentSubjectIds = studentSubjects.map((s: any) => s.id)
         
-        exams = exams.filter((exam: any) => 
-          exam.classId === studentClassId && 
-          studentSubjectIds.includes(exam.subjectId)
-        )
+        exams = studentSubjectIds.length > 0
+          ? exams.filter((exam: any) =>
+              exam.classId === studentClassId &&
+              studentSubjectIds.includes(exam.subjectId)
+            )
+          : exams.filter((exam: any) => exam.classId === studentClassId)
       }
     }
     

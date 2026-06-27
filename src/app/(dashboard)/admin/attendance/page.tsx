@@ -103,7 +103,8 @@ export default function AdminAttendancePage() {
     const date = now.toISOString().split("T")[0]
     const time = now.toTimeString().split(" ")[0].substring(0, 5)
     const hour = now.getHours()
-    const status = (userType === "student" && hour >= 8) || (userType === "staff" && hour >= 8) ? "late" : "present"
+    const lateThreshold = userType === "staff" ? 8 : 9
+    const status = hour >= lateThreshold ? "late" : "present"
 
     const existing = logs.find((l) => l.userId === userId && l.date === date)
     if (existing) {
@@ -183,10 +184,10 @@ export default function AdminAttendancePage() {
 
   const getUserName = (userId: string, userType: string) => {
     if (userType === "student") {
-      const s = students.find((s) => s.id === userId)
+      const s = students.find((s) => s.id === userId || s.userId === userId)
       return s ? `${s.firstName} ${s.lastName}` : userId
     }
-    const s = staff.find((s) => s.id === userId)
+    const s = staff.find((s) => s.id === userId || s.userId === userId)
     return s ? `${s.firstName} ${s.lastName}` : userId
   }
 

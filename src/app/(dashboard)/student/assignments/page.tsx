@@ -30,8 +30,10 @@ export default function StudentAssignmentsPage() {
         fetch(`/api/assignments?classId=${student.classId}`),
         fetch("/api/classes"),
       ])
-      setAssignments(Array.isArray(await asgnsRes.json()) ? await asgnsRes.json() : [])
-      setClasses(Array.isArray(await clsRes.json()) ? await clsRes.json() : [])
+      const assignmentsData = await asgnsRes.json()
+      setAssignments(Array.isArray(assignmentsData) ? assignmentsData : [])
+      const classesData = await clsRes.json()
+      setClasses(Array.isArray(classesData) ? classesData : [])
       setLoading(false)
     }
     load()
@@ -40,8 +42,14 @@ export default function StudentAssignmentsPage() {
   const getClassName = (id: string) => classes.find((c) => c.id === id)
 
   const now = new Date()
-  const activeAssignments = assignments.filter((a) => new Date(a.dueDate) >= now && a.status !== "closed")
-  const overdueAssignments = assignments.filter((a) => new Date(a.dueDate) < now && a.status !== "closed")
+  const activeAssignments = assignments.filter((a) => {
+    const due = a.dueDate ? new Date(a.dueDate) : null
+    return a.status !== "closed" && (!due || due >= now)
+  })
+  const overdueAssignments = assignments.filter((a) => {
+    const due = a.dueDate ? new Date(a.dueDate) : null
+    return a.status !== "closed" && due && due < now
+  })
   const closedAssignments = assignments.filter((a) => a.status === "closed")
 
   const filtered = tab === "active" ? activeAssignments : tab === "overdue" ? overdueAssignments : closedAssignments
