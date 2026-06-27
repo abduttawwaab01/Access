@@ -55,7 +55,7 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-card" showCloseButton={false}>
+            <SheetContent side="left" className="w-64 p-0 bg-card" showCloseButton={false}>
               <Sidebar items={navItems} collapsed={false} onToggle={() => {}} user={user} schoolName={schoolName} embedded onClose={() => setSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
