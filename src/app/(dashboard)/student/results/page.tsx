@@ -29,11 +29,10 @@ export default function StudentResultsPage() {
     if (!userId) return
     const fetchData = async () => {
       const studRes = await fetch(`/api/students?userId=${userId}`)
-      let sid = userId
-      if (studRes.ok) {
-        const student = await studRes.json()
-        sid = student?.id || userId
-      }
+      if (!studRes.ok) { setLoading(false); return }
+      const student = await studRes.json()
+      const sid = student?.id || ""
+      if (!sid) { setLoading(false); return }
       const [res, sessions] = await Promise.all([
         fetch(`/api/results?studentId=${sid}`).then((r) => r.json()),
         fetch(`/api/exam-sessions`).then((r) => r.json()),

@@ -39,11 +39,14 @@ export default function StudentAnalyticsPage() {
   useEffect(() => {
     if (!userId) return
     fetch(`/api/students?userId=${userId}`)
-      .then((r) => r.json())
-      .then((s) => {
+      .then(async (r) => {
+        if (!r.ok) { setLoading(false); return }
+        const s = await r.json()
         if (s?.id) {
           setStudentId(s.id)
           setStudent(s)
+        } else {
+          setLoading(false)
         }
       })
       .catch(() => setLoading(false))

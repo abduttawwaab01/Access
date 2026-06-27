@@ -20,12 +20,10 @@ export default function StudentAttendancePage() {
     if (!userId) return
     const load = async () => {
       const studRes = await fetch(`/api/students?userId=${userId}`)
-      let sid = userId
-      if (studRes.ok) {
-        const s = await studRes.json()
-        if (s?.id) sid = s.id
-      }
-      const res = await fetch(`/api/attendance-records?studentId=${sid}`)
+      if (!studRes.ok) { setLoading(false); return }
+      const s = await studRes.json()
+      if (!s?.id) { setLoading(false); return }
+      const res = await fetch(`/api/attendance-records?studentId=${s.id}`)
       const data = await res.json()
       setRecords(Array.isArray(data) ? data : [])
       setLoading(false)

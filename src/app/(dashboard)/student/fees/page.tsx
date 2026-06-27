@@ -22,16 +22,16 @@ export default function StudentFeesPage() {
     if (!userId) return
     const load = async () => {
       const studRes = await fetch(`/api/students?userId=${userId}`)
-      let sid = userId, cid = ""
-      if (studRes.ok) {
-        const s = await studRes.json()
-        if (s?.id) { sid = s.id; cid = s.classId || "" }
-      }
+      if (!studRes.ok) { setLoading(false); return }
+      const s = await studRes.json()
+      const sid = s?.id || ""
+      const cid = s?.classId || ""
+      if (!sid) { setLoading(false); return }
       setStudentId(sid)
       setStudentClassId(cid)
       const [p, fs] = await Promise.all([
-        fetch("/api/payments").then((r) => r.json()),
-        fetch("/api/fee-structures").then((r) => r.json()),
+        fetch(`/api/payments?studentId=${sid}`).then((r) => r.json()),
+        fetch(`/api/fee-structures?classId=${cid}`).then((r) => r.json()),
       ])
       setPayments(p)
       setFeeStructures(fs)

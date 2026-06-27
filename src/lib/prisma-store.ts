@@ -899,7 +899,7 @@ export const db = {
           allowCopyPaste: data.allowCopyPaste ?? false,
           maxAttempts: data.maxAttempts ?? 0,
           questions: data.questions || [],
-          status: data.status || "draft",
+          status: data.status || "published",
           createdBy: data.createdBy || null,
           schoolId,
         },

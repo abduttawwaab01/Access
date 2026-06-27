@@ -3,19 +3,34 @@ import { db } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
+async function resolveStudent(userId: string) {
+  let student = await db.students.getByUserId(userId)
+  if (!student) student = await db.students.getById(userId)
+  if (!student) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    if (user?.email) {
+      student = await prisma.student.findFirst({ where: { email: user.email } })
+      if (student) {
+        await prisma.student.update({ where: { id: student.id }, data: { userId } })
+      }
+    }
+  }
+  return student
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
   const userId = searchParams.get("userId") || undefined
-  
+
   if (userId) {
-    const student = await db.students.getByUserId(userId)
+    const student = await resolveStudent(userId)
     if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 })
     }
     return NextResponse.json(student)
   }
-  
+
   const data = await db.students.getAll(classId)
   return NextResponse.json(data)
 }

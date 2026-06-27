@@ -34,21 +34,20 @@ export default function StudentReportCardPage() {
     if (!userId) return
     const load = async () => {
       const studRes = await fetch(`/api/students?userId=${userId}`)
-      let sid = userId
-      let studentData = null
-      if (studRes.ok) {
-        const s = await studRes.json()
-        if (s?.id) { sid = s.id; studentData = s }
-      }
+      if (!studRes.ok) { setLoading(false); return }
+      const s = await studRes.json()
+      const sid = s?.id || ""
+      const studentData = s?.id ? s : null
+      if (!sid) { setLoading(false); return }
       setStudentId(sid)
       setStudent(studentData)
       const [res, stu, cls, sch, rc, att, gc] = await Promise.all([
-        fetch("/api/results").then((r) => r.json()),
+        fetch(`/api/results?studentId=${sid}`).then((r) => r.json()),
         fetch("/api/students").then((r) => r.json()),
         fetch("/api/classes").then((r) => r.json()),
         fetch("/api/school").then((r) => r.json()),
         fetch(`/api/report-cards?studentId=${sid}`).then((r) => r.json()),
-        fetch("/api/attendance-logs").then((r) => r.json()),
+        fetch(`/api/attendance-logs?userId=${sid}`).then((r) => r.json()),
         fetch("/api/grading-config").then((r) => r.json()),
       ])
       setResults(Array.isArray(res) ? res : [])
