@@ -19,7 +19,7 @@ export default function TeacherAIAssistantPage() {
   const teacherId = (session?.user as any)?.id || ""
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="flex flex-col flex-1 p-4 md:p-6 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center gap-3 mb-1">
           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">

@@ -8,7 +8,7 @@ import { getInitials } from "@/lib/utils"
 import { Bell, Menu, Search, Moon, Sun, X } from "lucide-react"
 import { useTheme } from "@/hooks/useTheme"
 import { useMobile } from "@/hooks/useMobile"
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Sidebar } from "./Sidebar"
@@ -28,6 +28,7 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [notifCount, setNotifCount] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     fetch("/api/notifications")
@@ -48,20 +49,14 @@ export function TopHeader({ title, navItems, user, schoolName }: TopHeaderProps)
     <>
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 md:px-6">
         {isMobile && (
-          <Sheet>
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger className="flex items-center justify-center shrink-0">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0" showCloseButton={false}>
-              <Sidebar items={navItems} collapsed={false} onToggle={() => {}} user={user} schoolName={schoolName} embedded />
-              <SheetClose
-                className="absolute top-4 right-3 flex lg:hidden items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                render={<Button variant="ghost" size="icon-sm" />}
-              >
-                <X className="h-4 w-4" />
-              </SheetClose>
+              <Sidebar items={navItems} collapsed={false} onToggle={() => {}} user={user} schoolName={schoolName} embedded onClose={() => setSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
         )}

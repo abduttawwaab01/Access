@@ -388,7 +388,7 @@ export default function TeacherExamDetailPage() {
       </Dialog>
 
       <Dialog open={browseOpen} onOpenChange={(open) => { if (!open) setBrowseOpen(false) }}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Select Questions from Bank</DialogTitle>
             <DialogDescription>Search and select questions to add to this exam.</DialogDescription>

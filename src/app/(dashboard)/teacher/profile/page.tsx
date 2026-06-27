@@ -1,14 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import ProfilePage from "@/components/profile/ProfilePage"
 
 export default function TeacherProfilePage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [userData, setUserData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/teacher/profile")
+    if (!userId) return
+    fetch(`/api/teacher/profile?userId=${userId}`)
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || "Failed to fetch profile")
@@ -19,7 +23,7 @@ export default function TeacherProfilePage() {
         console.error("Failed to fetch teacher profile:", error)
         setLoading(false)
       })
-  }, [])
+  }, [userId])
 
   const handleSave = async (data: any) => {
     const response = await fetch("/api/teacher/profile", {

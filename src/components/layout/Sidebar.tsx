@@ -24,6 +24,7 @@ import {
   HelpCircle,
   Award,
   BotMessageSquare,
+  X,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -65,9 +66,10 @@ interface SidebarProps {
   schoolName?: string
   className?: string
   embedded?: boolean
+  onClose?: () => void
 }
 
-export function Sidebar({ items, collapsed, onToggle, user, schoolName, className, embedded }: SidebarProps) {
+export function Sidebar({ items, collapsed, onToggle, user, schoolName, className, embedded, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -96,14 +98,21 @@ export function Sidebar({ items, collapsed, onToggle, user, schoolName, classNam
             </div>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggle}
-          className={cn("hidden lg:flex", collapsed && "mx-auto")}
-        >
-          <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className={cn("hidden lg:flex", collapsed && "mx-auto")}
+          >
+            <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
+          </Button>
+          {embedded && onClose && (
+            <Button variant="ghost" size="icon-sm" onClick={onClose} className="lg:hidden">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-2">

@@ -28,7 +28,8 @@ export async function GET(request: Request) {
       }
     }
     const admins = await prisma.user.findMany({ where: { schoolId: user.schoolId, role: "admin" }, select: { id: true, name: true, email: true, role: true, image: true } })
-    contacts = [...contacts, ...admins]
+    const teachers = await prisma.user.findMany({ where: { schoolId: user.schoolId, role: "teacher" }, select: { id: true, name: true, email: true, role: true, image: true } })
+    contacts = [...contacts, ...admins, ...teachers]
   } else if (user.role === "parent") {
     const students = await prisma.student.findMany({ where: { parentId: user.id }, select: { classId: true } })
     const classIds = [...new Set(students.map((s: { classId: string }) => s.classId))]

@@ -150,7 +150,7 @@ export default function AIAssistant({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100vh-12rem)] rounded-2xl border bg-card overflow-hidden">
+    <div className="flex flex-col flex-1 rounded-2xl border bg-card overflow-hidden">
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
         {messages.map((msg, i) => (
           <motion.div

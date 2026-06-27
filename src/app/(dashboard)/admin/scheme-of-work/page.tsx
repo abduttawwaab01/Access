@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { downloadPng, downloadPdf, downloadDoc, openPrintWindow } from "@/lib/capture"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { CheckCircle, XCircle, Plus, Eye, Edit, Trash2, BookOpen, ChevronDown, ChevronUp } from "lucide-react"
+import { CheckCircle, XCircle, Plus, Eye, Edit, Trash2, BookOpen, ChevronDown, ChevronUp, Download, Printer, FileText, DownloadCloud } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -194,6 +195,32 @@ export default function SchemeOfWorkPage() {
     return true
   })
 
+  const reportRef = useRef<HTMLDivElement>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExportPng = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, "Scheme_of_Work.png", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, "Scheme_of_Work.pdf", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDoc = () => {
+    if (!reportRef.current) return
+    try { downloadDoc(reportRef.current, "Scheme_of_Work.doc", "Scheme of Work"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }
+  }
+
+  const handlePrint = () => {
+    if (!reportRef.current) return
+    openPrintWindow(reportRef.current, "Scheme of Work")
+  }
+
   const statusBadge = (status: string) => {
     const label = status.charAt(0).toUpperCase() + status.slice(1)
     return <Badge variant={statusColor[status] || "outline"}>{label}</Badge>
@@ -324,7 +351,25 @@ export default function SchemeOfWorkPage() {
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="border-t border-border/40 px-4 py-3 space-y-2">
+                          <div className="border-t border-border/40">
+                            <div ref={reportRef} className="px-4 py-3 space-y-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-semibold">{item.title} — Full Scheme</h3>
+                                <div className="flex gap-1">
+                                  <Button variant="outline" size="icon-sm" onClick={handleExportPng} disabled={exporting} title="Export PNG">
+                                    <Download className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="outline" size="icon-sm" onClick={handleExportPdf} disabled={exporting} title="Export PDF">
+                                    <FileText className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="outline" size="icon-sm" onClick={handleExportDoc} title="Export DOC">
+                                    <DownloadCloud className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="outline" size="icon-sm" onClick={handlePrint} title="Print">
+                                    <Printer className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
                             {item.weeks?.length > 0 ? item.weeks.map((week) => (
                               <Card key={week.weekNumber} className="border border-border/40 bg-muted/30">
                                 <CardHeader className="p-3 pb-1">
@@ -336,9 +381,10 @@ export default function SchemeOfWorkPage() {
                                   {week.resources && <p><span className="font-medium text-foreground">Resources:</span> {week.resources}</p>}
                                 </CardContent>
                               </Card>
-                            )) : (
+                            )                            ) : (
                               <p className="text-xs text-muted-foreground py-2">No week details available</p>
                             )}
+                          </div>
                           </div>
                         </motion.div>
                       )}

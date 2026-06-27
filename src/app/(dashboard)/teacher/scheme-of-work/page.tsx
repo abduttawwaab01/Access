@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { downloadPng, downloadPdf, downloadDoc, openPrintWindow } from "@/lib/capture"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, BookOpen, ChevronDown, ChevronUp, Layers, X, GripVertical } from "lucide-react"
+import { Plus, Pencil, Trash2, BookOpen, ChevronDown, ChevronUp, Layers, X, GripVertical, Download, Printer, FileText, DownloadCloud } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -211,6 +212,32 @@ export default function SchemeOfWorkPage() {
     }
   };
 
+  const reportRef = useRef<HTMLDivElement>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExportPng = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPng(reportRef.current, "Scheme_of_Work.png", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PNG") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return; setExporting(true)
+    try { await downloadPdf(reportRef.current, "Scheme_of_Work.pdf", { scale: 2, backgroundColor: "#ffffff" }); toast.success("Exported as PDF") }
+    catch { toast.error("Export failed") }; setExporting(false)
+  }
+
+  const handleExportDoc = () => {
+    if (!reportRef.current) return
+    try { downloadDoc(reportRef.current, "Scheme_of_Work.doc", "Scheme of Work"); toast.success("Exported as DOC") }
+    catch { toast.error("Export failed") }
+  }
+
+  const handlePrint = () => {
+    if (!reportRef.current) return
+    openPrintWindow(reportRef.current, "Scheme of Work")
+  }
+
   const toggleExpand = (id: string) => setExpanded((prev) => (prev === id ? null : id))
 
   const getClassName = (id: string) => classes.find((c) => c.id === id)
@@ -240,7 +267,7 @@ export default function SchemeOfWorkPage() {
               <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                 <Card className={cn("glass-card border-0 overflow-hidden transition-all duration-300", expanded === item.id && "ring-1 ring-primary/20")}>
                   <CardContent className="p-0">
-                    <div className="p-4">
+                    <div className="p-4 cursor-pointer" onClick={() => toggleExpand(item.id)}>
                       <div className="flex items-start justify-between">
                         <div className="flex gap-3 flex-1 min-w-0">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
@@ -257,7 +284,7 @@ export default function SchemeOfWorkPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <Badge className={statusVariant(item.status)}>{item.status}</Badge>
                           {(item.status === "draft" || item.status === "published") && (
                             <>
@@ -292,7 +319,24 @@ export default function SchemeOfWorkPage() {
                           transition={{ duration: 0.2 }}
                           className="border-t border-border/40 overflow-hidden"
                         >
-                          <div className="p-4 space-y-3">
+                          <div ref={reportRef} className="p-4 space-y-3">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-sm font-semibold">{item.title} — Full Scheme</h3>
+                              <div className="flex gap-1">
+                                <Button variant="outline" size="icon-sm" onClick={handleExportPng} disabled={exporting} title="Export PNG">
+                                  <Download className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="outline" size="icon-sm" onClick={handleExportPdf} disabled={exporting} title="Export PDF">
+                                  <FileText className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="outline" size="icon-sm" onClick={handleExportDoc} title="Export DOC">
+                                  <DownloadCloud className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="outline" size="icon-sm" onClick={handlePrint} title="Print">
+                                  <Printer className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
                             {item.weeks && item.weeks.length > 0 ? (
                               item.weeks.map((w: WeekEntry, wi: number) => (
                                 <div key={w.id} className="rounded-xl bg-muted/30 p-3 text-sm">
