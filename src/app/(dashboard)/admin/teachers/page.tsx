@@ -38,11 +38,15 @@ export default function TeachersPage() {
   const [search, setSearch] = useState("")
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", role: "teacher", department: "", password: "" })
+  const [formClassIds, setFormClassIds] = useState<string[]>([])
+  const [formSubjectIds, setFormSubjectIds] = useState<string[]>([])
+  const [formIsClassTeacher, setFormIsClassTeacher] = useState(false)
 
   const [assignSheetOpen, setAssignSheetOpen] = useState(false)
   const [assignTarget, setAssignTarget] = useState<any | null>(null)
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
+  const [levels, setLevels] = useState<any[]>([])
   const [existingAssign, setExistingAssign] = useState<any | null>(null)
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([])
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([])
@@ -65,9 +69,10 @@ export default function TeachersPage() {
   }
 
   const fetchClassesAndSubjects = async () => {
-    const [cRes, sRes] = await Promise.all([fetch("/api/classes"), fetch("/api/subjects")])
+    const [cRes, sRes, lRes] = await Promise.all([fetch("/api/classes"), fetch("/api/subjects"), fetch("/api/levels")])
     setClasses(await cRes.json())
     setSubjects(await sRes.json())
+    setLevels(await lRes.json())
   }
 
   useEffect(() => { fetchItems(); fetchClassesAndSubjects() }, [])
@@ -79,14 +84,13 @@ export default function TeachersPage() {
     setIsClassTeacher(false)
     setExistingAssign(null)
     try {
-      const res = await fetch("/api/teacher-assignments")
-      const all = await res.json()
-      const found = all.find((a: any) => a.teacherId === item.id)
-      if (found) {
-        setExistingAssign(found)
-        setSelectedClassIds(found.classIds || [])
-        setSelectedSubjectIds(found.subjectIds || [])
-        setIsClassTeacher(found.isClassTeacher || false)
+      const res = await fetch(`/api/teacher-assignments?teacherId=${item.id}`)
+      const data = await res.json()
+      if (data?.classIds) {
+        setExistingAssign(data)
+        setSelectedClassIds(data.classIds || [])
+        setSelectedSubjectIds(data.subjectIds || [])
+        setIsClassTeacher(data.isClassTeacher || false)
       }
     } catch {}
     setAssignSheetOpen(true)
@@ -181,6 +185,9 @@ export default function TeachersPage() {
   const openCreate = () => {
     setEditing(null)
     setForm({ firstName: "", lastName: "", email: "", role: "teacher", department: "", password: "" })
+    setFormClassIds([])
+    setFormSubjectIds([])
+    setFormIsClassTeacher(false)
     setSheetOpen(true)
   }
 
@@ -194,7 +201,10 @@ export default function TeachersPage() {
     e.preventDefault()
     const url = editing ? `/api/staff/${editing.id}` : "/api/staff"
     const method = editing ? "PUT" : "POST"
-    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
+    const payload = editing
+      ? form
+      : { ...form, classIds: formClassIds, subjectIds: formSubjectIds, isClassTeacher: formIsClassTeacher }
+    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
     if (res.ok) {
       toast.success(editing ? "Staff updated" : "Staff created")
       setSheetOpen(false)
@@ -322,6 +332,68 @@ export default function TeachersPage() {
             <Label>Password {editing ? "(leave blank to keep current)" : ""}</Label>
             <Input type="password" value={form.password} onChange={(e) => update("password", e.target.value)} className="h-12" placeholder={editing ? "••••••••" : "Set password"} />
           </div>
+          {form.role === "teacher" && !editing && (
+            <div className="space-y-4 border-t pt-4">
+              <p className="text-sm font-medium">Class & Subject Assignments</p>
+              <div className="space-y-2">
+                <Label>Classes</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  {classes.map((c) => {
+                    const active = formClassIds.includes(c.id)
+                    return (
+                      <button key={c.id} type="button" onClick={() => {
+                        const was = formClassIds.includes(c.id)
+                        setFormClassIds((prev) => was ? prev.filter((id) => id !== c.id) : [...prev, c.id])
+                        if (was) setFormSubjectIds((prev) => prev.filter((sid) => {
+                          const sub = subjects.find((s) => s.id === sid)
+                          return sub && formClassIds.filter((id) => id !== c.id).includes(sub.classId)
+                        }))
+                      }}
+                        className={cn("flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-all", active ? "border-primary bg-primary/5 text-primary font-medium" : "border-border hover:border-primary/30")}>
+                        <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", active ? "border-primary bg-primary text-white" : "border-muted-foreground/30")}>
+                          {active && <Check className="h-3 w-3" />}
+                        </div>
+                        {c.name} {c.arm && <span className="text-muted-foreground">- {c.arm}</span>}
+                        {c.level && <span className="text-[10px] text-muted-foreground ml-auto">{c.level.name}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Subjects</Label>
+                {(() => {
+                  const fs = formClassIds.length ? subjects.filter((s) => formClassIds.includes(s.classId)) : []
+                  return fs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">Select at least one class to see available subjects.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {fs.map((s) => {
+                        const active = formSubjectIds.includes(s.id)
+                        return (
+                          <button key={s.id} type="button" onClick={() => setFormSubjectIds((prev) => prev.includes(s.id) ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
+                            className={cn("flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-all", active ? "border-primary bg-primary/5 text-primary font-medium" : "border-border hover:border-primary/30")}>
+                            <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", active ? "border-primary bg-primary text-white" : "border-muted-foreground/30")}>
+                              {active && <Check className="h-3 w-3" />}
+                            </div>
+                            <span>{s.name}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">{s.code}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-border p-3">
+                <div>
+                  <Label className="text-sm font-medium">Class Teacher</Label>
+                  <p className="text-xs text-muted-foreground">Mark as homeroom teacher</p>
+                </div>
+                <Switch checked={formIsClassTeacher} onCheckedChange={setFormIsClassTeacher} />
+              </div>
+            </div>
+          )}
           <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">
             {editing ? "Update Staff" : "Create Staff"}
           </Button>
@@ -332,19 +404,34 @@ export default function TeachersPage() {
         <div className="space-y-5">
           <div className="space-y-2">
             <Label>Classes</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {classes.map((c) => {
-                const active = selectedClassIds.includes(c.id)
-                return (
-                  <button key={c.id} type="button" onClick={() => toggleClassId(c.id)}
-                    className={cn("flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-all", active ? "border-primary bg-primary/5 text-primary font-medium" : "border-border hover:border-primary/30")}>
-                    <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", active ? "border-primary bg-primary text-white" : "border-muted-foreground/30")}>
-                      {active && <Check className="h-3 w-3" />}
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {(() => {
+                const grouped: Record<string, any[]> = {}
+                for (const c of classes) {
+                  const key = c.level?.name || "Other"
+                  if (!grouped[key]) grouped[key] = []
+                  grouped[key].push(c)
+                }
+                return Object.entries(grouped).map(([levelName, clsList]) => (
+                  <div key={levelName}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1.5">{levelName}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {clsList.map((c) => {
+                        const active = selectedClassIds.includes(c.id)
+                        return (
+                          <button key={c.id} type="button" onClick={() => toggleClassId(c.id)}
+                            className={cn("flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm text-left transition-all", active ? "border-primary bg-primary/5 text-primary font-medium" : "border-border hover:border-primary/30")}>
+                            <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", active ? "border-primary bg-primary text-white" : "border-muted-foreground/30")}>
+                              {active && <Check className="h-3 w-3" />}
+                            </div>
+                            {c.name} {c.arm && <span className="text-muted-foreground">- {c.arm}</span>}
+                          </button>
+                        )
+                      })}
                     </div>
-                    {c.name} {c.arm && <span className="text-muted-foreground">- {c.arm}</span>}
-                  </button>
-                )
-              })}
+                  </div>
+                ))
+              })()}
             </div>
           </div>
 

@@ -15,6 +15,21 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log("[Prisma Seed] Starting...")
 
+  // Seed Levels
+  const levels = [
+    { name: "Nursery", slug: "nursery", sortOrder: 1 },
+    { name: "Primary", slug: "primary", sortOrder: 2 },
+    { name: "Junior Secondary", slug: "jss", sortOrder: 3 },
+    { name: "Senior Secondary", slug: "sss", sortOrder: 4 },
+  ]
+  for (const lvl of levels) {
+    const existing = await prisma.level.findUnique({ where: { slug: lvl.slug } })
+    if (!existing) {
+      await prisma.level.create({ data: lvl })
+      console.log(`[Prisma Seed] Created level: ${lvl.name}`)
+    }
+  }
+
   // Check if school already exists
   const existingSchool = await prisma.school.findUnique({
     where: { slug: "royal-kiddies-academy" },
@@ -198,6 +213,17 @@ async function main() {
     await prisma.user.create({ data: user })
     console.log(`[Prisma Seed] Created user: ${user.email} (${user.role})`)
     createdCount++
+  }
+
+  // Link school to all levels
+  const allLevels = await prisma.level.findMany()
+  for (const lvl of allLevels) {
+    const existingLink = await prisma.schoolLevel.findUnique({
+      where: { schoolId_levelId: { schoolId, levelId: lvl.id } },
+    })
+    if (!existingLink) {
+      await prisma.schoolLevel.create({ data: { schoolId, levelId: lvl.id } })
+    }
   }
 
   console.log(`[Prisma Seed] Complete! Created ${createdCount} users, skipped ${skippedCount} existing.`)

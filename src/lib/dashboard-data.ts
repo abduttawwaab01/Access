@@ -65,8 +65,12 @@ export async function getTeacherDashboardData(userId: string): Promise<TeacherDa
   }
   const staffId = staffData.id || ""
 
-  const ta = await db.teacherAssignments.getByTeacher(staffId)
-  const classIds: string[] = (ta?.classIds as string[]) || []
+  const [tc, ts] = await Promise.all([
+    db.teacherClasses.getByTeacher(staffId),
+    db.teacherSubjects.getByTeacher(staffId),
+  ])
+  const classIds: string[] = tc.map((t: any) => t.classId)
+  const subjectIds: string[] = ts.map((t: any) => t.subjectId)
 
   const [classes, notes, asgns, tt, evts, logs, studentCount] = await Promise.all([
     db.classes.getAll().catch(() => []),

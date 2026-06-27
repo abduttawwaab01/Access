@@ -24,11 +24,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const item = await db.staff.create(body)
+  const { classIds, subjectIds, isClassTeacher, ...staffData } = body
+  const item = await db.staff.create(staffData)
+  const schoolId = item.schoolId
 
   if (body.email) {
     const existingUser = await db.users.getByEmail(body.email)
-    const schoolId = item.schoolId
     if (existingUser) {
       if (body.password) {
         const hashed = await bcrypt.hash(body.password, 10)
@@ -48,6 +49,13 @@ export async function POST(request: Request) {
       })
       await db.staff.update(item.id, { userId: user.id })
     }
+  }
+
+  if (classIds?.length || subjectIds?.length) {
+    await Promise.all([
+      db.teacherClasses.setAssignments(item.id, classIds || [], isClassTeacher || false),
+      db.teacherSubjects.setAssignments(item.id, subjectIds || []),
+    ])
   }
 
   return NextResponse.json(item, { status: 201 })

@@ -139,11 +139,17 @@ If the answer requires specific data not listed here, note what data you'd need.
 }
 
 async function buildTeacherContext(teacherId: string): Promise<ContextResult> {
-  const ta = await db.teacherAssignments.getByTeacher(teacherId)
-  const teacher = await db.staff.getById(teacherId)
+  const [teacherClasses, teacherSubjects, teacher] = await Promise.all([
+    db.teacherClasses.getByTeacher(teacherId),
+    db.teacherSubjects.getByTeacher(teacherId),
+    db.staff.getById(teacherId),
+  ])
   const schoolSettings = await db.school.get()
 
-  if (!ta) {
+  const taClassIds = teacherClasses.map((tc: any) => tc.classId)
+  const taSubjectIds = teacherSubjects.map((ts: any) => ts.subjectId)
+
+  if (taClassIds.length === 0) {
     return {
       systemPrompt: `You are an AI assistant for a teacher at "${(schoolSettings as any)?.name || "Access School"}".
 No class assignments found for your account. Please contact the admin.
@@ -159,8 +165,6 @@ Answer general teaching questions concisely with bullet points.`,
   const lessonNotes = await db.lessonNotes.getAll()
   const assignments = await db.assignments.getAll()
 
-  const taClassIds = (ta as any).classIds || []
-  const taSubjectIds = (ta as any).subjectIds || []
   const myClasses = classes.filter((c: any) => taClassIds.includes(c.id))
   const mySubjects = subjects.filter((s: any) => taSubjectIds.includes(s.id))
   const myStudents = students.filter((s: any) => taClassIds.includes(s.classId))

@@ -18,15 +18,18 @@ const sections = ["Science", "Arts", "Commerce", "Technology", "General"]
 
 export default function ClassesPage() {
   const [items, setItems] = useState<any[]>([])
+  const [levels, setLevels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ name: "", arm: "", section: "" })
+  const [form, setForm] = useState({ name: "", arm: "", section: "", levelId: "" })
 
   const fetchItems = async () => {
-    const res = await fetch("/api/classes")
-    const data = await res.json()
+    const [cRes, lRes] = await Promise.all([fetch("/api/classes"), fetch("/api/levels")])
+    const data = await cRes.json()
+    const lvlData = await lRes.json()
     setItems(data)
+    setLevels(lvlData.map((sl: any) => sl.level))
     setLoading(false)
   }
 
@@ -36,13 +39,13 @@ export default function ClassesPage() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ name: "", arm: "", section: "" })
+    setForm({ name: "", arm: "", section: "", levelId: "" })
     setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
     setEditing(item)
-    setForm({ name: item.name, arm: item.arm || "", section: item.section || "" })
+    setForm({ name: item.name, arm: item.arm || "", section: item.section || "", levelId: item.levelId || "" })
     setSheetOpen(true)
   }
 
@@ -105,6 +108,7 @@ export default function ClassesPage() {
                               <div>
                                 <p className="font-semibold">{item.name}{item.arm ? ` ${item.arm}` : ""}</p>
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                  {item.level?.name && <span>{item.level.name}</span>}
                                   {item.section && <span>{item.section}</span>}
                                   <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.studentCount || 0} students</span>
                                 </div>
@@ -147,6 +151,15 @@ export default function ClassesPage() {
                 <SelectTrigger className="h-12"><SelectValue placeholder="Select section" /></SelectTrigger>
                 <SelectContent>
                   {sections.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="level">Level</Label>
+              <Select value={form.levelId} onValueChange={(v) => update("levelId", v)}>
+                <SelectTrigger className="h-12"><SelectValue placeholder="Select level" /></SelectTrigger>
+                <SelectContent>
+                  {levels.map((l: any) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

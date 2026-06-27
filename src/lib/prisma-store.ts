@@ -258,17 +258,19 @@ export const db = {
 
   classes: {
     getAll: async () => {
-      return prisma.class.findMany({ orderBy: { createdAt: "desc" } })
+      return prisma.class.findMany({ orderBy: { createdAt: "desc" }, include: { level: true } })
     },
     getById: async (id: string) => {
-      return prisma.class.findUnique({ where: { id } })
+      return prisma.class.findUnique({ where: { id }, include: { level: true } })
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
-      return prisma.class.create({ data: { ...data, schoolId } })
+      const { classIds, subjectIds, ...rest } = data
+      return prisma.class.create({ data: { ...rest, schoolId }, include: { level: true } })
     },
     update: async (id: string, data: any) => {
-      return prisma.class.update({ where: { id }, data })
+      const { classIds, subjectIds, ...rest } = data
+      return prisma.class.update({ where: { id }, data: rest, include: { level: true } })
     },
     delete: async (id: string) => {
       await prisma.class.delete({ where: { id } })
@@ -337,6 +339,23 @@ export const db = {
     },
   },
 
+  levels: {
+    getAll: async () => {
+      return prisma.level.findMany({ orderBy: { sortOrder: "asc" } })
+    },
+    getBySlug: async (slug: string) => {
+      return prisma.level.findUnique({ where: { slug } })
+    },
+    getSchoolLevels: async () => {
+      const schoolId = await ensureSchoolId()
+      return prisma.schoolLevel.findMany({
+        where: { schoolId },
+        include: { level: true },
+        orderBy: { level: { sortOrder: "asc" } },
+      })
+    },
+  },
+
   teacherAssignments: {
     getAll: async () => {
       return prisma.teacherAssignment.findMany()
@@ -381,6 +400,69 @@ export const db = {
     },
     delete: async (id: string) => {
       await prisma.teacherAssignment.delete({ where: { id } })
+      return true
+    },
+  },
+
+  teacherClasses: {
+    getByTeacher: async (teacherId: string) => {
+      return prisma.teacherClass.findMany({
+        where: { teacherId },
+        include: { class: { include: { level: true } } },
+      })
+    },
+    getByClass: async (classId: string) => {
+      return prisma.teacherClass.findMany({
+        where: { classId },
+        include: { teacher: true },
+      })
+    },
+    setAssignments: async (teacherId: string, classIds: string[], isClassTeacher: boolean) => {
+      const schoolId = await ensureSchoolId()
+      await prisma.teacherClass.deleteMany({ where: { teacherId } })
+      if (classIds.length === 0) return []
+      return prisma.teacherClass.createManyAndReturn({
+        data: classIds.map((classId) => ({
+          teacherId,
+          classId,
+          isClassTeacher,
+          schoolId,
+        })),
+      })
+    },
+    delete: async (id: string) => {
+      await prisma.teacherClass.delete({ where: { id } })
+      return true
+    },
+  },
+
+  teacherSubjects: {
+    getByTeacher: async (teacherId: string) => {
+      return prisma.teacherSubject.findMany({
+        where: { teacherId },
+        include: { subject: { include: { class: true } } },
+      })
+    },
+    getBySubject: async (subjectId: string) => {
+      return prisma.teacherSubject.findMany({
+        where: { subjectId },
+        include: { teacher: true },
+      })
+    },
+    setAssignments: async (teacherId: string, subjectIds: string[]) => {
+      const schoolId = await ensureSchoolId()
+      await prisma.teacherSubject.deleteMany({ where: { teacherId } })
+      if (subjectIds.length === 0) return []
+      return prisma.teacherSubject.createManyAndReturn({
+        data: subjectIds.map((subjectId) => ({
+          teacherId,
+          subjectId,
+          schoolId,
+        })),
+      })
+    },
+    delete: async (id: string) => {
+      await prisma.teacherSubject.delete({ where: { id } })
       return true
     },
   },

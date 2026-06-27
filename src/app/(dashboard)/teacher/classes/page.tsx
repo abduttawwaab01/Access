@@ -34,7 +34,7 @@ export default function TeacherClassesPage() {
       const allClasses = await clsRes.json()
       const allStudents = await stuRes.json()
 
-      const assignedIds: string[] = Array.isArray(ta) && ta.length > 0 ? ta[0]?.classIds || [] : []
+      const assignedIds: string[] = ta?.classIds || []
       const myClasses = allClasses.filter((c: any) => assignedIds.includes(c.id))
 
       const classStudentMap: Record<string, any[]> = {}
@@ -90,14 +90,14 @@ export default function TeacherClassesPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-lg">{cls.name}{cls.arm ? ` ${cls.arm}` : ""}</p>
-                          <p className="text-xs text-muted-foreground">{cls.section || "General"}</p>
+                          <p className="text-xs text-muted-foreground">{cls.level?.name || cls.section || "General"}</p>
                           <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {cls.students?.length || 0} students</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <Badge variant="outline" className="text-[10px]">{cls.section || "General"}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{cls.level?.name || cls.section || "General"}</Badge>
                         {expanded === cls.id ? (
                           <ChevronUp className="h-4 w-4 text-muted-foreground mt-2" />
                         ) : (
