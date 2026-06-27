@@ -1,16 +1,7 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/prisma-store"
+import { cacheHeader } from "@/lib/cache-header"
+import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
-
-async function mapSubjectNames(results: any[]): Promise<any[]> {
-  if (!results.length) return results
-  const subjects = await prisma.subject.findMany({ select: { id: true, name: true } })
-  const subjectMap = Object.fromEntries(subjects.map((s) => [s.id, s.name]))
-  return results.map((r: any) => ({
-    ...r,
-    subject: subjectMap[r.subjectId] || r.subjectId,
-  }))
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -19,27 +10,51 @@ export async function GET(request: Request) {
   const subjectId = searchParams.get("subjectId")
   const term = searchParams.get("term") || undefined
   const examId = searchParams.get("examId") || undefined
+  const pageRaw = searchParams.get("page")
+  const pageSizeRaw = searchParams.get("pageSize")
 
+  if (pageRaw) {
+    const page = parseInt(pageRaw, 10)
+    const pageSize = parseInt(pageSizeRaw || "50", 10)
+    const where: any = {}
+    if (studentId) where.studentId = studentId
+    if (classId) where.classId = classId
+    if (subjectId) where.subjectId = subjectId
+    if (term) where.term = term
+    if (examId) where.examId = examId
+    const session = searchParams.get("session") || undefined
+    if (session) where.session = session
+
+    const result = await paginatedQuery(
+      prisma.result,
+      { where, include: { subject: true }, orderBy: { createdAt: "desc" } },
+      { page, pageSize }
+    )
+
+    const mapped = result.data.map((r: any) => ({
+      ...r,
+      subject: r.subject?.name || r.subjectId,
+    }))
+
+    return NextResponse.json({ data: mapped, total: result.total, page: result.page, pageSize: result.pageSize, totalPages: result.totalPages }, cacheHeader())
+  }
+
+  const session = searchParams.get("session") || undefined
+  let results: any[]
   if (classId && subjectId) {
-    const session = searchParams.get("session") || undefined
-    const results = await db.results.getByClassAndSubject(classId, subjectId, term, session, examId)
-    return NextResponse.json(await mapSubjectNames(results))
+    results = await db.results.getByClassAndSubject(classId, subjectId, term, session, examId)
+  } else if (classId && !subjectId) {
+    results = await db.results.getByClass(classId, term, session)
+  } else if (studentId) {
+    if (term) results = await db.results.getByStudentAndTerm(studentId, term)
+    else results = await db.results.getByStudent(studentId)
+  } else {
+    results = await db.results.getAll()
   }
-  if (classId && !subjectId) {
-    const session = searchParams.get("session") || undefined
-    const results = await db.results.getByClass(classId, term, session)
-    return NextResponse.json(await mapSubjectNames(results))
-  }
-  if (studentId) {
-    if (term) {
-      const results = await db.results.getByStudentAndTerm(studentId, term)
-      return NextResponse.json(await mapSubjectNames(results))
-    }
-    const results = await db.results.getByStudent(studentId)
-    return NextResponse.json(await mapSubjectNames(results))
-  }
-  const results = await db.results.getAll()
-  return NextResponse.json(await mapSubjectNames(results))
+  const subjects = await prisma.subject.findMany({ select: { id: true, name: true } })
+  const subjectMap = Object.fromEntries(subjects.map((s: any) => [s.id, s.name]))
+  results = results.map((r: any) => ({ ...r, subject: subjectMap[r.subjectId] || r.subjectId }))
+  return NextResponse.json(results, cacheHeader())
 }
 
 export async function POST(request: Request) {

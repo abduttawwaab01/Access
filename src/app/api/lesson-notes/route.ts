@@ -1,10 +1,42 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/prisma-store"
+import { cacheHeader } from "@/lib/cache-header"
+import { db, paginatedQuery } from "@/lib/prisma-store"
+import { prisma } from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
   const teacherId = searchParams.get("teacherId")
+  const pageRaw = searchParams.get("page")
+  const pageSizeRaw = searchParams.get("pageSize")
+
+  if (pageRaw) {
+    const page = parseInt(pageRaw, 10)
+    const pageSize = parseInt(pageSizeRaw || "50", 10)
+    if (teacherId) {
+      const ta = await db.teacherAssignments.getByTeacher(teacherId)
+      if (!ta) {
+        return NextResponse.json({ data: [], total: 0, page, pageSize, totalPages: 0 }, cacheHeader())
+      }
+      const cids = (ta.classIds || []) as string[]
+      const sids = (ta.subjectIds || []) as string[]
+      const where: any = { classId: { in: cids }, subjectId: { in: sids } }
+      const result = await paginatedQuery(
+        prisma.lessonNote,
+        { where, orderBy: { createdAt: "desc" } },
+        { page, pageSize }
+      )
+      return NextResponse.json(result, cacheHeader())
+    }
+    const where: any = {}
+    if (classId) where.classId = classId
+    const result = await paginatedQuery(
+      prisma.lessonNote,
+      { where, orderBy: { createdAt: "desc" } },
+      { page, pageSize }
+    )
+    return NextResponse.json(result, cacheHeader())
+  }
 
   let result: any[]
   if (teacherId) {
@@ -26,7 +58,7 @@ export async function GET(request: NextRequest) {
     creatorName: n.createdBy ? (() => { const s = staff.find((s: any) => s.id === n.createdBy); return s ? `${s.firstName} ${s.lastName}` : "Unknown" })() : "Unknown",
     approverName: n.approvedBy ? (() => { const s = staff.find((s: any) => s.id === n.approvedBy); return s ? `${s.firstName} ${s.lastName}` : "Unknown" })() : null,
   }))
-  return NextResponse.json(result)
+  return NextResponse.json(result, cacheHeader())
 }
 
 export async function POST(request: NextRequest) {

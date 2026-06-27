@@ -198,11 +198,11 @@ export function ExamDownload({ exam, questions }: ExamDownloadProps) {
   </body>
   </html>`
 
-    const blob = new Blob([html], { type: "application/msword" })
+    const blob = new Blob([html], { type: "application/msword;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `${exam.title.replace(/\s+/g, "_")}_Questions.docx`
+    a.download = `${exam.title.replace(/\s+/g, "_")}_Questions.doc`
     a.click()
     URL.revokeObjectURL(url)
     setLoading(null)

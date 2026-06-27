@@ -35,17 +35,20 @@ export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState("all")
 
   useEffect(() => {
-    const fetchAll = async () => {
-      const [stuRes, stfRes, clsRes, subRes, resRes, attRes, feeRes] = await Promise.all([
-        fetch("/api/students"), fetch("/api/staff"), fetch("/api/classes"),
-        fetch("/api/subjects"), fetch("/api/results"), fetch("/api/attendance-records"), fetch("/api/fees"),
-      ])
-      setStudents(await stuRes.json()); setStaff(await stfRes.json())
-      setClasses(await clsRes.json()); setSubjects(await subRes.json())
-      setResults(await resRes.json()); setAttendance(await attRes.json()); setFees(await feeRes.json())
+    const fetchData = async () => {
+      setLoading(true)
+      const res = await fetch("/api/analytics")
+      const data = await res.json()
+      setStudents(data.students || [])
+      setStaff(data.staff || [])
+      setClasses(data.classes || [])
+      setSubjects(data.subjects || [])
+      setResults(data.results || [])
+      setAttendance(data.attendanceRecords || [])
+      setFees(data.fees || [])
       setLoading(false)
     }
-    fetchAll()
+    fetchData()
   }, [])
 
   const totalStudents = students.length

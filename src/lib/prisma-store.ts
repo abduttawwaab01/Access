@@ -1,6 +1,31 @@
 import { prisma } from "./prisma"
 import { store } from "./api-store"
 
+type PaginationParams = { page?: number; pageSize?: number }
+
+export type PaginatedResult<T> = {
+  data: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export async function paginatedQuery<T, A extends { where?: any; orderBy?: any; include?: any; select?: any }>(
+  delegate: { findMany: (args: any) => Promise<T[]>; count: (args: { where?: any }) => Promise<number> },
+  args: A,
+  params: PaginationParams = {}
+): Promise<PaginatedResult<T>> {
+  const page = Math.max(1, params.page ?? 1)
+  const pageSize = Math.min(500, Math.max(1, params.pageSize ?? 500))
+  const skip = (page - 1) * pageSize
+  const [data, total] = await Promise.all([
+    delegate.findMany({ ...args, skip, take: pageSize }),
+    delegate.count({ where: (args as any).where }),
+  ])
+  return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
+}
+
 async function ensureSchoolId(): Promise<string> {
   const school = await prisma.school.findFirst()
   return school?.id || ""

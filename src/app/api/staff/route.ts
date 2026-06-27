@@ -1,17 +1,25 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/prisma-store"
+import { cacheHeader } from "@/lib/cache-header"
+import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get("userId")
+  const pageRaw = searchParams.get("page")
   if (userId) {
     const staff = await db.staff.getByUserId(userId)
-    if (!staff) return NextResponse.json({ error: "Staff not found" }, { status: 404 })
-    return NextResponse.json(staff)
+    if (!staff) return NextResponse.json({ error: "Staff not found" }, cacheHeader())
+    return NextResponse.json(staff, cacheHeader())
   }
-  return NextResponse.json(await db.staff.getAll())
+  if (pageRaw) {
+    const page = parseInt(pageRaw, 10)
+    const pageSize = parseInt(searchParams.get("pageSize") || "50", 10)
+    const result = await paginatedQuery(prisma.staff, { orderBy: { firstName: "asc" } }, { page, pageSize })
+    return NextResponse.json(result, cacheHeader())
+  }
+  return NextResponse.json(await db.staff.getAll(), cacheHeader())
 }
 
 export async function POST(request: Request) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
@@ -83,6 +83,10 @@ export default function QuestionBankPage() {
   const [filterTopic, setFilterTopic] = useState("")
   const [filterDifficulty, setFilterDifficulty] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
+  const [page, setPage] = useState(1)
+  const pageSize = 50
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   const assignedClassIds = useMemo(() => [...new Set(assignments.map((a: any) => a.classId))], [assignments])
   const assignedSubjectIds = useMemo(() => [...new Set(assignments.map((a: any) => a.subjectId))], [assignments])
@@ -90,14 +94,28 @@ export default function QuestionBankPage() {
   const assignedSubjects = useMemo(() => subjects.filter((s) => assignedSubjectIds.includes(s.id)), [subjects, assignedSubjectIds])
 
   const fetchData = async () => {
+    const params = new URLSearchParams()
+    params.set("teacherId", teacherId)
+    params.set("page", String(page))
+    params.set("pageSize", String(pageSize))
+    if (filterClass !== "all") params.set("classId", filterClass)
+    if (filterSubject !== "all") params.set("subjectId", filterSubject)
+    if (filterTopic !== "") params.set("topic", filterTopic)
+    if (filterDifficulty !== "all") params.set("difficulty", filterDifficulty)
+    if (filterStatus === "approved") params.set("approved", "true")
+    if (filterStatus === "pending") params.set("approved", "false")
+
     const [qRes, aRes, cRes, sRes, tRes] = await Promise.all([
-      fetch(`/api/question-bank?teacherId=${teacherId}`),
+      fetch(`/api/question-bank?${params}`),
       fetch("/api/teacher-assignments"),
       fetch("/api/classes"),
       fetch("/api/subjects"),
       fetch("/api/topics"),
     ])
-    setQuestions(await qRes.json())
+    const qData = await qRes.json()
+    setQuestions(qData.data || [])
+    setTotal(qData.total || 0)
+    setTotalPages(qData.totalPages || 0)
     setAssignments(await aRes.json())
     setClasses(await cRes.json())
     setSubjects(await sRes.json())
@@ -105,18 +123,11 @@ export default function QuestionBankPage() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    if (!userId) return
-    fetch("/api/staff?userId=" + userId)
-      .then((r) => r.json())
-      .then((staffData) => setTeacherId(staffData?.id || ""))
-      .catch(() => setLoading(false))
-  }, [userId])
+  const debouncedSearch = (value: string) => setFilterTopic(value)
 
   useEffect(() => {
-    if (!teacherId) return
-    fetchData().catch(() => setLoading(false))
-  }, [teacherId])
+    fetchData()
+  }, [page, filterClass, filterSubject, filterTopic, filterDifficulty, filterStatus])
 
   const update = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }))
 
@@ -212,16 +223,6 @@ export default function QuestionBankPage() {
     update("options", opts)
   }
 
-  const filtered = questions.filter((q) => {
-    if (filterClass !== "all" && q.classId !== filterClass) return false
-    if (filterSubject !== "all" && q.subjectId !== filterSubject) return false
-    if (filterTopic && !q.topic?.toLowerCase().includes(filterTopic.toLowerCase())) return false
-    if (filterDifficulty !== "all" && q.difficulty !== filterDifficulty) return false
-    if (filterStatus === "approved" && !q.approved) return false
-    if (filterStatus === "pending" && q.approved) return false
-    return true
-  })
-
   const canEdit = (q: any) => q.teacherId === teacherId && q.status !== "approved"
 
   const getClassName = (id: string) => classes.find((c) => c.id === id)
@@ -238,7 +239,7 @@ export default function QuestionBankPage() {
           className="h-10 pl-9"
         />
       </div>
-      <Select value={filterClass} onValueChange={(v) => { if (v) setFilterClass(v) }}>
+      <Select value={filterClass} onValueChange={(v) => { if (v) { setFilterClass(v); setPage(1) } }}>
         <SelectTrigger className="h-10 w-full sm:w-[150px]"><SelectValue placeholder="All classes" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Classes</SelectItem>
@@ -247,7 +248,7 @@ export default function QuestionBankPage() {
           ))}
         </SelectContent>
       </Select>
-      <Select value={filterSubject} onValueChange={(v) => { if (v) setFilterSubject(v) }}>
+      <Select value={filterSubject} onValueChange={(v) => { if (v) { setFilterSubject(v); setPage(1) } }}>
         <SelectTrigger className="h-10 w-full sm:w-[150px]"><SelectValue placeholder="All subjects" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Subjects</SelectItem>
@@ -256,7 +257,7 @@ export default function QuestionBankPage() {
           ))}
         </SelectContent>
       </Select>
-      <Select value={filterDifficulty} onValueChange={(v) => { if (v) setFilterDifficulty(v) }}>
+      <Select value={filterDifficulty} onValueChange={(v) => { if (v) { setFilterDifficulty(v); setPage(1) } }}>
         <SelectTrigger className="h-10 w-full sm:w-[130px]"><SelectValue placeholder="Difficulty" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Levels</SelectItem>
@@ -265,7 +266,7 @@ export default function QuestionBankPage() {
           ))}
         </SelectContent>
       </Select>
-      <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
+      <Select value={filterStatus} onValueChange={(v) => { if (v) { setFilterStatus(v); setPage(1) } }}>
         <SelectTrigger className="h-10 w-full sm:w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
@@ -281,7 +282,7 @@ export default function QuestionBankPage() {
     <div className="p-4 md:p-6">
       <PageHeader
         title="Question Bank"
-        description={`${questions.length} questions`}
+        description={`${total} questions`}
         actionLabel="Add Question"
         onAction={openCreate}
       />
@@ -295,7 +296,7 @@ export default function QuestionBankPage() {
             <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : questions.length === 0 ? (
         <EmptyState
           title="No questions found"
           description={filterClass !== "all" || filterSubject !== "all" || filterTopic ? "Try different filters" : "Add your first question to the bank"}
@@ -303,7 +304,7 @@ export default function QuestionBankPage() {
       ) : (
         <div className="space-y-2">
           <AnimatePresence>
-            {filtered.map((item, i) => {
+            {questions.map((item: any, i: number) => {
               const Icon = typeIcons[item.type] || HelpCircle
               const isOwner = item.teacherId === teacherId
               return (
@@ -361,6 +362,20 @@ export default function QuestionBankPage() {
               )
             })}
           </AnimatePresence>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground px-3">
+            Page {page} of {totalPages} ({total} total)
+          </span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </Button>
         </div>
       )}
 

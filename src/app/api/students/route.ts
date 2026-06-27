@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/prisma-store"
+import { cacheHeader } from "@/lib/cache-header"
+import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
@@ -28,17 +29,31 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
   const userId = searchParams.get("userId") || undefined
+  const pageRaw = searchParams.get("page")
 
   if (userId) {
     const student = await resolveStudent(userId)
     if (!student) {
-      return NextResponse.json({ error: "Student not found" }, { status: 404 })
+      return NextResponse.json({ error: "Student not found" }, cacheHeader())
     }
-    return NextResponse.json(student)
+    return NextResponse.json(student, cacheHeader())
+  }
+
+  if (pageRaw) {
+    const page = parseInt(pageRaw, 10)
+    const pageSize = parseInt(searchParams.get("pageSize") || "50", 10)
+    const where: any = {}
+    if (classId) where.classId = classId
+    const result = await paginatedQuery(
+      prisma.student,
+      { where, include: { class: true }, orderBy: { firstName: "asc" } },
+      { page, pageSize }
+    )
+    return NextResponse.json(result, cacheHeader())
   }
 
   const data = await db.students.getAll(classId)
-  return NextResponse.json(data)
+  return NextResponse.json(data, cacheHeader())
 }
 
 export async function POST(request: Request) {

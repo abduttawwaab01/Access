@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/prisma-store"
+import { cacheHeader } from "@/lib/cache-header"
+import { db, paginatedQuery } from "@/lib/prisma-store"
+import { prisma } from "@/lib/prisma"
 
 function mapQuestion(q: any) {
   return {
@@ -27,6 +29,42 @@ export async function GET(request: NextRequest) {
   const subjectId = searchParams.get("subjectId") || undefined
   const approved = searchParams.get("approved")
   const teacherId = searchParams.get("teacherId")
+  const pageRaw = searchParams.get("page")
+  const pageSizeRaw = searchParams.get("pageSize")
+
+  if (pageRaw) {
+    const page = parseInt(pageRaw, 10)
+    const pageSize = parseInt(pageSizeRaw || "50", 10)
+    let where: any = {}
+    if (classId) where.classId = classId
+    if (subjectId) where.subjectId = subjectId
+    if (approved === "true") where.approved = true
+    else if (approved === "false") where.approved = false
+    const difficulty = searchParams.get("difficulty")
+    if (difficulty) where.difficulty = difficulty
+
+    if (teacherId) {
+      const ta = await db.teacherAssignments.getByTeacher(teacherId)
+      if (!ta) {
+        return NextResponse.json({ data: [], total: 0, page, pageSize, totalPages: 0 }, cacheHeader())
+      }
+      const cids = (ta.classIds || []) as string[]
+      const sids = (ta.subjectIds || []) as string[]
+      where = { ...where, classId: { in: cids }, subjectId: { in: sids } }
+    }
+
+    const { data, total, page: p, pageSize: ps, totalPages } = await paginatedQuery(
+      prisma.question,
+      { where, orderBy: { createdAt: "desc" }, include: { subject: true, class: true } },
+      { page, pageSize }
+    )
+    const mapped = data.map((q: any) => ({
+      ...mapQuestion(q),
+      subjectName: q.subject?.name || "Unknown",
+      className: q.class?.name || "Unknown",
+    }))
+    return NextResponse.json({ data: mapped, total, page: p, pageSize: ps, totalPages }, cacheHeader())
+  }
 
   let result: any[]
   if (teacherId) {
@@ -49,7 +87,7 @@ export async function GET(request: NextRequest) {
     subjectName: subjects.find((s: any) => s.id === q.subjectId)?.name || "Unknown",
     className: classes.find((c: any) => c.id === q.classId)?.name || "Unknown",
   }))
-  return NextResponse.json(result)
+  return NextResponse.json(result, cacheHeader())
 }
 
 export async function POST(request: NextRequest) {

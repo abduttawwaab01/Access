@@ -84,6 +84,8 @@ model User {
   staff     Staff?    @relation("StaffUser")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([schoolId, role])
 }
 
 model Announcement {
@@ -107,6 +109,8 @@ model Announcement {
   reviews        AnnouncementReview[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
+
+  @@index([schoolId, audience, active])
 }
 
 model AnnouncementReview {
@@ -244,6 +248,8 @@ model Student {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([schoolId, classId])
 }
 
 model Staff {
@@ -275,6 +281,8 @@ model Staff {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
 }
 
 model TeacherAssignment {
@@ -313,8 +321,10 @@ model LessonNote {
   school      School   @relation(fields: [schoolId], references: [id])
   class       Class    @relation(fields: [classId], references: [id])
   subjectRel  Subject? @relation(fields: [subjectId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, classId, subjectId, createdBy])
 }
 
 model SchemeOfWork {
@@ -331,8 +341,10 @@ model SchemeOfWork {
   school     School   @relation(fields: [schoolId], references: [id])
   class      Class    @relation(fields: [classId], references: [id])
   subject    Subject  @relation(fields: [subjectId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, classId, subjectId])
 }
 
 model Assignment {
@@ -387,6 +399,8 @@ model TimetableEntry {
   school      School        @relation(fields: [schoolId], references: [id])
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
+  @@index([schoolId, classId, day])
 }
 
 model Result {
@@ -414,6 +428,8 @@ model Result {
   exam       Exam?    @relation(fields: [examId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([schoolId, studentId, classId, term, session])
 }
 
 model AttendanceRecord {
@@ -428,6 +444,7 @@ model AttendanceRecord {
   updatedAt DateTime @updatedAt
 
   @@unique([studentId, date])
+  @@index([schoolId, studentId, date])
 }
 
 model Fee {
@@ -442,6 +459,8 @@ model Fee {
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([schoolId, studentId])
 }
 
 model ParentLink {
@@ -452,6 +471,8 @@ model ParentLink {
   school    School   @relation(fields: [schoolId], references: [id])
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@index([schoolId, parentId, studentId])
 }
 
 model AttendanceLog {
@@ -466,6 +487,8 @@ model AttendanceLog {
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([schoolId, userId, date])
 }
 
 model AttendanceQRCode {
@@ -486,6 +509,8 @@ model ReportCard {
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([schoolId, studentId])
 }
 
 model ReportCardEntry {
@@ -509,6 +534,7 @@ model ReportCardEntry {
   updatedAt        DateTime @updatedAt
 
   @@unique([studentId, term, session])
+  @@index([schoolId, classId, term, session])
 }
 
 model Topic {
@@ -520,6 +546,8 @@ model Topic {
   subject   Subject  @relation(fields: [subjectId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([schoolId, subjectId])
 }
 
 model LessonQuizResult {
@@ -535,6 +563,8 @@ model LessonQuizResult {
   school        School   @relation(fields: [schoolId], references: [id])
   student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   attemptedAt   DateTime @default(now())
+
+  @@index([schoolId, studentId, lessonNoteId])
 }
 
 model Question {
@@ -558,6 +588,8 @@ model Question {
   class      Class    @relation(fields: [classId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([schoolId, classId, subjectId, approved, difficulty])
 }
 
 model Exam {
@@ -587,6 +619,8 @@ model Exam {
   results          Result[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([schoolId, classId, subjectId, status])
 }
 
 model ExamSession {
@@ -607,6 +641,8 @@ model ExamSession {
   student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([schoolId, examId, studentId, status])
 }
 
 model Submission {
@@ -624,6 +660,8 @@ model Submission {
   student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([schoolId, assignmentId, studentId, status])
 }
 
 model BankDetails {
@@ -665,6 +703,8 @@ model Payment {
   student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([schoolId, studentId, status])
 }
 
 model SalaryStructure {
@@ -694,6 +734,7 @@ model SalaryRecord {
   updatedAt   DateTime @updatedAt
 
   @@unique([staffId, month, year])
+  @@index([schoolId, staffId, month, year])
 }
 
 model Document {
@@ -708,6 +749,8 @@ model Document {
   student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   generatedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([schoolId, studentId, type])
 }
 
 model GradingConfig {
@@ -767,6 +810,8 @@ model AdmissionApplication {
   school              School   @relation(fields: [schoolId], references: [id])
   appliedAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  @@index([schoolId, status])
 }
 
 model Event {
@@ -782,6 +827,8 @@ model Event {
   school      School   @relation(fields: [schoolId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([schoolId, date, type])
 }
 
 model FeedbackTicket {
@@ -797,6 +844,8 @@ model FeedbackTicket {
   school     School   @relation(fields: [schoolId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([schoolId, status])
 }
 
 model WeeklyReport {
@@ -816,6 +865,8 @@ model WeeklyReport {
   class       Class    @relation(fields: [classId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([schoolId, studentId, classId, week])
 }
 
 model Conversation {
@@ -827,6 +878,8 @@ model Conversation {
   updatedAt  DateTime @updatedAt
   participants ConversationParticipant[]
   messages    Message[]
+
+  @@index([schoolId])
 }
 
 model ConversationParticipant {
@@ -846,4 +899,6 @@ model Message {
   content        String
   createdAt      DateTime @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

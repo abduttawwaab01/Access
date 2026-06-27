@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/prisma-store"
+import { db, paginatedQuery } from "@/lib/prisma-store"
+import { prisma } from "@/lib/prisma"
+import { cacheHeader } from "@/lib/cache-header"
 
 function mapQuestion(q: any) {
   return {
@@ -25,6 +27,32 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const subjectId = searchParams.get("subjectId") || undefined
   const classId = searchParams.get("classId") || undefined
+  const approved = searchParams.get("approved")
+  const pageRaw = searchParams.get("page")
+  const pageSizeRaw = searchParams.get("pageSize")
+
+  const where: any = {}
+  if (subjectId) where.subjectId = subjectId
+  if (classId) where.classId = classId
+  if (approved === "true") where.approved = true
+  else if (approved === "false") where.approved = false
+
+  if (pageRaw) {
+    const page = parseInt(pageRaw, 10)
+    const pageSize = parseInt(pageSizeRaw || "50", 10)
+    const { data, total, page: p, pageSize: ps, totalPages } = await paginatedQuery(
+      prisma.question,
+      { where, orderBy: { createdAt: "desc" }, include: { subject: true, class: true } },
+      { page, pageSize }
+    )
+    const mapped = data.map((q: any) => ({
+      ...mapQuestion(q),
+      subjectName: q.subject?.name || "Unknown",
+      className: q.class?.name || "Unknown",
+    }))
+    return NextResponse.json({ data: mapped, total, page: p, pageSize: ps, totalPages }, cacheHeader())
+  }
+
   const result = await db.questions.getAll(subjectId, classId)
   const subjects = await db.subjects.getAll()
   const classes = await db.classes.getAll()
@@ -32,7 +60,7 @@ export async function GET(request: Request) {
     ...mapQuestion(q),
     subjectName: subjects.find((s: any) => s.id === q.subjectId)?.name || "Unknown",
     className: classes.find((c: any) => c.id === q.classId)?.name || "Unknown",
-  })))
+  })), cacheHeader())
 }
 
 export async function POST(request: Request) {

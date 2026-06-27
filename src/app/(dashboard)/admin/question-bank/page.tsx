@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
@@ -60,24 +60,27 @@ export default function QuestionBankPage() {
   const [filterTopic, setFilterTopic] = useState("all")
   const [filterDifficulty, setFilterDifficulty] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [page, setPage] = useState(1)
+  const pageSize = 50
+  const [total, setTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
-  const fetchAll = async () => {
-    const [qRes, cRes, sRes, tRes, stRes] = await Promise.all([
-      fetch("/api/question-bank"),
-      fetch("/api/classes"),
-      fetch("/api/subjects"),
-      fetch("/api/topics"),
-      fetch("/api/staff"),
-    ])
-    setItems(await qRes.json())
-    setClasses(await cRes.json())
-    setSubjects(await sRes.json())
-    setAllTopics(await tRes.json())
-    setStaff(await stRes.json())
-    setLoading(false)
+  const debouncedSearchRef = useRef<NodeJS.Timeout>()
+
+  const debouncedSearch = (value: string) => {
+    if (debouncedSearchRef.current) clearTimeout(debouncedSearchRef.current)
+    debouncedSearchRef.current = setTimeout(() => {
+      setSearchQuery(value)
+      setPage(1)
+    }, 500)
   }
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    return () => {
+      if (debouncedSearchRef.current) clearTimeout(debouncedSearchRef.current)
+    }
+  }, [])
 
   const update = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
 
@@ -205,10 +208,10 @@ export default function QuestionBankPage() {
   }
 
   const toggleSelectAll = () => {
-    if (selected.size === filtered.length) {
+    if (selected.size === items.length) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(filtered.map((q) => q.id)))
+      setSelected(new Set(items.map((q) => q.id)))
     }
   }
 
@@ -223,20 +226,8 @@ export default function QuestionBankPage() {
     return s ? `${s.firstName} ${s.lastName}` : "Unknown"
   }
 
-  const filtered = items.filter((q) => {
-    if (filterClass !== "all" && q.classId !== filterClass) return false
-    if (filterSubject !== "all" && q.subjectId !== filterSubject) return false
-    if (filterTopic !== "all" && q.topic !== filterTopic) return false
-    if (filterDifficulty !== "all" && q.difficulty !== filterDifficulty) return false
-    if (filterStatus === "approved" && !q.approved) return false
-    if (filterStatus === "pending" && q.approved) return false
-    return true
-  })
-
-  const totalCount = items.length
-  const approvedCount = items.filter((q) => q.approved).length
-  const pendingCount = items.filter((q) => !q.approved).length
-  const allSelected = filtered.length > 0 && selected.size === filtered.length
+  const totalCount = total
+  const allSelected = items.length > 0 && selected.size === items.length
 
   const filterBarTopics = filterSubject === "all"
     ? allTopics
@@ -254,8 +245,6 @@ export default function QuestionBankPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {[
           { label: "Total Questions", value: totalCount, color: "text-primary" },
-          { label: "Approved", value: approvedCount, color: "text-green-600" },
-          { label: "Pending", value: pendingCount, color: "text-orange-600" },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -273,28 +262,6 @@ export default function QuestionBankPage() {
         ))}
       </div>
 
-      {pendingCount > 0 && (
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
-          <Button
-            size="sm"
-            className="animated-gradient border-0 text-white shadow-lg shadow-primary/25"
-            onClick={async () => {
-              const pendingIds = items.filter((q) => !q.approved).map((q) => q.id)
-              if (pendingIds.length === 0) return
-              const res = await fetch("/api/question-bank", {
-                method: "PUT", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "approveAll", ids: pendingIds, approvedBy: "4" }),
-              })
-              if (res.ok) { toast.success(`${pendingIds.length} questions approved`); fetchAll() }
-              else toast.error("Failed to approve all")
-            }}
-          >
-            <CheckCircle className="h-4 w-4 mr-1.5" />
-            Approve All Pending ({pendingCount})
-          </Button>
-        </motion.div>
-      )}
-
       <Card className="glass-card border-0 mb-4">
         <CardContent className="p-3 md:p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -302,46 +269,46 @@ export default function QuestionBankPage() {
             <span className="text-sm font-medium">Filters</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            <Select value={filterClass} onValueChange={(v) => { if (v) setFilterClass(v) }}>
-              <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Class" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterSubject} onValueChange={(v) => { if (v) { setFilterSubject(v); setFilterTopic("all") } }}>
-              <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Subject" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filterTopic} onValueChange={(v) => { if (v) setFilterTopic(v) }}>
-              <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Topic" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Topics</SelectItem>
-                {filterBarTopics.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filterDifficulty} onValueChange={(v) => { if (v) setFilterDifficulty(v) }}>
-              <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Difficulty" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Difficulties</SelectItem>
-                <SelectItem value="easy">Easy</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="hard">Hard</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={(v) => { if (v) setFilterStatus(v) }}>
-              <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={filterClass} onValueChange={(v) => { if (v) { setFilterClass(v); setPage(1) } }}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Class" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {classes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterSubject} onValueChange={(v) => { if (v) { setFilterSubject(v); setFilterTopic("all"); setPage(1) } }}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Subject" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subjects</SelectItem>
+                  {subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterTopic} onValueChange={(v) => { if (v) { setFilterTopic(v); setPage(1) } }}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Topic" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Topics</SelectItem>
+                  {filterBarTopics.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterDifficulty} onValueChange={(v) => { if (v) { setFilterDifficulty(v); setPage(1) } }}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Difficulty" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Difficulties</SelectItem>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={(v) => { if (v) { setFilterStatus(v); setPage(1) } }}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                </SelectContent>
+              </Select>
           </div>
         </CardContent>
       </Card>
@@ -366,7 +333,7 @@ export default function QuestionBankPage() {
 
       {loading ? (
         <div className="space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
-      ) : filtered.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState title="No questions found" description={filterClass !== "all" || filterSubject !== "all" ? "Try different filters" : "Add your first question to the bank"} />
       ) : (
         <div className="space-y-2">
@@ -384,7 +351,7 @@ export default function QuestionBankPage() {
             <div className="w-[10%] shrink-0 text-right">Actions</div>
           </div>
           <AnimatePresence>
-            {filtered.map((item, i) => {
+            {items.map((item: any, i: number) => {
               const Icon = typeIcons[item.type] || HelpCircle
               return (
                 <motion.div
@@ -494,6 +461,20 @@ export default function QuestionBankPage() {
               )
             })}
           </AnimatePresence>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground px-3">
+            Page {page} of {totalPages} ({total} total)
+          </span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </Button>
         </div>
       )}
 
