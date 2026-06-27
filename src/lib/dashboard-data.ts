@@ -68,13 +68,14 @@ export async function getTeacherDashboardData(userId: string): Promise<TeacherDa
   const ta = await db.teacherAssignments.getByTeacher(staffId)
   const classIds: string[] = (ta?.classIds as string[]) || []
 
-  const [classes, notes, asgns, tt, evts, logs] = await Promise.all([
+  const [classes, notes, asgns, tt, evts, logs, studentCount] = await Promise.all([
     db.classes.getAll().catch(() => []),
     db.lessonNotes.getAll().catch(() => []),
     db.assignments.getAll().catch(() => []),
     db.timetable.getAll().catch(() => []),
     db.events.getAll({ upcoming: true }).catch(() => []),
     db.attendanceLogs.getAll().catch(() => []),
+    classIds.length > 0 ? prisma.student.count({ where: { classId: { in: classIds } } }) : Promise.resolve(0),
   ])
 
   const notesArr = Array.isArray(notes) ? notes : []
@@ -98,7 +99,7 @@ export async function getTeacherDashboardData(userId: string): Promise<TeacherDa
     teacher: staffData,
     stats: {
       classes: classIds.length || classesArr.length,
-      students: classesArr.reduce((s: number, c: any) => s + (c.studentCount || 0), 0),
+      students: studentCount,
       lessons: filteredNotes.length,
       assignments: filteredAsgns.length,
     },
