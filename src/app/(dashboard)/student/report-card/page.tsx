@@ -119,6 +119,10 @@ export default function StudentReportCardPage() {
     session,
     subjects: termResults.map((r: any) => ({
       subject: r.subject,
+      caScore: r.caScore ?? 0,
+      examScore: r.examScore ?? 0,
+      caTotal: r.caTotal ?? 40,
+      examTotal: r.examTotal ?? 60,
       score: r.score,
       total: r.totalMax || 100,
       grade: r.grade || "F",

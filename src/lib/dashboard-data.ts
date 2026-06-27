@@ -122,7 +122,23 @@ export interface StudentDashboardData {
 }
 
 export async function getStudentDashboardData(userId: string): Promise<StudentDashboardData> {
-  const student = await db.students.getByUserId(userId)
+  let student = await db.students.getByUserId(userId)
+  if (!student) student = await db.students.getById(userId)
+  if (!student) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
+    if (user?.email) {
+      student = await prisma.student.findFirst({ where: { email: user.email } })
+    }
+    if (!student && user?.name) {
+      const nameParts = user.name.trim().split(/\s+/)
+      const firstName = nameParts[0] || ""
+      const lastName = nameParts.slice(1).join(" ") || firstName
+      student = await prisma.student.findFirst({ where: { firstName, lastName } })
+    }
+    if (student) {
+      await prisma.student.update({ where: { id: student.id }, data: { userId } })
+    }
+  }
   if (!student) {
     return { student: null, studentId: "", results: [], attendance: [], exams: [], events: [], activeSession: "" }
   }
