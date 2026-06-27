@@ -38,11 +38,12 @@ export default function ParentAnalyticsPage() {
     setLoading(true)
     Promise.all([
       fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()),
-      fetch(`/api/attendance-records?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
+      fetch(`/api/attendance-records?studentId=${activeChildId}`).then((r) => r.json()),
       fetch(`/api/fees?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
     ]).then(([res, att, fee]) => {
       setResults(res)
-      setAttendance(att)
+      const logs = Array.isArray(att) ? att : []
+      setAttendance({ present: logs.filter((r: any) => r.status === "present").length, absent: logs.filter((r: any) => r.status === "absent").length, late: logs.filter((r: any) => r.status === "late").length, total: logs.length })
       setFees(fee)
       setLoading(false)
     }).catch(() => setLoading(false))

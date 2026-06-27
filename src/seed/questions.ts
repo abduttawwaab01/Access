@@ -1166,6 +1166,7 @@ export function generateExamSessionsAndSubmissions(
     submissions.push({
       id: nextId("sub"),
       sessionId: session.id,
+      studentId: session.studentId,
       gradedBy: teacherIds[i % teacherIds.length],
       totalScore: session.totalScore,
       maxScore: session.maxScore,

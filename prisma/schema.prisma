@@ -166,6 +166,13 @@ model Class {
   subjects  Subject[]
   students  Student[]
   exams     Exam[]
+  results   Result[]
+  assignments Assignment[]
+  lessonNotes  LessonNote[]
+  feeStructures FeeStructure[]
+  questions    Question[]
+  schemeOfWorks SchemeOfWork[]
+  weeklyReports WeeklyReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -180,6 +187,12 @@ model Subject {
   schoolId String
   school   School  @relation(fields: [schoolId], references: [id])
   exams    Exam[]
+  results  Result[]
+  assignments Assignment[]
+  questions   Question[]
+  topics      Topic[]
+  lessonNotes LessonNote[]
+  schemeOfWorks SchemeOfWork[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -210,11 +223,24 @@ model Student {
   parentId String?
   parent   User?  @relation("ParentStudent", fields: [parentId], references: [id])
 
-  userId String? @unique
-  user   User?  @relation("StudentUser", fields: [userId], references: [id])
+  userId String @unique
+  user   User   @relation("StudentUser", fields: [userId], references: [id])
 
   schoolId String
   school   School @relation(fields: [schoolId], references: [id])
+
+  results          Result[]
+  examSessions     ExamSession[]
+  submissions      Submission[]
+  payments         Payment[]
+  fees             Fee[]
+  documents        Document[]
+  reportCards      ReportCard[]
+  reportCardEntries ReportCardEntry[]
+  weeklyReports    WeeklyReport[]
+  lessonQuizResults LessonQuizResult[]
+  attendanceRecords AttendanceRecord[]
+  parentLinks       ParentLink[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -243,6 +269,9 @@ model Staff {
 
   userId String? @unique
   user   User?   @relation("StaffUser", fields: [userId], references: [id])
+
+  salaryStructures SalaryStructure[]
+  salaryRecords    SalaryRecord[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -282,6 +311,8 @@ model LessonNote {
   rejectedAt  DateTime?
   schoolId    String
   school      School   @relation(fields: [schoolId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
+  subjectRel  Subject? @relation(fields: [subjectId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -298,6 +329,8 @@ model SchemeOfWork {
   approvedAt DateTime?
   schoolId   String
   school     School   @relation(fields: [schoolId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
+  subject    Subject  @relation(fields: [subjectId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -315,6 +348,9 @@ model Assignment {
   createdBy   String?
   schoolId    String
   school      School   @relation(fields: [schoolId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
+  subjectRel  Subject  @relation(fields: [subjectId], references: [id])
+  submissions Submission[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -372,6 +408,10 @@ model Result {
   remark     String   @default("Needs Improvement")
   schoolId   String
   school     School   @relation(fields: [schoolId], references: [id])
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
+  exam       Exam?    @relation(fields: [examId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -383,6 +423,7 @@ model AttendanceRecord {
   status    String   @default("present")
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -398,6 +439,7 @@ model Fee {
   session   String?
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -408,6 +450,7 @@ model ParentLink {
   studentId String
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
@@ -440,6 +483,7 @@ model ReportCard {
   data      Json
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -459,6 +503,8 @@ model ReportCardEntry {
   nextTerm         String?
   domains          Json?
 
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -471,6 +517,7 @@ model Topic {
   subjectId String
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -486,6 +533,7 @@ model LessonQuizResult {
   subject       String?
   schoolId      String
   school        School   @relation(fields: [schoolId], references: [id])
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   attemptedAt   DateTime @default(now())
 }
 
@@ -506,6 +554,8 @@ model Question {
   createdBy  String?
   schoolId   String
   school     School   @relation(fields: [schoolId], references: [id])
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -533,6 +583,8 @@ model Exam {
   school           School   @relation(fields: [schoolId], references: [id])
   class            Class    @relation(fields: [classId], references: [id])
   subject          Subject  @relation(fields: [subjectId], references: [id])
+  examSessions     ExamSession[]
+  results          Result[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -551,6 +603,8 @@ model ExamSession {
   endTime     DateTime?
   schoolId    String
   school      School    @relation(fields: [schoolId], references: [id])
+  exam        Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -566,6 +620,8 @@ model Submission {
   feedback     String?
   schoolId     String
   school       School   @relation(fields: [schoolId], references: [id])
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -591,6 +647,7 @@ model FeeStructure {
   session     String?
   schoolId    String
   school      School   @relation(fields: [schoolId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -605,6 +662,7 @@ model Payment {
   confirmedBy   String?
   schoolId      String
   school        School   @relation(fields: [schoolId], references: [id])
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -615,6 +673,7 @@ model SalaryStructure {
   amount   Float
   schoolId String
   school   School  @relation(fields: [schoolId], references: [id])
+  staff    Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
   updatedAt DateTime @updatedAt
 }
 
@@ -630,6 +689,7 @@ model SalaryRecord {
   confirmedBy String?
   schoolId    String
   school      School   @relation(fields: [schoolId], references: [id])
+  staff       Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -645,6 +705,7 @@ model Document {
   status      String   @default("final")
   schoolId    String
   school      School   @relation(fields: [schoolId], references: [id])
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   generatedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -751,6 +812,8 @@ model WeeklyReport {
   publishedAt DateTime?
   schoolId    String
   school      School   @relation(fields: [schoolId], references: [id])
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class       Class    @relation(fields: [classId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -19,12 +19,12 @@ export default function ParentAttendancePage() {
   useEffect(() => {
     if (!activeChildId) return
     setLoading(true)
-    Promise.all([
-      fetch(`/api/attendance-records?studentId=${activeChildId}`).then((r) => r.json()),
-      fetch(`/api/attendance-records?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
-    ]).then(([recs, sum]) => {
+    fetch(`/api/attendance-records?studentId=${activeChildId}`).then((r) => r.json()).then((recs) => {
       setRecords(recs)
-      setSummary(sum)
+      const present = recs.filter((r: any) => r.status === "present").length
+      const absent = recs.filter((r: any) => r.status === "absent").length
+      const late = recs.filter((r: any) => r.status === "late").length
+      setSummary({ present, absent, late, total: recs.length })
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [activeChildId])

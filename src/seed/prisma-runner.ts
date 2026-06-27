@@ -19,6 +19,7 @@ import {
   generateTopics,
   generateSchemeOfWork,
   generateLessonNotes,
+  generateAttendanceRecords,
   generateResults,
   generateReportCards,
   generateFeeStructures,
@@ -97,6 +98,45 @@ async function main() {
     }
   }
   console.log(`[Seed] ${staffList.length} staff users created`)
+
+  // 1c. Staff records (linked to User accounts)
+  const createdStaff: any[] = []
+  for (const s of staffList) {
+    const existingStaff = await prisma.staff.findFirst({ where: { email: s.email } })
+    if (existingStaff) {
+      // Update userId link if missing
+      if (!existingStaff.userId) {
+        const user = await prisma.user.findUnique({ where: { email: s.email } })
+        if (user) {
+          await prisma.staff.update({ where: { id: existingStaff.id }, data: { userId: user.id } })
+        }
+      }
+      createdStaff.push(existingStaff)
+      continue
+    }
+    const user = await prisma.user.findUnique({ where: { email: s.email } })
+    const staff = await prisma.staff.create({
+      data: {
+        id: s.id,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        staffId: s.staffId,
+        role: s.role || "teacher",
+        department: s.department || null,
+        qualification: s.qualification || null,
+        gender: s.gender || null,
+        phone: s.phone || null,
+        email: s.email,
+        address: s.address || null,
+        employmentDate: s.employmentDate ? new Date(s.employmentDate) : null,
+        salary: s.salary || null,
+        schoolId,
+        userId: user?.id || null,
+      },
+    })
+    createdStaff.push(staff)
+  }
+  console.log(`[Seed] ${createdStaff.length} staff records created`)
 
   // 2. Academic session & terms
   let session = await prisma.academicSession.findFirst({
@@ -191,9 +231,10 @@ async function main() {
 
   // 6. Timetable
   const timetableList = generateTimetable(createdClasses, createdSubjects)
-  const randomTeacher = await prisma.staff.findFirst({ where: { schoolId } })
+  const randomTeacher = createdStaff[0] || null
   const timetableData = timetableList.map((t: any) => {
     const subject = createdSubjects.find((s: any) => s.name === t.subject)
+    if (!subject) console.warn(`[Seed] Timetable: subject "${t.subject}" not found, skipping entry`)
     return subject ? {
       id: t.id, day: t.day, period: t.time,
       subjectId: subject.id, classId: t.classId,
@@ -230,33 +271,10 @@ async function main() {
   }
   console.log(`[Seed] ${schemes.length} schemes of work`)
 
-  // 8. Students
+  // 8. Students — create User accounts first, then Student records with userId
   const studentList = generateStudents(createdClasses)
   const createdStudents: any[] = []
-  // Try createMany first, fall back to individual for getting back data
-  const studentData = studentList.map((s: any) => ({
-    id: s.id, firstName: s.firstName, lastName: s.lastName,
-    studentId: s.studentId, email: s.email || null,
-    dateOfBirth: s.dateOfBirth ? new Date(s.dateOfBirth) : null,
-    gender: s.gender || null, address: s.address || null,
-    phone: s.phone || null, bloodGroup: s.bloodGroup || null,
-    medicalNotes: s.medicalNotes || null,
-    enrollmentDate: s.enrollmentDate ? new Date(s.enrollmentDate) : null,
-    status: s.status || "active", classId: s.classId, schoolId,
-  }))
-  await prisma.student.deleteMany({ where: { schoolId } })
-  for (let i = 0; i < studentData.length; i += 50) {
-    await prisma.student.createMany({
-      data: studentData.slice(i, i + 50),
-      skipDuplicates: true,
-    })
-  }
-  // Re-read to get created records
-  for (const s of studentList) {
-    const found = await prisma.student.findFirst({ where: { studentId: s.studentId } })
-    if (found) createdStudents.push(found)
-  }
-  // Create student user accounts for login
+  // Create user accounts for students first
   for (const s of studentList) {
     const email = s.email
     if (!email) continue
@@ -272,6 +290,37 @@ async function main() {
         },
       })
     }
+  }
+  // Fetch created users
+  const studentEmails = studentList.map((s: any) => s.email).filter(Boolean)
+  const studentUsers = await prisma.user.findMany({ where: { email: { in: studentEmails } } })
+  const userByEmail = Object.fromEntries(studentUsers.map((u: any) => [u.email, u]))
+  // Create Student records with userId linked
+  const studentData = studentList.map((s: any) => {
+    const user = userByEmail[s.email]
+    return {
+      id: s.id, firstName: s.firstName, lastName: s.lastName,
+      studentId: s.studentId, email: s.email || null,
+      dateOfBirth: s.dateOfBirth ? new Date(s.dateOfBirth) : null,
+      gender: s.gender || null, address: s.address || null,
+      phone: s.phone || null, bloodGroup: s.bloodGroup || null,
+      medicalNotes: s.medicalNotes || null,
+      enrollmentDate: s.enrollmentDate ? new Date(s.enrollmentDate) : null,
+      status: s.status || "active", classId: s.classId, schoolId,
+      userId: user?.id || s.id,
+    }
+  })
+  await prisma.student.deleteMany({ where: { schoolId } })
+  for (let i = 0; i < studentData.length; i += 50) {
+    await prisma.student.createMany({
+      data: studentData.slice(i, i + 50),
+      skipDuplicates: true,
+    })
+  }
+  // Re-read to get created records
+  for (const s of studentList) {
+    const found = await prisma.student.findFirst({ where: { studentId: s.studentId } })
+    if (found) createdStudents.push(found)
   }
   console.log(`[Seed] ${createdStudents.length} students`)
 
@@ -390,12 +439,29 @@ async function main() {
       },
     }).catch(() => {})
   }
+  // Create Assignment records for each exam so submissions can reference them
+  for (const es of examSessions) {
+    const existing = await prisma.assignment.findUnique({ where: { id: es.id } })
+    if (!existing) {
+      await prisma.assignment.create({
+        data: {
+          id: es.id,
+          title: "Exam Session",
+          type: "exam",
+          status: "active",
+          classId: createdStudents.find((s: any) => s.id === es.studentId)?.classId || createdClasses[0]?.id || "",
+          subjectId: exams.find((e: any) => e.id === es.examId)?.subjectId || null,
+          schoolId,
+        },
+      }).catch(() => {})
+    }
+  }
   for (const sub of submissions) {
     await prisma.submission.create({
       data: {
         id: sub.id,
         assignmentId: sub.sessionId,
-        studentId: "",
+        studentId: sub.studentId || "",
         content: {},
         score: sub.totalScore || 0,
         feedback: sub.feedback || null,
@@ -428,8 +494,24 @@ async function main() {
   }
   console.log(`[Seed] ${resultsList.length} results`)
 
-  // 15. Report Cards
-  const reportCards = generateReportCards(createdStudents, createdClasses, resultsList, [])
+  // 15. Attendance Records
+  const attendanceRecordList = generateAttendanceRecords(createdStudents)
+  await prisma.attendanceRecord.deleteMany({ where: { schoolId } })
+  for (let i = 0; i < attendanceRecordList.length; i += 100) {
+    await prisma.attendanceRecord.createMany({
+      data: attendanceRecordList.slice(i, i + 100).map((a: any) => ({
+        id: a.id, studentId: a.studentId,
+        date: new Date(a.date),
+        status: a.status,
+        schoolId,
+      })),
+      skipDuplicates: true,
+    })
+  }
+  console.log(`[Seed] ${attendanceRecordList.length} attendance records`)
+
+  // 16. Report Cards
+  const reportCards = generateReportCards(createdStudents, createdClasses, resultsList, attendanceRecordList)
   await prisma.reportCard.deleteMany({ where: { schoolId } })
   for (let i = 0; i < reportCards.length; i += 50) {
     await prisma.reportCard.createMany({
@@ -443,7 +525,7 @@ async function main() {
   }
   console.log(`[Seed] ${reportCards.length} report cards`)
 
-  // 16. Fee Structures
+  // 17. Fee Structures
   const feeList = generateFeeStructures(createdClasses)
   await prisma.feeStructure.deleteMany({ where: { schoolId } })
   for (let i = 0; i < feeList.length; i += 50) {
@@ -459,7 +541,7 @@ async function main() {
   }
   console.log(`[Seed] ${feeList.length} fee structures`)
 
-  // 17. Payments
+  // 18. Payments
   const paymentList = generatePayments(createdStudents, feeList)
   await prisma.payment.deleteMany({ where: { schoolId } })
   for (let i = 0; i < paymentList.length; i += 100) {
@@ -476,7 +558,7 @@ async function main() {
   }
   console.log(`[Seed] ${paymentList.length} payments`)
 
-  // 18. Admission Applications
+  // 19. Admission Applications
   const admissionList = generateAdmissionApplications(createdClasses)
   await prisma.admissionApplication.deleteMany({ where: { schoolId } })
   for (const a of admissionList) {
@@ -494,7 +576,7 @@ async function main() {
   }
   console.log(`[Seed] ${admissionList.length} admission applications`)
 
-  // 19. Feedback Tickets
+  // 20. Feedback Tickets
   const feedbackList = generateFeedbackTickets()
   await prisma.feedbackTicket.deleteMany({ where: { schoolId } })
   for (const fb of feedbackList) {
@@ -511,15 +593,15 @@ async function main() {
   }
   console.log(`[Seed] ${feedbackList.length} feedback tickets`)
 
-  // 20. Lesson Notes
-  const lessonNoteList = generateLessonNotes(createdClasses, createdSubjects, [])
+  // 21. Lesson Notes
+  const lessonNoteList = generateLessonNotes(createdClasses, createdSubjects, createdStaff)
   await prisma.lessonNote.deleteMany({ where: { schoolId } })
   for (let i = 0; i < lessonNoteList.length; i += 50) {
     await prisma.lessonNote.createMany({
       data: lessonNoteList.slice(i, i + 50).map((ln: any) => ({
         id: ln.id, classId: ln.classId, subjectId: ln.subjectId,
         title: ln.title,
-        content: { html: ln.content, resources: ln.resources },
+        content: ln.content,
         topic: ln.title.split(":")[0] || ln.title,
         quiz: ln.quiz || [],
         status: ln.status || "published",
@@ -533,9 +615,8 @@ async function main() {
   }
   console.log(`[Seed] ${lessonNoteList.length} lesson notes`)
 
-  // 21. Teacher Assignments
-  const allStaff = await prisma.staff.findMany({ where: { schoolId } })
-  const assignments = generateTeacherAssignments(allStaff.map((s) => ({ id: s.id, department: s.department || "" })), createdClasses, createdSubjects)
+  // 22. Teacher Assignments
+  const assignments = generateTeacherAssignments(createdStaff.map((s: any) => ({ id: s.id, department: s.department || "" })), createdClasses, createdSubjects)
   await prisma.teacherAssignment.deleteMany({ where: { schoolId } })
   for (let i = 0; i < assignments.length; i += 50) {
     await prisma.teacherAssignment.createMany({
@@ -549,7 +630,7 @@ async function main() {
   }
   console.log(`[Seed] ${assignments.length} teacher assignments`)
 
-  // 22. Bank Details
+  // 23. Bank Details
   const bankData = generateBankDetails()
   await prisma.bankDetails.upsert({
     where: { id: bankData.id },
@@ -564,7 +645,7 @@ async function main() {
   })
   console.log(`[Seed] Bank details saved`)
 
-  // 23. School Settings via GradingConfig
+  // 24. School Settings via GradingConfig
   await prisma.gradingConfig.upsert({
     where: { id: "gc_default" },
     update: {},

@@ -111,13 +111,17 @@ export default function TeacherWeeklyReportsPage() {
 
   const getAttendanceForWeek = async (studentId: string) => {
     const weekDays = selectedWeek * 5
-    const res = await fetch(`/api/attendance-records?studentId=${studentId}&summary=true`)
-    const summary = await res.json()
-    const total = Math.min(summary.total || 0, 5)
+    const res = await fetch(`/api/attendance-records?studentId=${studentId}`)
+    const logs = await res.json()
+    const records = Array.isArray(logs) ? logs : []
+    const present = records.filter((r: any) => r.status === "present").length
+    const absent = records.filter((r: any) => r.status === "absent").length
+    const late = records.filter((r: any) => r.status === "late").length
+    const total = Math.min(records.length, 5)
     return {
-      present: Math.min(summary.present || 0, total),
-      absent: Math.min(summary.absent || 0, total),
-      late: Math.min(summary.late || 0, total),
+      present: Math.min(present, total),
+      absent: Math.min(absent, total),
+      late: Math.min(late, total),
       total,
     }
   }

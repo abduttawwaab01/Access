@@ -51,12 +51,13 @@ export default function ParentDashboardClient({ initialData }: { initialData: Pa
     if (!activeChildId) return
     Promise.all([
       fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()),
-      fetch(`/api/attendance-records?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
+      fetch(`/api/attendance-records?studentId=${activeChildId}`).then((r) => r.json()),
       fetch(`/api/fees?studentId=${activeChildId}&summary=true`).then((r) => r.json()),
       fetch("/api/events?upcoming=true").then((r) => r.json()).catch(() => []),
     ]).then(([res, att, fee, evts]) => {
       setResults(res)
-      setAttendance(att)
+      const logs = Array.isArray(att) ? att : []
+      setAttendance({ present: logs.filter((r: any) => r.status === "present").length, absent: logs.filter((r: any) => r.status === "absent").length, late: logs.filter((r: any) => r.status === "late").length, total: logs.length })
       setFees(fee)
       setEvents(Array.isArray(evts) ? evts.slice(0, 5) : [])
     })

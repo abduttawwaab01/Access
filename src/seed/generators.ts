@@ -255,14 +255,16 @@ export function generateParents() {
 // ============================================================
 export function generateParentLinks(students: { id: string }[], parents: { id: string }[]) {
   const result: any[] = []
-  students.forEach((student, i) => {
-    const parent = parents[i % parents.length]
-    result.push({
-      id: nextId("plk"),
-      parentId: parent.id,
-      studentId: student.id,
-      relationship: i % 2 === 0 ? "Father" : "Mother",
-    })
+  // Assign 2 students per parent to cover all 40 students with 20 parents
+  parents.forEach((parent, pi) => {
+    const child1 = students[pi * 2]
+    const child2 = students[pi * 2 + 1]
+    if (child1) {
+      result.push({ id: nextId("plk"), parentId: parent.id, studentId: child1.id, relationship: "Father" })
+    }
+    if (child2) {
+      result.push({ id: nextId("plk"), parentId: parent.id, studentId: child2.id, relationship: "Mother" })
+    }
   })
   return result
 }

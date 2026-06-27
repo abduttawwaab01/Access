@@ -1072,17 +1072,6 @@ export const db = {
           schoolId,
         },
       })
-      if (data.userType === "student" || data.userType === "Student") {
-        const student = await prisma.student.findFirst({ where: { OR: [{ id: data.userId }, { userId: data.userId }] } })
-        if (student) {
-          const recordDate = new Date(data.date + "T00:00:00Z")
-          await prisma.attendanceRecord.upsert({
-            where: { studentId_date: { studentId: student.id, date: recordDate } },
-            create: { studentId: student.id, date: recordDate, status: data.status || "present", schoolId },
-            update: { status: data.status || "present" },
-          })
-        }
-      }
       return log
     },
     getToday: async () => {
