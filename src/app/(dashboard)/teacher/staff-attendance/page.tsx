@@ -16,6 +16,8 @@ export default function StaffAttendanceCheckInPage() {
   const [checkInTime, setCheckInTime] = useState<string | null>(null)
   const [checkInStatus, setCheckInStatus] = useState<"present" | "late" | null>(null)
   const [staffId, setStaffId] = useState<string | null>(null)
+  const [staffName, setStaffName] = useState<string>("Staff")
+  const [staffRole, setStaffRole] = useState<string>("")
   const [loadingStaff, setLoadingStaff] = useState(true)
 
   const authUserId = (session?.user as any)?.id
@@ -25,7 +27,11 @@ export default function StaffAttendanceCheckInPage() {
     fetch("/api/staff?userId=" + authUserId)
       .then((r) => r.json())
       .then((staffData) => {
-        if (staffData?.id) setStaffId(staffData.id)
+        if (staffData?.id) {
+          setStaffId(staffData.id)
+          setStaffName(`${staffData.firstName} ${staffData.lastName}`)
+          setStaffRole(staffData.role || "Staff")
+        }
         setLoadingStaff(false)
       })
       .catch(() => setLoadingStaff(false))
@@ -88,7 +94,7 @@ export default function StaffAttendanceCheckInPage() {
     }
   }
 
-  const userName = session?.user?.name || "Staff"
+  const userName = staffName
 
   if (loadingStaff) {
     return (
@@ -112,9 +118,10 @@ export default function StaffAttendanceCheckInPage() {
                   <CheckCircle2 className="h-10 w-10 text-green-500" />
                 </div>
               </div>
+              <Badge variant="outline" className="text-xs border-purple-300 text-purple-600 bg-purple-50 dark:bg-purple-950/30 mb-1">Staff Check-In</Badge>
               <h2 className="text-2xl font-bold">Checked In!</h2>
               <p className="text-muted-foreground">
-                {userName}, you are marked as{" "}
+                {userName} <span className="text-xs text-muted-foreground/60">({staffRole})</span>, you are marked as{" "}
                 <Badge className={checkInStatus === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>
                   {checkInStatus}
                 </Badge>{" "}

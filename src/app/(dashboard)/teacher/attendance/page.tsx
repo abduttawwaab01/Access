@@ -113,8 +113,11 @@ export default function TeacherAttendancePage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold">Attendance</h2>
-        <p className="text-sm text-muted-foreground">Mark and view student attendance</p>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">Student Attendance</h2>
+          <Badge variant="outline" className="text-xs border-blue-300 text-blue-600 bg-blue-50 dark:bg-blue-950/30">Students</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">Mark and view student attendance per class</p>
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
@@ -156,7 +159,10 @@ export default function TeacherAttendancePage() {
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">{student.firstName} {student.lastName}</p>
-                        <p className="text-xs text-muted-foreground">{student.classId ? classes.find((c) => c.id === student.classId)?.name || "Unassigned" : "Unassigned"}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-blue-200 text-blue-600 bg-blue-50 dark:bg-blue-950/30">Student</Badge>
+                          <span className="text-xs text-muted-foreground">{student.classId ? classes.find((c) => c.id === student.classId)?.name || "Unassigned" : "Unassigned"}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-1">
@@ -206,11 +212,14 @@ export default function TeacherAttendancePage() {
       <div className="mt-4">
         <Card className="border-0 glass-card">
           <CardContent className="p-4">
-            {logs.filter((l) => l.date === today).length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">No attendance marked today</div>
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="outline" className="text-xs border-blue-300 text-blue-600">Students only</Badge>
+            </div>
+            {logs.filter((l) => l.date === today && l.userType === "student").length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">No student attendance marked today</div>
             ) : (
               <div className="space-y-2">
-                {logs.filter((l) => l.date === today).reverse().map((log) => {
+                {logs.filter((l) => l.date === today && l.userType === "student").reverse().map((log) => {
                   const student = students.find((s) => s.id === log.userId)
                   return (
                     <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
@@ -219,7 +228,10 @@ export default function TeacherAttendancePage() {
                           <AvatarFallback className="text-xs">{student ? `${student.firstName[0]}${student.lastName[0]}` : "?"}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium">{student ? `${student.firstName} ${student.lastName}` : log.userId}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{student ? `${student.firstName} ${student.lastName}` : log.userId}</p>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-blue-200 text-blue-600 bg-blue-50 dark:bg-blue-950/30">Student</Badge>
+                          </div>
                           <p className="text-xs text-muted-foreground">{log.time} via {log.method}</p>
                         </div>
                       </div>

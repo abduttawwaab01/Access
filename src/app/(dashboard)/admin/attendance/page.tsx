@@ -21,10 +21,12 @@ export default function AdminAttendancePage() {
   const [staff, setStaff] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [scanned, setScanned] = useState<string | null>(null)
+  const [scannedType, setScannedType] = useState<"student" | "staff" | null>(null)
   const [scanning, setScanning] = useState(false)
   const [manualCode, setManualCode] = useState("")
+  const [logFilter, setLogFilter] = useState<"all" | "student" | "staff">("all")
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [todayStats, setTodayStats] = useState({ present: 0, late: 0, absent: 0, total: 0 })
+  const [todayStats, setTodayStats] = useState({ studentPresent: 0, studentLate: 0, studentTotal: 0, staffPresent: 0, staffLate: 0, staffTotal: 0 })
 
   useEffect(() => {
     Promise.all([
@@ -45,11 +47,15 @@ export default function AdminAttendancePage() {
   const updateStats = (logs: any[]) => {
     const today = new Date().toISOString().split("T")[0]
     const todayLogs = logs.filter((l) => l.date === today)
+    const studentLogs = todayLogs.filter((l) => l.userType === "student")
+    const staffLogs = todayLogs.filter((l) => l.userType === "staff")
     setTodayStats({
-      present: todayLogs.filter((l) => l.status === "present").length,
-      late: todayLogs.filter((l) => l.status === "late").length,
-      absent: 0,
-      total: todayLogs.length,
+      studentPresent: studentLogs.filter((l) => l.status === "present").length,
+      studentLate: studentLogs.filter((l) => l.status === "late").length,
+      studentTotal: studentLogs.length,
+      staffPresent: staffLogs.filter((l) => l.status === "present").length,
+      staffLate: staffLogs.filter((l) => l.status === "late").length,
+      staffTotal: staffLogs.length,
     })
   }
 
@@ -95,6 +101,7 @@ export default function AdminAttendancePage() {
       updateStats(updated)
       toast.success(`Staff marked as ${status}`)
       setScanned(null)
+      setScannedType(null)
     }
   }
 
@@ -124,10 +131,13 @@ export default function AdminAttendancePage() {
       updateStats(updated)
       toast.success(`${userType === "student" ? "Student" : "Staff"} marked as ${status}`)
       setScanned(null)
+      setScannedType(null)
     }
   }
 
   const startScanner = async () => {
+    setScanned(null)
+    setScannedType(null)
     setScanning(true)
     try {
       const Html5Qrcode = (await import("html5-qrcode")).Html5Qrcode
@@ -141,11 +151,12 @@ export default function AdminAttendancePage() {
           setScanned(decodedText)
           const user = findUser(decodedText)
           if (user) {
+            setScannedType(user.type as "student" | "staff")
             if (user.type === "staff") {
               if (user.id) {
                 markStaffAttendance(user.id)
               } else {
-                toast.success("School attendance QR - open camera for staff self-check-in")
+                toast.success("School attendance QR — open camera for staff self-check-in")
               }
             } else if (user.id) {
               markAttendance(user.id, "student")
@@ -153,6 +164,7 @@ export default function AdminAttendancePage() {
               toast.error("Unknown QR code")
             }
           } else {
+            setScannedType(null)
             toast.error("Unknown QR code")
           }
         },
@@ -176,9 +188,15 @@ export default function AdminAttendancePage() {
   const handleManualCheckIn = () => {
     if (!manualCode.trim()) { toast.error("Enter a student/staff code"); return }
     const user = findUser(manualCode.trim())
-    if (user && user.id) markAttendance(user.id, user.type)
-    else if (user?.type === "staff") toast.success("Staff entry logged")
-    else toast.error("No user found with that code")
+    if (user && user.id) {
+      const typeLabel = user.type === "student" ? "Student" : "Staff"
+      toast.success(`${typeLabel} found: ${user.name}`)
+      markAttendance(user.id, user.type)
+    } else if (user?.type === "staff") {
+      toast.success("Staff entry logged")
+    } else {
+      toast.error("No user found with that code")
+    }
     setManualCode("")
   }
 
@@ -201,24 +219,73 @@ export default function AdminAttendancePage() {
       </motion.div>
 
       {/* Today's Stats */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { label: "Present Today", value: todayStats.present, icon: CheckCircle2, color: "bg-green-500/15 text-green-600" },
-          { label: "Late Today", value: todayStats.late, icon: Clock, color: "bg-amber-500/15 text-amber-600" },
-          { label: "Total Scans", value: todayStats.total, icon: History, color: "bg-blue-500/15 text-blue-600" },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-0 glass-card">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl ${stat.color}`}>
-                <stat.icon className="h-5 w-5" />
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="border-0 glass-card border-l-4 border-l-blue-400">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <User className="h-4 w-4 text-blue-500" />
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Students</p>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div>
+                <p className="text-lg font-bold text-green-600">{todayStats.studentPresent}</p>
+                <p className="text-[10px] text-muted-foreground">Present</p>
               </div>
               <div>
-                <p className="text-lg font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                <p className="text-lg font-bold text-amber-600">{todayStats.studentLate}</p>
+                <p className="text-[10px] text-muted-foreground">Late</p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div>
+                <p className="text-lg font-bold">{todayStats.studentTotal}</p>
+                <p className="text-[10px] text-muted-foreground">Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 glass-card border-l-4 border-l-purple-400">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="h-4 w-4 text-purple-500" />
+              <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Staff</p>
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+              <div>
+                <p className="text-lg font-bold text-green-600">{todayStats.staffPresent}</p>
+                <p className="text-[10px] text-muted-foreground">Present</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-amber-600">{todayStats.staffLate}</p>
+                <p className="text-[10px] text-muted-foreground">Late</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold">{todayStats.staffTotal}</p>
+                <p className="text-[10px] text-muted-foreground">Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 text-green-600">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-lg font-bold">{todayStats.studentPresent + todayStats.staffPresent}</p>
+              <p className="text-xs text-muted-foreground">Total Present</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 glass-card">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-600">
+              <History className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-lg font-bold">{todayStats.studentTotal + todayStats.staffTotal}</p>
+              <p className="text-xs text-muted-foreground">Total Scans</p>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
@@ -241,7 +308,7 @@ export default function AdminAttendancePage() {
                     <Camera className="h-10 w-10 text-primary" />
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Scan a student ID QR code or school entry QR code</p>
+                <p className="text-sm text-muted-foreground mb-4">Scan a <span className="text-blue-600 font-medium">Student</span> or <span className="text-purple-600 font-medium">Staff</span> ID card QR code</p>
                 <Button onClick={startScanner} className="animated-gradient border-0 text-white">
                   <Scan className="h-4 w-4 mr-2" /> Start Scanner
                 </Button>
@@ -252,7 +319,7 @@ export default function AdminAttendancePage() {
               <div>
                 <div id="qr-reader" className="w-full max-w-sm mx-auto rounded-xl overflow-hidden" />
                 <div className="text-center mt-4">
-                  <Button variant="outline" onClick={() => { setScanning(false) }}>Stop Scanner</Button>
+                  <Button variant="outline" onClick={() => { setScanning(false); setScannedType(null) }}>Stop Scanner</Button>
                 </div>
               </div>
             )}
@@ -261,9 +328,18 @@ export default function AdminAttendancePage() {
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4">
                 <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
                 <p className="font-semibold">QR Code Scanned</p>
-                <p className="text-xs text-muted-foreground mt-1 font-mono">{scanned}</p>
+                {scannedType && (
+                  <Badge variant="outline" className={`mt-2 ${
+                    scannedType === "student"
+                      ? "border-blue-300 text-blue-600 bg-blue-50 dark:bg-blue-950/30"
+                      : "border-purple-300 text-purple-600 bg-purple-50 dark:bg-purple-950/30"
+                  }`}>
+                    {scannedType === "student" ? "Student ID Card" : "Staff ID Card"}
+                  </Badge>
+                )}
+                <p className="text-xs text-muted-foreground mt-2 font-mono break-all">{scanned}</p>
                 <div className="flex gap-2 justify-center mt-4">
-                  <Button variant="outline" onClick={() => setScanned(null)}>Scan Again</Button>
+                  <Button variant="outline" onClick={() => { setScanned(null); setScannedType(null) }}>Scan Again</Button>
                 </div>
               </motion.div>
             )}
@@ -292,7 +368,7 @@ export default function AdminAttendancePage() {
       <div className="mt-4">
         <Card className="border-0 glass-card">
           <CardContent className="p-4 space-y-4">
-            <p className="text-sm text-muted-foreground">Enter a student ID code or staff code to mark attendance</p>
+            <p className="text-sm text-muted-foreground">Enter a <span className="text-blue-600 font-medium">Student</span> or <span className="text-purple-600 font-medium">Staff</span> ID code to mark attendance</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Input placeholder="Enter QR code (e.g. STU-ALICE-001)" value={manualCode} onChange={(e) => setManualCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleManualCheckIn()} />
               <Button onClick={handleManualCheckIn} className="shrink-0"><Search className="h-4 w-4 mr-1" /> Find</Button>
@@ -314,24 +390,53 @@ export default function AdminAttendancePage() {
       <div className="mt-4">
         <Card className="border-0 glass-card">
           <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {(["all", "student", "staff"] as const).map((f) => (
+                <button key={f} onClick={() => setLogFilter(f)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    logFilter === f
+                      ? f === "student" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                        : f === "staff" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                        : "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {f === "all" ? "All" : f === "student" ? "Students" : "Staff"}
+                </button>
+              ))}
+            </div>
             {logs.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">No attendance logs yet</div>
             ) : (
               <div className="space-y-2">
-                {logs.slice().reverse().map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs">{getUserName(log.userId, log.userType).split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{getUserName(log.userId, log.userType)}</p>
-                        <p className="text-xs text-muted-foreground">{log.date} at {log.time} via {log.method}</p>
+                {logs.slice().reverse().filter((l) => logFilter === "all" || l.userType === logFilter).map((log) => {
+                  const isStudent = log.userType === "student"
+                  return (
+                    <div key={log.id} className={`flex items-center justify-between p-3 rounded-xl ${isStudent ? "bg-blue-50/50 dark:bg-blue-950/10" : "bg-purple-50/50 dark:bg-purple-950/10"}`}>
+                      <div className="flex items-center gap-3">
+                        <Avatar className={`h-8 w-8 ${isStudent ? "ring-1 ring-blue-200" : "ring-1 ring-purple-200"}`}>
+                          <AvatarFallback className={`text-xs ${isStudent ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                            {getUserName(log.userId, log.userType).split(" ").map((n: string) => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{getUserName(log.userId, log.userType)}</p>
+                            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${
+                              isStudent
+                                ? "border-blue-200 text-blue-600 bg-blue-50 dark:bg-blue-950/30"
+                                : "border-purple-200 text-purple-600 bg-purple-50 dark:bg-purple-950/30"
+                            }`}>
+                              {isStudent ? "Student" : "Staff"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{log.date} at {log.time} via {log.method}</p>
+                        </div>
                       </div>
+                      <Badge className={log.status === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{log.status}</Badge>
                     </div>
-                    <Badge className={log.status === "present" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{log.status}</Badge>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </CardContent>
