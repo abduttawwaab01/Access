@@ -229,3 +229,124 @@ export const DEFAULT_CERTIFICATE_CONFIG: CertificateConfig = {
   showWatermark: true,
   theme: "light",
 }
+
+// Behaviour Chart Types
+export interface StudentBehaviourEntry {
+  id: string
+  name: string
+  scores: Record<string, number>
+  notes?: string
+}
+
+export interface BehaviourCategory {
+  id: string
+  label: string
+  emoji: string
+  maxScore: number
+}
+
+export interface BehaviourReward {
+  threshold: number
+  label: string
+}
+
+export interface BehaviourConfig {
+  templateId: string
+  chartTitle: string
+  schoolName: string
+  schoolLogo: string
+  students: StudentBehaviourEntry[]
+  categories: BehaviourCategory[]
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  textColor: string
+  borderColor: string
+  starColor: string
+  starSize: "sm" | "md" | "lg"
+  theme: "light" | "dark" | "custom"
+  showNames: boolean
+  showTotals: boolean
+  showRewardTrack: boolean
+  showEmojis: boolean
+  periodType: "daily" | "weekly" | "monthly"
+  periodLabel: string
+  date: string
+  rewards: BehaviourReward[]
+}
+
+export interface BehaviourTemplate {
+  id: string
+  name: string
+  description: string
+  preview: string
+  tags: string[]
+}
+
+export const DEFAULT_BEHAVIOUR_CONFIG: BehaviourConfig = {
+  templateId: "daily-star",
+  chartTitle: "Star Achievement Chart",
+  schoolName: "",
+  schoolLogo: "",
+  students: [],
+  categories: [
+    { id: "participation", label: "Participation", emoji: "🙋", maxScore: 3 },
+    { id: "homework", label: "Homework", emoji: "📚", maxScore: 3 },
+    { id: "behaviour", label: "Behaviour", emoji: "😊", maxScore: 3 },
+    { id: "cleanliness", label: "Cleanliness", emoji: "🧹", maxScore: 3 },
+    { id: "punctuality", label: "Punctuality", emoji: "⏰", maxScore: 3 },
+  ],
+  primaryColor: "#f59e0b",
+  secondaryColor: "#10b981",
+  accentColor: "#ef4444",
+  backgroundColor: "#fffbeb",
+  textColor: "#1a1a2e",
+  borderColor: "#f59e0b",
+  starColor: "#f59e0b",
+  starSize: "md",
+  theme: "light",
+  showNames: true,
+  showTotals: true,
+  showRewardTrack: false,
+  showEmojis: true,
+  periodType: "weekly",
+  periodLabel: "Week 1",
+  date: new Date().toISOString().split("T")[0],
+  rewards: [
+    { threshold: 10, label: "Star Badge" },
+    { threshold: 25, label: "Class Monitor" },
+    { threshold: 50, label: "Prize from School" },
+  ],
+}
+
+export const CATEGORY_PRESETS: Record<string, BehaviourCategory[]> = {
+  default: [
+    { id: "participation", label: "Participation", emoji: "🙋", maxScore: 3 },
+    { id: "homework", label: "Homework", emoji: "📚", maxScore: 3 },
+    { id: "behaviour", label: "Behaviour", emoji: "😊", maxScore: 3 },
+    { id: "cleanliness", label: "Cleanliness", emoji: "🧹", maxScore: 3 },
+    { id: "punctuality", label: "Punctuality", emoji: "⏰", maxScore: 3 },
+  ],
+  academic: [
+    { id: "reading", label: "Reading", emoji: "📖", maxScore: 3 },
+    { id: "writing", label: "Writing", emoji: "✏️", maxScore: 3 },
+    { id: "math", label: "Math", emoji: "🔢", maxScore: 3 },
+    { id: "science", label: "Science", emoji: "🔬", maxScore: 3 },
+    { id: "art", label: "Art & Creative", emoji: "🎨", maxScore: 3 },
+  ],
+  conduct: [
+    { id: "respect", label: "Respect", emoji: "🙏", maxScore: 3 },
+    { id: "honesty", label: "Honesty", emoji: "🤝", maxScore: 3 },
+    { id: "kindness", label: "Kindness", emoji: "💛", maxScore: 3 },
+    { id: "responsibility", label: "Responsibility", emoji: "✅", maxScore: 3 },
+    { id: "teamwork", label: "Teamwork", emoji: "👥", maxScore: 3 },
+  ],
+  nursery: [
+    { id: "sharing", label: "Sharing", emoji: "🧸", maxScore: 3 },
+    { id: "listening", label: "Listening", emoji: "👂", maxScore: 3 },
+    { id: "following", label: "Following Rules", emoji: "📏", maxScore: 3 },
+    { id: "tidy", label: "Tidying Up", emoji: "🧹", maxScore: 3 },
+    { id: "manners", label: "Good Manners", emoji: "🌷", maxScore: 3 },
+  ],
+}

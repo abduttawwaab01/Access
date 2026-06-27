@@ -68,14 +68,14 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
         </div>
         {cfg.showMedicalNotes && (cfg.customMedicalNotes || student.medicalNotes) && (
           <div className="rounded-lg bg-red-50 border border-red-100 p-3 mt-2">
-            <p className="text-[10px] font-semibold text-red-700 mb-0.5">Medical Notes</p>
+            <p className="text-[10px] font-semibold text-red-700 mb-0.5 leading-normal">Medical Notes</p>
             <p className="text-xs text-red-600">{cfg.customMedicalNotes || student.medicalNotes}</p>
           </div>
         )}
       </div>
       {cfg.showRules && cfg.rulesText && (
         <div className="px-5 py-2 border-t border-gray-100 bg-amber-50/50">
-          <p className="text-[8px] font-semibold text-amber-800 uppercase tracking-wider mb-1">Rules & Regulations</p>
+          <p className="text-[8px] font-semibold text-amber-800 uppercase tracking-wider mb-1 leading-normal">Rules & Regulations</p>
           <pre className="text-[7px] text-amber-700 leading-relaxed whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
         </div>
       )}
@@ -84,9 +84,9 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
           <div className="bg-white rounded-lg p-1 border border-gray-200 inline-block">
             <QRCodeSVG value={qrData} size={40} level="M" />
           </div>
-          <p className="text-[8px] text-gray-400 mt-1">Scan QR</p>
+          <p className="text-[8px] text-gray-400 mt-1 leading-normal">Scan QR</p>
         </div>
-        <div className="text-[10px] text-gray-500 text-center leading-tight">
+        <div className="text-[10px] text-gray-500 text-center leading-normal">
           <p className="font-semibold text-gray-700">{school.name}</p>
           {school.phone && <p>{school.phone}</p>}
           {school.email && <p className="text-[9px]">{school.email}</p>}
@@ -100,8 +100,8 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null
   return (
     <div className="min-w-0">
-      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{label}</p>
-      <p className="text-xs text-gray-700 truncate font-medium">{value}</p>
+      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider leading-normal">{label}</p>
+      <p className="text-xs text-gray-700 leading-normal">{value}</p>
     </div>
   )
 }

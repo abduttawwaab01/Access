@@ -16,6 +16,7 @@ import {
   ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive, AlertTriangle, Star, Award
 } from "lucide-react"
 import { CertificateGenerator } from "@/components/certificates/CertificateGenerator"
+import { BehaviourGenerator } from "@/components/behaviour/BehaviourGenerator"
 import { ConversationList } from "@/components/chat/ConversationList"
 import { ChatWindow } from "@/components/chat/ChatWindow"
 import { NewChatDialog } from "@/components/chat/NewChatDialog"
@@ -70,6 +71,7 @@ export default function SuperAdminPage() {
       case "attendance": return <AttendanceSection />
       case "documents": return <DocumentsSection />
       case "certificates": return <CertificatesSection />
+      case "behaviour": return <BehaviourChartSection />
       case "announcements": return <AnnouncementsSection />
       case "announcement-reviews": return <AnnouncementReviewsSection />
       case "feedback": return <FeedbackSection />
@@ -2577,6 +2579,26 @@ function CertificatesSection() {
         </div>
       </div>
       <CertificateGenerator />
+    </div>
+  )
+}
+
+function BehaviourChartSection() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <Loading />
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/20 flex items-center justify-center">
+          <Star className="h-5 w-5 text-red-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">Behaviour &amp; Star Achievement Chart</h2>
+          <p className="text-sm text-zinc-500">Track student behaviour with star charts, colour codes, and reward milestones</p>
+        </div>
+      </div>
+      <BehaviourGenerator />
     </div>
   )
 }

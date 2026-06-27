@@ -6,7 +6,7 @@ import {
   Shield, LayoutDashboard, Settings, BookOpen, Calendar, Users,
   GraduationCap, HelpCircle, ClipboardCheck, FileText, CreditCard,
   Wallet, Building2, Download, Megaphone, MessageSquare, ScanLine, Bot,
-  AlertTriangle, Award
+  AlertTriangle, Award, Star
 } from "lucide-react"
 
 interface NavItem { id: string; icon: any; label: string }
@@ -49,6 +49,7 @@ const navGroups: NavGroup[] = [
     { id: "documents", icon: FileText, label: "Documents" },
     { id: "communication", icon: MessageSquare, label: "Communication" },
     { id: "certificates", icon: Award, label: "Certificate Generator" },
+    { id: "behaviour", icon: Star, label: "Behaviour Chart" },
     { id: "announcements", icon: Megaphone, label: "Announcements" },
     { id: "announcement-reviews", icon: MessageSquare, label: "Announcement Reviews" },
   ]},
