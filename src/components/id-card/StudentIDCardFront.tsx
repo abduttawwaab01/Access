@@ -48,9 +48,7 @@ export function StudentIDCardFront({ student, school, classes, orientation = "po
               <div>
                 <p className="text-lg font-bold text-gray-900">{student.firstName} {student.lastName}</p>
                 <p className="text-xs text-gray-500 font-medium">{studentClass}</p>
-                <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
-                  <span className="text-[9px] font-mono text-muted-foreground">ID: {student.studentId}</span>
-                </div>
+                <p className="text-[9px] font-mono text-gray-500 mt-1">ID: {student.studentId}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5">
@@ -104,9 +102,7 @@ export function StudentIDCardFront({ student, school, classes, orientation = "po
         <div className="text-center mb-3">
           <p className="text-base font-bold text-gray-900">{student.firstName} {student.lastName}</p>
           <p className="text-xs text-gray-500 font-medium">{studentClass}</p>
-          <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
-            <span className="text-[10px] font-mono text-muted-foreground">ID: {student.studentId}</span>
-          </div>
+          <p className="text-[10px] font-mono text-gray-500 mt-1">ID: {student.studentId}</p>
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5 mb-3">
           {student.dateOfBirth && <><span className="font-medium text-gray-400">DOB</span><span className="text-right">{new Date(student.dateOfBirth).toLocaleDateString()}</span></>}

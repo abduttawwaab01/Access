@@ -44,7 +44,7 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
           {cfg.showRules && cfg.rulesText && (
             <div className="border-t border-gray-100 pt-2 mt-2">
               <p className="text-[7px] font-semibold text-amber-800 uppercase tracking-wider mb-1">Rules & Regulations</p>
-              <pre className="text-[7px] text-amber-700 leading-tight whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
+              <pre className="text-[7px] text-amber-700 leading-relaxed whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
             </div>
           )}
         </div>
@@ -76,7 +76,7 @@ export function StudentIDCardBack({ student, school, config, orientation = "port
       {cfg.showRules && cfg.rulesText && (
         <div className="px-5 py-2 border-t border-gray-100 bg-amber-50/50">
           <p className="text-[8px] font-semibold text-amber-800 uppercase tracking-wider mb-1">Rules & Regulations</p>
-          <pre className="text-[7px] text-amber-700 leading-tight whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
+          <pre className="text-[7px] text-amber-700 leading-relaxed whitespace-pre-wrap font-sans">{cfg.rulesText}</pre>
         </div>
       )}
       <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-center gap-4">

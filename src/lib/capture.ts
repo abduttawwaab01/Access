@@ -80,6 +80,20 @@ const TAILWIND_HEX_OVERRIDES = `
 .bg-secondary:hover { background-color: #06b6d4 !important; }
 `
 
+function getFontFaceCss(): string {
+  let css = ""
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        if (rule.type === CSSRule.FONT_FACE_RULE) {
+          css += rule.cssText + "\n"
+        }
+      }
+    } catch {}
+  }
+  return css
+}
+
 function getFontLinks(): string {
   return `<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
@@ -266,6 +280,9 @@ export async function captureElement(
     throw new Error("html2canvas is not available")
   }
 
+  await document.fonts.ready
+  const fontFaceCss = getFontFaceCss()
+
   const restoreSource = overrideUnsupportedColorsAll(element)
   const restore = overrideColorVarsOnElement(element)
   try {
@@ -280,6 +297,19 @@ export async function captureElement(
         const links = clonedDoc.querySelectorAll('link[rel="stylesheet"]')
         for (const link of links) link.remove()
 
+        // Set base URL so relative @font-face src URLs resolve correctly
+        const base = clonedDoc.createElement("base")
+        base.href = document.baseURI
+        clonedDoc.head.insertBefore(base, clonedDoc.head.firstChild)
+
+        // Inject @font-face rules from main document (self-hosted Next.js fonts)
+        if (fontFaceCss) {
+          const fontStyle = clonedDoc.createElement("style")
+          fontStyle.textContent = fontFaceCss
+          clonedDoc.head.appendChild(fontStyle)
+        }
+
+        // Also inject Google Fonts links as fallback
         const fontLinkEl = clonedDoc.createElement("head")
         fontLinkEl.innerHTML = getFontLinks()
         for (const child of Array.from(fontLinkEl.children)) {

@@ -13,8 +13,9 @@ import {
   Wallet, Building2, Download, Megaphone, MessageSquare, Edit3, Eye,
   Search, Filter, AlertCircle, ToggleLeft, ToggleRight, ArrowUpDown,
   DollarSign, Printer, Ban, Mail, Phone, MapPin, Globe, Pencil,
-  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive, AlertTriangle, Star
+  ChevronDown, ChevronUp, Loader2, ScanLine, ImageIcon, Bot, MessageCircle, Send, Archive, AlertTriangle, Star, Award
 } from "lucide-react"
+import { CertificateGenerator } from "@/components/certificates/CertificateGenerator"
 import { ConversationList } from "@/components/chat/ConversationList"
 import { ChatWindow } from "@/components/chat/ChatWindow"
 import { NewChatDialog } from "@/components/chat/NewChatDialog"
@@ -68,6 +69,7 @@ export default function SuperAdminPage() {
       case "admissions": return <AdmissionsSection />
       case "attendance": return <AttendanceSection />
       case "documents": return <DocumentsSection />
+      case "certificates": return <CertificatesSection />
       case "announcements": return <AnnouncementsSection />
       case "announcement-reviews": return <AnnouncementReviewsSection />
       case "feedback": return <FeedbackSection />
@@ -2558,6 +2560,26 @@ const SUPER_ADMIN_QUICK_ACTIONS = [
   { label: "User Statistics", prompt: "Give me user statistics across all roles — students, teachers, admins, parents, and staff." },
   { label: "Data Export Help", prompt: "How can I export data from the system? What export options are available?" },
 ]
+
+function CertificatesSection() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <Loading />
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/20 flex items-center justify-center">
+          <Award className="h-5 w-5 text-red-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">Certificate Generator</h2>
+          <p className="text-sm text-zinc-500">Create, customize, and download premium award certificates</p>
+        </div>
+      </div>
+      <CertificateGenerator />
+    </div>
+  )
+}
 
 function AIAssistantSection() {
   return (

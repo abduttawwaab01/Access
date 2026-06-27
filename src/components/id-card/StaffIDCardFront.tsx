@@ -43,9 +43,7 @@ export function StaffIDCardFront({ staff, school, orientation = "portrait" }: Pr
                 <p className="text-lg font-bold text-gray-900">{staff.firstName} {staff.lastName}</p>
                 <p className="text-xs font-semibold text-indigo-600">{staff.role || "Staff"}</p>
                 {staff.department && <p className="text-[11px] text-gray-500">{staff.department}</p>}
-                <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
-                  <span className="text-[9px] font-mono text-muted-foreground">{staff.staffId}</span>
-                </div>
+                <p className="text-[9px] font-mono text-gray-500 mt-1">{staff.staffId}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5">
@@ -100,9 +98,7 @@ export function StaffIDCardFront({ staff, school, orientation = "portrait" }: Pr
           <p className="text-base font-bold text-gray-900">{staff.firstName} {staff.lastName}</p>
           <p className="text-xs font-semibold text-indigo-600">{staff.role || "Staff"}</p>
           {staff.department && <p className="text-[11px] text-gray-500">{staff.department}</p>}
-          <div className="inline-flex items-center gap-1.5 mt-1 rounded-full bg-muted px-3 py-0.5">
-            <span className="text-[10px] font-mono text-muted-foreground">{staff.staffId}</span>
-          </div>
+          <p className="text-[10px] font-mono text-gray-500 mt-1">{staff.staffId}</p>
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-500 border-t border-gray-100 pt-2.5 mb-3">
           {staff.email && <><span className="font-medium text-gray-400">Email</span><span className="text-right truncate">{staff.email}</span></>}

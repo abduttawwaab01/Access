@@ -149,14 +149,14 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData; gra
           <table className="w-full border-collapse" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>
             <thead>
               <tr className="bg-indigo-50 text-left">
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "3%" }}>#</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700">Subject</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>CA Score</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>Exam Score</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>Total</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>%</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700 text-center" style={{ width: "7%" }}>Grade</th>
-                <th className="border border-gray-200 px-1.5 py-1 font-semibold text-indigo-700">Remark</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700 text-center" style={{ width: "3%" }}>#</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700">Subject</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>CA Score</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700 text-center" style={{ width: "10%" }}>Exam Score</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>Total</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700 text-center" style={{ width: "8%" }}>%</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700 text-center" style={{ width: "7%" }}>Grade</th>
+                <th className="border border-gray-200 px-2 py-1.5 font-semibold text-indigo-700">Remark</th>
               </tr>
             </thead>
             <tbody>
@@ -164,20 +164,20 @@ export const ReportCard = forwardRef<HTMLDivElement, { data: ReportCardData; gra
                 const pct = r.total > 0 ? Math.round((r.score / r.total) * 100) : 0
                 return (
                   <tr key={r.subject} className={i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center text-muted-foreground" style={{ whiteSpace: "nowrap" }}>{i + 1}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 font-medium">{r.subject}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.caScore ?? "-"}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.examScore ?? "-"}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.score}</td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{pct}%</td>
-    <td className="border border-gray-200 px-1.5 py-1 text-center" style={{ whiteSpace: "nowrap" }}>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center text-muted-foreground" style={{ whiteSpace: "nowrap" }}>{i + 1}</td>
+                    <td className="border border-gray-200 px-2 py-1.5 font-medium">{r.subject}</td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.caScore ?? "-"}</td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.examScore ?? "-"}</td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{r.score}</td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center font-mono" style={{ whiteSpace: "nowrap" }}>{pct}%</td>
+    <td className="border border-gray-200 px-2 py-1.5 text-center" style={{ whiteSpace: "nowrap" }}>
       <span className="inline-block font-bold px-1.5 py-0.5 rounded" style={{
         color: (GRADE_COLORS[r.grade] || "#6b7280"),
         backgroundColor: `${(GRADE_COLORS[r.grade] || "#6b7280")}15`,
         fontSize: compact ? "5pt" : "6pt"
       }}>{r.grade}</span>
     </td>
-                    <td className="border border-gray-200 px-1.5 py-1 text-muted-foreground" style={{ fontSize: compact ? "5pt" : "6pt", whiteSpace: "nowrap" }}>{r.remark}</td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-muted-foreground" style={{ fontSize: compact ? "5.5pt" : "6.5pt" }}>{r.remark}</td>
                   </tr>
                 )
               })}

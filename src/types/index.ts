@@ -164,3 +164,68 @@ export interface ReportCardData {
   nextTerm: string
   domains: { name: string; score: number; max: number }[]
 }
+
+// Certificate Types
+export type RecipientType = "student" | "teacher" | "staff"
+
+export interface CertificateConfig {
+  templateId: string
+  recipientName: string
+  recipientType: RecipientType
+  awardName: string
+  classOrDepartment: string
+  date: string
+  reason: string
+  schoolName: string
+  schoolLogo: string
+  schoolMotto: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  textColor: string
+  borderColor: string
+  signatureName: string
+  signatureImage: string
+  issuerName: string
+  issuerTitle: string
+  certificateId: string
+  showBadge: boolean
+  showWatermark: boolean
+  theme: "light" | "dark" | "custom"
+}
+
+export interface CertificateTemplate {
+  id: string
+  name: string
+  description: string
+  preview: string
+  tags: string[]
+}
+
+export const DEFAULT_CERTIFICATE_CONFIG: CertificateConfig = {
+  templateId: "classic-gold",
+  recipientName: "",
+  recipientType: "student",
+  awardName: "Certificate of Achievement",
+  classOrDepartment: "",
+  date: new Date().toISOString().split("T")[0],
+  reason: "For outstanding academic performance",
+  schoolName: "",
+  schoolLogo: "",
+  schoolMotto: "",
+  primaryColor: "#b8860b",
+  secondaryColor: "#f5e6c8",
+  accentColor: "#8b0000",
+  backgroundColor: "#fffef5",
+  textColor: "#1a1a2e",
+  borderColor: "#b8860b",
+  signatureName: "",
+  signatureImage: "",
+  issuerName: "",
+  issuerTitle: "Principal",
+  certificateId: `CERT-${Date.now().toString(36).toUpperCase()}`,
+  showBadge: true,
+  showWatermark: true,
+  theme: "light",
+}
