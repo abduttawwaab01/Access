@@ -66,7 +66,7 @@ export default function QuestionBankPage() {
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
 
-  const debouncedSearchRef = useRef<NodeJS.Timeout>()
+  const debouncedSearchRef = useRef<NodeJS.Timeout | null>(null)
 
   const debouncedSearch = (value: string) => {
     if (debouncedSearchRef.current) clearTimeout(debouncedSearchRef.current)
@@ -81,6 +81,39 @@ export default function QuestionBankPage() {
       if (debouncedSearchRef.current) clearTimeout(debouncedSearchRef.current)
     }
   }, [])
+
+  const fetchAll = async () => {
+    const params = new URLSearchParams()
+    params.set("page", String(page))
+    params.set("pageSize", String(pageSize))
+    if (filterClass !== "all") params.set("classId", filterClass)
+    if (filterSubject !== "all") params.set("subjectId", filterSubject)
+    if (filterTopic !== "all") params.set("topic", filterTopic)
+    if (filterDifficulty !== "all") params.set("difficulty", filterDifficulty)
+    if (filterStatus === "approved") params.set("approved", "true")
+    if (filterStatus === "pending") params.set("approved", "false")
+
+    const [qRes, cRes, sRes, tRes, stRes] = await Promise.all([
+      fetch(`/api/question-bank?${params}`),
+      fetch("/api/classes"),
+      fetch("/api/subjects"),
+      fetch("/api/topics"),
+      fetch("/api/staff"),
+    ])
+    const qData = await qRes.json()
+    setItems(qData.data || [])
+    setTotal(qData.total || 0)
+    setTotalPages(qData.totalPages || 0)
+    setClasses(await cRes.json())
+    setSubjects(await sRes.json())
+    setAllTopics(await tRes.json())
+    setStaff(await stRes.json())
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchAll()
+  }, [page, filterClass, filterSubject, filterTopic, filterDifficulty, filterStatus, searchQuery])
 
   const update = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
 
