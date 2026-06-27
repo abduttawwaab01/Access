@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Search, CheckCircle2, Clock, AlertTriangle, User, History, Camera, QrCode, ScanLine } from "lucide-react"
 import { QRScanner } from "@/components/QRScanner"
+import { playSuccess, playFailure } from "@/lib/sounds"
 
 export default function TeacherAttendancePage() {
   const { data: session } = useSession()
@@ -61,7 +62,7 @@ export default function TeacherAttendancePage() {
   const isMarked = (studentId: string) => logs.some((l) => l.userId === studentId && l.date === today)
 
   const markStudent = async (studentId: string, status: "present" | "late") => {
-    if (isMarked(studentId)) { toast.error("Already marked today"); return }
+    if (isMarked(studentId)) { playFailure(); toast.error("Already marked today"); return false }
     const now = new Date()
     const time = now.toTimeString().split(" ")[0].substring(0, 5)
     const res = await fetch("/api/attendance-logs", {
@@ -72,8 +73,15 @@ export default function TeacherAttendancePage() {
     if (res.ok) {
       const newLog = await res.json()
       setLogs([...logs, newLog])
+      playSuccess()
       toast.success(`Marked as ${status}`)
+      return true
     }
+    if (res.status === 409) {
+      playFailure()
+      toast.error("Already marked today")
+    }
+    return false
   }
 
   const handleQRScan = async (decodedText: string) => {
@@ -81,15 +89,17 @@ export default function TeacherAttendancePage() {
       const data = JSON.parse(decodedText)
       if (data.type === "student" && data.id) {
         const student = students.find((s) => s.id === data.id)
-        if (!student) { toast.error("Student not found"); return }
+        if (!student) { playFailure(); toast.error("Student not found"); return }
         const hour = new Date().getHours()
         const status = hour >= 9 ? "late" : "present"
-        await markStudent(data.id, status)
-        toast.success(`${student.firstName} ${student.lastName} marked ${status} via QR`)
+        const ok = await markStudent(data.id, status)
+        if (ok) toast.success(`${student.firstName} ${student.lastName} marked ${status} via QR`)
       } else {
+        playFailure()
         toast.error("Not a valid student QR code")
       }
     } catch {
+      playFailure()
       toast.error("Invalid QR code format")
     }
   }

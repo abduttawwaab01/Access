@@ -12,6 +12,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json()
+  const existing = await db.attendanceLogs.getByUserAndDate(body.userId, body.date)
+  if (existing) {
+    return NextResponse.json({ error: "Already marked" }, { status: 409 })
+  }
   const item = await db.attendanceLogs.create(body)
   return NextResponse.json(item, { status: 201 })
 }

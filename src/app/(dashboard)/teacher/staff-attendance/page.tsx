@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { CheckCircle2, QrCode } from "lucide-react"
 import { QRScanner } from "@/components/QRScanner"
 import { useSession } from "next-auth/react"
+import { playSuccess, playFailure } from "@/lib/sounds"
 
 export default function StaffAttendanceCheckInPage() {
   const { data: session } = useSession()
@@ -19,16 +20,19 @@ export default function StaffAttendanceCheckInPage() {
     try {
       const data = JSON.parse(decodedText)
       if (data.type !== "school_attendance") {
+        playFailure()
         toast.error("Not a valid school attendance QR code")
         return
       }
     } catch {
+      playFailure()
       toast.error("Invalid QR code format")
       return
     }
 
     const userId = (session?.user as any)?.id
     if (!userId) {
+      playFailure()
       toast.error("You must be logged in to check in")
       return
     }
@@ -56,12 +60,15 @@ export default function StaffAttendanceCheckInPage() {
       setCheckedIn(true)
       setCheckInTime(time)
       setCheckInStatus(status)
+      playSuccess()
       toast.success(`Checked in as ${status} at ${time}`)
     } else {
       const data = await res.json()
       if (data.error === "Already marked") {
+        playFailure()
         toast.error("You have already checked in today")
       } else {
+        playFailure()
         toast.error("Failed to check in")
       }
     }
