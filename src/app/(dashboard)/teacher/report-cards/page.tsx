@@ -321,7 +321,7 @@ export default function TeacherReportCardsPage() {
       )}
 
       {selectedStudentId && termResults.length > 0 && (
-        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center">
+        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="overflow-x-auto flex justify-center">
           <ReportCard ref={reportRef} data={reportData!} gradeBoundaries={gradeBoundaries} />
         </motion.div>
       )}

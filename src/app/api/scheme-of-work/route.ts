@@ -21,6 +21,9 @@ export async function GET(request: NextRequest) {
   const staff = await db.staff.getAll()
   result = result.map((s: any) => ({
     ...s,
+    weeks: s.content?.weeks || [],
+    term: s.content?.term || s.term || "",
+    session: s.content?.session || s.session || "",
     subjectName: subjects.find((sub: any) => sub.id === s.subjectId)?.name || "Unknown",
     className: classes.find((c: any) => c.id === s.classId)?.name || "Unknown",
     creatorName: (() => { const st = staff.find((st: any) => st.id === s.createdBy); return st ? `${st.firstName} ${st.lastName}` : "Unknown" })(),

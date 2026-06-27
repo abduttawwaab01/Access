@@ -65,6 +65,7 @@ export default function SchemeOfWorkPage() {
   const [filterClass, setFilterClass] = useState("all")
   const [filterSubject, setFilterSubject] = useState("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [showEditWarning, setShowEditWarning] = useState(false)
 
   const [form, setForm] = useState({
     title: "",
@@ -292,12 +293,12 @@ export default function SchemeOfWorkPage() {
                               </Button>
                             </>
                           )}
-                          {item.status === "published" && item.createdBy === teacherId && (
+                          {item.status === "published" && (
                             <Button 
                               variant="ghost" 
                               size="icon" 
                               className="text-blue-600" 
-                              onClick={() => openEdit(item)}
+                              onClick={() => { openEdit(item); setShowEditWarning(true); }}
                               title="Edit (will reset to draft)"
                             >
                               <Edit className="h-4 w-4" />
@@ -449,7 +450,7 @@ export default function SchemeOfWorkPage() {
         </form>
       </FormSheet>
 
-      {editing?.status === "published" && editing?.createdBy === teacherId && (
+      {showEditWarning && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md">
             <h3 className="text-lg font-semibold mb-2">Warning</h3>
@@ -458,16 +459,10 @@ export default function SchemeOfWorkPage() {
               Are you sure you want to continue?
             </p>
             <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  setEditing(null);
-                  setSheetOpen(false);
-                }} 
-                variant="destructive"
-              >
+              <Button onClick={() => setShowEditWarning(false)} variant="destructive">
                 Yes, Edit
               </Button>
-              <Button onClick={() => setEditing(null)} variant="outline">
+              <Button onClick={() => { setShowEditWarning(false); setEditing(null); setSheetOpen(false); }} variant="outline">
                 Cancel
               </Button>
             </div>

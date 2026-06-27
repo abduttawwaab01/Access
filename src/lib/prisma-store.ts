@@ -437,12 +437,13 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
+      const content = data.content || (data.weeks ? { weeks: data.weeks, term: data.term, session: data.session } : undefined)
       return prisma.schemeOfWork.create({
         data: {
           classId: data.classId,
           subjectId: data.subjectId,
           title: data.title,
-          content: data.content || undefined,
+          content,
           status: data.status || "draft",
           createdBy: data.createdBy || null,
           approvedBy: data.approvedBy || null,
@@ -452,8 +453,17 @@ export const db = {
       })
     },
     update: async (id: string, data: any) => {
-      const updateData: any = { ...data }
-      if (data.approvedAt) updateData.approvedAt = new Date(data.approvedAt)
+      const updateData: any = {}
+      if (data.title !== undefined) updateData.title = data.title
+      if (data.classId !== undefined) updateData.classId = data.classId
+      if (data.subjectId !== undefined) updateData.subjectId = data.subjectId
+      if (data.status !== undefined) updateData.status = data.status
+      if (data.createdBy !== undefined) updateData.createdBy = data.createdBy
+      if (data.approvedBy !== undefined) updateData.approvedBy = data.approvedBy
+      if (data.approvedAt !== undefined) updateData.approvedAt = data.approvedAt ? new Date(data.approvedAt) : null
+      if (data.content !== undefined || data.weeks !== undefined) {
+        updateData.content = data.content || { weeks: data.weeks, term: data.term, session: data.session }
+      }
       return prisma.schemeOfWork.update({ where: { id }, data: updateData })
     },
     delete: async (id: string) => {
@@ -1031,7 +1041,30 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
-      return prisma.attendanceLog.create({ data: { ...data, schoolId } })
+      const log = await prisma.attendanceLog.create({
+        data: {
+          userId: data.userId,
+          userType: data.userType,
+          date: data.date,
+          time: data.time,
+          status: data.status,
+          method: data.method,
+          timestamp: data.timestamp || new Date(),
+          schoolId,
+        },
+      })
+      if (data.userType === "student" || data.userType === "Student") {
+        const student = await prisma.student.findUnique({ where: { userId: data.userId } })
+        if (student) {
+          const recordDate = new Date(data.date + "T00:00:00Z")
+          await prisma.attendanceRecord.upsert({
+            where: { studentId_date: { studentId: student.id, date: recordDate } },
+            create: { studentId: student.id, date: recordDate, status: data.status || "present", schoolId },
+            update: { status: data.status || "present" },
+          })
+        }
+      }
+      return log
     },
     getToday: async () => {
       const today = new Date().toISOString().split("T")[0]

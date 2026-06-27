@@ -155,7 +155,7 @@ export default function SchemeOfWorkPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const body = editing
-      ? { action: "update", id: editing.id, ...form, weeks, createdBy: teacherId }
+      ? { action: "update", id: editing.id, data: { ...form, weeks, createdBy: teacherId } }
       : { ...form, weeks, createdBy: teacherId, status: "draft" }
     const url = editing ? "/api/scheme-of-work" : "/api/scheme-of-work"
     const method = editing ? "PUT" : "POST"
@@ -195,7 +195,7 @@ export default function SchemeOfWorkPage() {
 
   const confirmEditPublished = async () => {
     if (selectedScheme) {
-      const body = { action: "update", id: selectedScheme.id, ...form, weeks, createdBy: teacherId };
+      const body = { action: "update", id: selectedScheme.id, data: { ...form, weeks, createdBy: teacherId } };
       const res = await fetch("/api/scheme-of-work", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

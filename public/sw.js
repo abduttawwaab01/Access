@@ -1,6 +1,6 @@
-const CACHE_NAME = "access-v4"
-const STATIC_CACHE = "access-static-v4"
-const API_CACHE = "access-api-v4"
+const CACHE_NAME = "access-v5"
+const STATIC_CACHE = "access-static-v5"
+const API_CACHE = "access-api-v5"
 
 const staticAssets = [
   "/",
@@ -30,6 +30,9 @@ self.addEventListener("activate", (event) => {
     )
   )
   self.clients.claim()
+  if (self.registration?.navigationPreload) {
+    self.registration.navigationPreload.enable()
+  }
 })
 
 self.addEventListener("fetch", (event) => {
@@ -40,7 +43,12 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  if (event.request.mode === "navigate" || staticAssets.includes(url.pathname)) {
+  if (event.request.mode === "navigate") {
+    event.respondWith(networkFirst(event.request, STATIC_CACHE))
+    return
+  }
+
+  if (staticAssets.includes(url.pathname)) {
     event.respondWith(cacheFirst(event.request))
     return
   }
@@ -65,7 +73,9 @@ async function networkFirst(request, cacheName) {
     const cached = await caches.match(request)
     if (cached) return cached
     if (request.mode === "navigate") {
-      return caches.match("/")
+      const root = await caches.match("/")
+      if (root) return root
+      return new Response("<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Offline</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:2rem;text-align:center;background:#0b1121;color:#e2e8f0}h1{font-size:1.5rem;margin-bottom:0.5rem}p{color:#94a3b8;max-width:24rem;line-height:1.5}</style></head><body><h1>You're Offline</h1><p>Please check your internet connection and try again.</p></body></html>", { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } })
     }
     return new Response(JSON.stringify({ offline: true }), { status: 503, headers: { "Content-Type": "application/json" } })
   }
@@ -97,7 +107,9 @@ async function cacheFirst(request) {
     }
     return response
   } catch {
-    return caches.match("/")
+    const root = await caches.match("/")
+    if (root) return root
+    return new Response("<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Offline</title><style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:2rem;text-align:center;background:#0b1121;color:#e2e8f0}h1{font-size:1.5rem;margin-bottom:0.5rem}p{color:#94a3b8;max-width:24rem;line-height:1.5}</style></head><body><h1>You're Offline</h1><p>Please check your internet connection and try again.</p></body></html>", { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } })
   }
 }
 
