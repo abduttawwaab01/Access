@@ -12,6 +12,7 @@ import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, Pola
 import { ArrowLeft, Clock, Award, Brain, AlertTriangle, Lightbulb, Target, CheckCircle2, XCircle, FileText, DownloadCloud, FileSpreadsheet } from "lucide-react"
 import { downloadPng, downloadPdf, downloadCsv, downloadDoc } from "@/lib/capture"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 const getGrade = (pct: number) => {
   if (pct >= 75) return { grade: "A", color: "text-green-500" }
@@ -26,24 +27,36 @@ const questionTypes: Record<string, string> = { mcq: "Multiple Choice", true_fal
 export default function ExamAnalysisPage() {
   const { sessionId } = useParams()
   const router = useRouter()
+  const { data: authData } = useSession()
+  const userId = (authData?.user as any)?.id || ""
   const [session, setSession] = useState<any>(null)
   const [exam, setExam] = useState<any>(null)
   const [questions, setQuestions] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [unauthorized, setUnauthorized] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const load = async () => {
-      const [sRes, qRes, subRes] = await Promise.all([
+      const [sRes, qRes, subRes, studRes] = await Promise.all([
         fetch(`/api/exam-sessions/${sessionId}`),
         fetch("/api/questions"),
         fetch("/api/subjects"),
+        fetch(`/api/students?userId=${userId}`),
       ])
       const s = await sRes.json()
+      const student = await studRes.json()
       const q = await qRes.json()
       const sub = await subRes.json()
+
+      if (!s || s.studentId !== student?.id) {
+        setUnauthorized(true)
+        setLoading(false)
+        return
+      }
+
       setSession(s)
       setQuestions(q)
       setSubjects(sub)
@@ -55,9 +68,18 @@ export default function ExamAnalysisPage() {
       setLoading(false)
     }
     load()
-  }, [sessionId])
+  }, [sessionId, userId])
 
   if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-32", "h-48", "h-48 md:h-56 min-h-[160px]"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
+
+  if (unauthorized) return (
+    <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center gap-3">
+      <AlertTriangle className="h-12 w-12 text-destructive/50" />
+      <h3 className="font-semibold">Access Denied</h3>
+      <p className="text-sm text-muted-foreground">You do not have permission to view this exam analysis.</p>
+      <Button variant="outline" onClick={() => router.push("/student/cbt")}><ArrowLeft className="h-4 w-4 mr-1" /> Back to Exams</Button>
+    </div>
+  )
 
   if (!session || !exam) return (
     <div className="p-4 md:p-6 flex flex-col items-center justify-center min-h-[60vh] text-center gap-3">

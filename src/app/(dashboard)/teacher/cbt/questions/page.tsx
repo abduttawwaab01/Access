@@ -13,13 +13,18 @@ import { toast } from "sonner"
 import { Plus, Pencil, Trash2, HelpCircle, Code, AlignLeft, CheckCircle } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
-
 import { EmptyState } from "@/components/admin/EmptyState"
+import { useSession } from "next-auth/react"
 
 const typeIcons: Record<string, any> = { mcq: HelpCircle, true_false: CheckCircle, theory: AlignLeft, coding: Code }
 const typeColors: Record<string, string> = { mcq: "bg-blue-500/10 text-blue-500", true_false: "bg-green-500/10 text-green-500", theory: "bg-amber-500/10 text-amber-500", coding: "bg-purple-500/10 text-purple-500" }
 
 export default function TeacherQuestionsPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
+  const [teacherId, setTeacherId] = useState("")
+  const [myClassIds, setMyClassIds] = useState<string[]>([])
+  const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
   const [items, setItems] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -31,19 +36,43 @@ export default function TeacherQuestionsPage() {
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ type: "mcq", text: "", options: ["", "", "", ""], correctAnswer: "", points: 5, subjectId: "", classId: "" })
 
+  // Resolve teacher identity and assigned classes/subjects
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        const staffId = staffData?.id || ""
+        setTeacherId(staffId)
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        setMyClassIds(ta?.classIds || [])
+        setMySubjectIds(ta?.subjectIds || [])
+      })
+      .catch(() => {})
+  }, [userId])
+
   const fetchData = async () => {
     const [qRes, sRes, cRes] = await Promise.all([
-      fetch("/api/questions"),
+      fetch("/api/questions?teacherId=" + teacherId),
       fetch("/api/subjects"),
       fetch("/api/classes"),
     ])
     setItems(await qRes.json())
-    setSubjects(await sRes.json())
-    setClasses(await cRes.json())
+    const allSubjects = await sRes.json()
+    const allClasses = await cRes.json()
+    // Restrict subject/class selectors to teacher's assigned ones
+    setSubjects(mySubjectIds.length > 0 ? allSubjects.filter((s: any) => mySubjectIds.includes(s.id)) : allSubjects)
+    setClasses(myClassIds.length > 0 ? allClasses.filter((c: any) => myClassIds.includes(c.id)) : allClasses)
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    if (!teacherId) return
+    fetchData()
+  }, [teacherId, myClassIds, mySubjectIds])
 
   const update = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
 
@@ -65,9 +94,9 @@ export default function TeacherQuestionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    let body: any = { ...form }
+    let body: any = { ...form, createdBy: teacherId }
     if (form.type === "true_false") body.options = ["True", "False"]
-    if (form.type === "theory" || form.type === "coding") body = { type: form.type, text: form.text, points: form.points, subjectId: form.subjectId, classId: form.classId }
+    if (form.type === "theory" || form.type === "coding") body = { type: form.type, text: form.text, points: form.points, subjectId: form.subjectId, classId: form.classId, createdBy: teacherId }
     const url = editing ? `/api/questions/${editing.id}` : "/api/questions"
     const method = editing ? "PUT" : "POST"
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })

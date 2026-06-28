@@ -21,6 +21,7 @@ const gradeColors: Record<string, string> = { A: "#22c55e", B: "#3b82f6", C: "#f
 export default function TeacherResultsPage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id || ""
+  const [myStaffId, setMyStaffId] = useState("")
   const [activeTab, setActiveTab] = useState("Score Entry")
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
@@ -46,8 +47,9 @@ export default function TeacherResultsPage() {
       .then((r) => r.json())
       .then((staffData) => {
         const staffId = staffData?.id || ""
+        setMyStaffId(staffId)
         return Promise.all([
-          fetch("/api/teacher-assignments").then((r) => r.json()),
+          fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json()),
           fetch("/api/classes").then((r) => r.json()),
           fetch("/api/subjects").then((r) => r.json()),
           fetch("/api/students").then((r) => r.json()),
@@ -83,13 +85,14 @@ export default function TeacherResultsPage() {
     setScores({})
     const params = new URLSearchParams({ classId: selectedClassId, subjectId: selectedSubjectId, term: selectedTerm })
     if (selectedSession) params.set("session", selectedSession)
+    if (myStaffId) params.set("teacherId", myStaffId)
     fetch(`/api/results?${params}`).then((r) => r.json()).then((data) => {
       setResults(Array.isArray(data) ? data : [])
       const initial: Record<string, { caScore: string; examScore: string }> = {}
       ;(Array.isArray(data) ? data : []).forEach((r: any) => { initial[r.studentId] = { caScore: r.caScore?.toString() ?? "", examScore: r.examScore?.toString() ?? "" } })
       setScores(initial)
     }).catch(() => {})
-  }, [selectedClassId, selectedSubjectId, selectedTerm, selectedSession])
+  }, [selectedClassId, selectedSubjectId, selectedTerm, selectedSession, myStaffId])
 
   const classSubjects = subjects.filter((s) => s.classId === selectedClassId)
   const classStudents = students.filter((s) => s.classId === selectedClassId).sort((a, b) => a.firstName?.localeCompare(b.firstName))
@@ -119,6 +122,7 @@ export default function TeacherResultsPage() {
           examScore: Number(sc?.examScore) || 0,
           term: selectedTerm,
           session: selectedSession || currentSession(),
+          createdBy: myStaffId,
         }
       })
       const res = await fetch("/api/results", {
@@ -134,6 +138,7 @@ export default function TeacherResultsPage() {
       toast.success(`Saved ${saved.length} results`)
       const params = new URLSearchParams({ classId: selectedClassId, subjectId: selectedSubjectId, term: selectedTerm })
       if (selectedSession) params.set("session", selectedSession)
+      if (myStaffId) params.set("teacherId", myStaffId)
       const fresh = await fetch(`/api/results?${params}`); const freshData = await fresh.json()
       setResults(Array.isArray(freshData) ? freshData : [])
     } catch (err) { toast.error("Failed to save results") }

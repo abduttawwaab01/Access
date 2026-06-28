@@ -28,6 +28,7 @@ async function resolveStudent(userId: string) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
+  const classIds = searchParams.get("classIds") || undefined
   const userId = searchParams.get("userId") || undefined
   const pageRaw = searchParams.get("page")
 
@@ -52,7 +53,12 @@ export async function GET(request: Request) {
     return NextResponse.json(result, cacheHeader())
   }
 
-  const data = await db.students.getAll(classId)
+  const cids = classIds ? classIds.split(",").filter(Boolean) : classId ? [classId] : undefined
+  if (cids) {
+    const all = await Promise.all(cids.map((cid: string) => db.students.getAll(cid)))
+    return NextResponse.json(all.flat(), cacheHeader())
+  }
+  const data = await db.students.getAll()
   return NextResponse.json(data, cacheHeader())
 }
 

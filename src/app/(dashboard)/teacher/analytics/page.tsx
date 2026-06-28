@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
@@ -42,20 +42,20 @@ export default function TeacherAnalyticsPage() {
       .then((r) => r.json())
       .then((staffData) => {
         const staffId = staffData?.id || ""
-        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json()).then((tas) => ({ tas, staffId }))
       })
-      .then((tas) => {
+      .then(({ tas, staffId }) => {
         const ta = Array.isArray(tas) ? tas[0] : null
         const classIds: string[] = ta?.classIds || []
         const subjectIds: string[] = ta?.subjectIds || []
         return Promise.all([
-          classIds.length > 0 ? fetch(`/api/students?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/students").then((r) => r.json()),
-          classIds.length > 0 ? fetch(`/api/classes`).then((r) => r.json()).then((all) => all.filter((c: any) => classIds.includes(c.id))) : fetch("/api/classes").then((r) => r.json()),
-          subjectIds.length > 0 ? fetch(`/api/subjects`).then((r) => r.json()).then((all) => all.filter((s: any) => subjectIds.includes(s.id))) : fetch("/api/subjects").then((r) => r.json()),
-          classIds.length > 0 ? fetch(`/api/results?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/results").then((r) => r.json()),
-          fetch("/api/attendance-records").then((r) => r.json()),
-          classIds.length > 0 ? fetch(`/api/assignments?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/assignments").then((r) => r.json()),
-          classIds.length > 0 ? fetch(`/api/lesson-notes?classId=${classIds[0]}`).then((r) => r.json()) : fetch("/api/lesson-notes").then((r) => r.json()),
+          classIds.length > 0 ? fetch(`/api/students?classId=${classIds[0]}`).then((r) => r.json()) : Promise.resolve([]),
+          classIds.length > 0 ? fetch(`/api/classes`).then((r) => r.json()).then((all) => all.filter((c: any) => classIds.includes(c.id))) : Promise.resolve([]),
+          subjectIds.length > 0 ? fetch(`/api/subjects`).then((r) => r.json()).then((all) => all.filter((s: any) => subjectIds.includes(s.id))) : Promise.resolve([]),
+          classIds.length > 0 ? fetch(`/api/results?classId=${classIds[0]}&teacherId=${staffId}`).then((r) => r.json()) : Promise.resolve([]),
+          fetch("/api/attendance-records?teacherId=" + staffId).then((r) => r.json()),
+          classIds.length > 0 ? fetch(`/api/assignments?classId=${classIds[0]}&teacherId=${staffId}`).then((r) => r.json()) : Promise.resolve([]),
+          classIds.length > 0 ? fetch(`/api/lesson-notes?classId=${classIds[0]}&teacherId=${staffId}`).then((r) => r.json()) : Promise.resolve([]),
         ])
       })
       .then(([stu, cls, sub, res, att, asn, les]) => {
@@ -199,8 +199,8 @@ export default function TeacherAnalyticsPage() {
       {/* Trend Summary Cards */}
       <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Class Average", value: `${avgScore}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].avgScore > termScoreData[termScoreData.length - 2].avgScore ? "+" : ""}${termScoreData[termScoreData.length - 1].avgScore - termScoreData[termScoreData.length - 2].avgScore}%` : "—", icon: TrendingUp, color: avgScore >= 70 ? "from-green-500 to-green-600" : "from-amber-500 to-amber-600", trend: avgScore >= 70 },
-          { label: "Pass Rate", value: `${Math.round(passRate)}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].passRate > termScoreData[termScoreData.length - 2].passRate ? "+" : ""}${(termScoreData[termScoreData.length - 1].passRate - termScoreData[termScoreData.length - 2].passRate).toFixed(1)}%` : "—", icon: Award, color: passRate >= 70 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600", trend: passRate >= 70 },
+          { label: "Class Average", value: `${avgScore}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].avgScore > termScoreData[termScoreData.length - 2].avgScore ? "+" : ""}${termScoreData[termScoreData.length - 1].avgScore - termScoreData[termScoreData.length - 2].avgScore}%` : "â€”", icon: TrendingUp, color: avgScore >= 70 ? "from-green-500 to-green-600" : "from-amber-500 to-amber-600", trend: avgScore >= 70 },
+          { label: "Pass Rate", value: `${Math.round(passRate)}%`, change: termScoreData.length >= 2 ? `${termScoreData[termScoreData.length - 1].passRate > termScoreData[termScoreData.length - 2].passRate ? "+" : ""}${(termScoreData[termScoreData.length - 1].passRate - termScoreData[termScoreData.length - 2].passRate).toFixed(1)}%` : "â€”", icon: Award, color: passRate >= 70 ? "from-emerald-500 to-emerald-600" : "from-red-500 to-red-600", trend: passRate >= 70 },
           { label: "Submission Rate", value: `${submissionRate}%`, change: `${submissionChange >= 0 ? "+" : ""}${submissionChange.toFixed(1)}%`, icon: ClipboardCheck, color: "from-violet-500 to-violet-600", trend: submissionRate >= 70 },
           { label: "Attendance", value: `${attendanceRate}%`, change: `${attendanceChange >= 0 ? "+" : ""}${attendanceChange.toFixed(1)}%`, icon: CalendarCheck, color: "from-blue-500 to-blue-600", trend: attendanceRate >= 80 },
         ].map((stat, i) => (
@@ -504,3 +504,7 @@ export default function TeacherAnalyticsPage() {
     </div>
   )
 }
+
+
+
+

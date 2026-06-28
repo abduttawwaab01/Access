@@ -17,6 +17,7 @@ const adminNav: NavItem[] = [
   { label: "AI Assistant", href: "/admin/ai-assistant", icon: "BotMessageSquare" },
   { label: "CBT Engine", href: "/admin/cbt/exams", icon: "ClipboardCheck" },
   { label: "Question Bank", href: "/admin/question-bank", icon: "HelpCircle" },
+  { label: "Assignments", href: "/admin/assignments", icon: "ClipboardCheck" },
   { label: "Scheme of Work", href: "/admin/scheme-of-work", icon: "BookOpen" },
   { label: "Lesson Notes", href: "/admin/lesson-notes", icon: "FileText" },
   { label: "Deep Analysis", href: "/admin/analytics/deep-analysis", icon: "BarChart3" },

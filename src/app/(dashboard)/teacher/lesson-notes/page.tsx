@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -43,6 +43,8 @@ export default function LessonNotesPage() {
   const [viewerNote, setViewerNote] = useState<any>(null)
   const [school, setSchool] = useState<any>(null)
   const [sessions, setSessions] = useState<any[]>([])
+  const [myClassIds, setMyClassIds] = useState<string[]>([])
+  const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
 
@@ -55,10 +57,12 @@ export default function LessonNotesPage() {
       fetch("/api/subjects"),
     ])
     setItems(await notesRes.json())
-    setClasses(await classesRes.json())
+    const allClasses = await classesRes.json()
+    setClasses(allClasses.filter((c: any) => myClassIds.includes(c.id)))
     setSchool(await schoolRes.json())
     setSessions(await sessionsRes.json())
-    setSubjects(await subjectsRes.json())
+    const allSubjects = await subjectsRes.json()
+    setSubjects(allSubjects.filter((s: any) => mySubjectIds.includes(s.id)))
     setLoading(false)
   }
 
@@ -67,7 +71,14 @@ export default function LessonNotesPage() {
     fetch("/api/staff?userId=" + userId)
       .then((r) => r.json())
       .then((staffData) => {
-        setTeacherId(staffData?.id || "")
+        const staffId = staffData?.id || ""
+        setTeacherId(staffId)
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        setMyClassIds(ta?.classIds || [])
+        setMySubjectIds(ta?.subjectIds || [])
       })
       .catch(() => setLoading(false))
   }, [userId])
@@ -588,3 +599,4 @@ export default function LessonNotesPage() {
     </div>
   )
 }
+

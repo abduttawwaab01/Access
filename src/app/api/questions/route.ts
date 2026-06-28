@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+﻿import { NextResponse } from "next/server"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import { cacheHeader } from "@/lib/cache-header"
@@ -28,8 +28,58 @@ export async function GET(request: Request) {
   const subjectId = searchParams.get("subjectId") || undefined
   const classId = searchParams.get("classId") || undefined
   const approved = searchParams.get("approved")
+  const teacherId = searchParams.get("teacherId")
   const pageRaw = searchParams.get("page")
   const pageSizeRaw = searchParams.get("pageSize")
+
+  // If teacherId provided, filter by teacher's assigned classes/subjects
+  if (teacherId) {
+    const [tc, ts] = await Promise.all([
+      db.teacherClasses.getByTeacher(teacherId),
+      db.teacherSubjects.getByTeacher(teacherId),
+    ])
+    const classIds = tc.map((t: any) => t.classId)
+    const subjectIds = ts.map((t: any) => t.subjectId)
+
+    if (classIds.length === 0) {
+      return NextResponse.json([], cacheHeader())
+    }
+
+    const where: any = { classId: { in: classIds } }
+    if (subjectIds.length > 0) where.subjectId = { in: subjectIds }
+    if (subjectId) where.subjectId = subjectId
+    if (classId) where.classId = classId
+    if (approved === "true") where.approved = true
+    else if (approved === "false") where.approved = false
+
+    if (pageRaw) {
+      const page = parseInt(pageRaw, 10)
+      const pageSize = parseInt(pageSizeRaw || "50", 10)
+      const { data, total, page: p, pageSize: ps, totalPages } = await paginatedQuery(
+        prisma.question,
+        { where, orderBy: { createdAt: "desc" }, include: { subject: true, class: true } },
+        { page, pageSize }
+      )
+      const mapped = data.map((q: any) => ({
+        ...mapQuestion(q),
+        subjectName: q.subject?.name || "Unknown",
+        className: q.class?.name || "Unknown",
+      }))
+      return NextResponse.json({ data: mapped, total, page: p, pageSize: ps, totalPages }, cacheHeader())
+    }
+
+    const allQ = await db.questions.getAll()
+    const result = allQ.filter((q: any) => classIds.includes(q.classId) && (subjectIds.length === 0 || subjectIds.includes(q.subjectId)))
+    if (approved === "true") return NextResponse.json(result.filter((q: any) => q.approved), cacheHeader())
+    if (approved === "false") return NextResponse.json(result.filter((q: any) => !q.approved), cacheHeader())
+    const subjects = await db.subjects.getAll()
+    const classes = await db.classes.getAll()
+    return NextResponse.json(result.map((q: any) => ({
+      ...mapQuestion(q),
+      subjectName: subjects.find((s: any) => s.id === q.subjectId)?.name || "Unknown",
+      className: classes.find((c: any) => c.id === q.classId)?.name || "Unknown",
+    })), cacheHeader())
+  }
 
   const where: any = {}
   if (subjectId) where.subjectId = subjectId
@@ -65,6 +115,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json()
+  // Require createdBy
+  if (!body.createdBy) {
+    return NextResponse.json({ error: "createdBy is required" }, { status: 400 })
+  }
   const item = await db.questions.create(body)
   return NextResponse.json(mapQuestion(item), { status: 201 })
 }

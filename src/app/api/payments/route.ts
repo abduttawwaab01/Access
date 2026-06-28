@@ -6,9 +6,12 @@ import { prisma } from "@/lib/prisma"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId") || undefined
+  const studentIds = searchParams.get("studentIds") || undefined
   const pending = searchParams.get("pending")
   const pageRaw = searchParams.get("page")
   const pageSizeRaw = searchParams.get("pageSize")
+
+  const ids = studentIds ? studentIds.split(",").filter(Boolean) : studentId ? [studentId] : undefined
 
   if (pageRaw) {
     const page = parseInt(pageRaw, 10)
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
     }
 
     const where: any = {}
-    if (studentId) where.studentId = studentId
+    if (ids) where.studentId = { in: ids }
     const result = await paginatedQuery(
       prisma.payment,
       { where, orderBy: { createdAt: "desc" } },
@@ -34,7 +37,11 @@ export async function GET(request: Request) {
   }
 
   if (pending === "true") return NextResponse.json(await db.payments.getPending(), cacheHeader())
-  return NextResponse.json(await db.payments.getAll(studentId), cacheHeader())
+  if (ids) {
+    const all = await Promise.all(ids.map((id: string) => db.payments.getAll(id)))
+    return NextResponse.json(all.flat())
+  }
+  return NextResponse.json(await db.payments.getAll(), cacheHeader())
 }
 
 export async function POST(request: Request) {

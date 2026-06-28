@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -12,91 +12,53 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, ClipboardCheck, Users, CalendarDays } from "lucide-react"
+import { Plus, Pencil, Trash2, ClipboardCheck, Users, CalendarDays, Search, X } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
-
 import { EmptyState } from "@/components/admin/EmptyState"
-import { generateAssignmentDescription } from "@/lib/content-generator"
 import { cn } from "@/lib/utils"
 
-export default function AssignmentsPage() {
-  const { data: session } = useSession()
-  const userId = (session?.user as any)?.id || ""
+export default function AdminAssignmentsPage() {
   const [items, setItems] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
-  const [generatingDesc, setGeneratingDesc] = useState(false)
+  const [staff, setStaff] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [search, setSearch] = useState("")
   const [tab, setTab] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ title: "", subject: "", subjectId: "", classId: "", dueDate: "", type: "homework", description: "" })
-  const [myClassIds, setMyClassIds] = useState<string[]>([])
-  const [myStaffId, setMyStaffId] = useState("")
-  const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
+  const [form, setForm] = useState({ title: "", subject: "", subjectId: "", classId: "", dueDate: "", type: "homework", description: "", createdBy: "" })
 
   const fetchData = async () => {
-    const [asgnsRes, classesRes, subjectsRes] = await Promise.all([
-      fetch("/api/assignments?teacherId=" + myStaffId),
+    const [asgnsRes, classesRes, subjectsRes, staffRes] = await Promise.all([
+      fetch("/api/assignments"),
       fetch("/api/classes"),
       fetch("/api/subjects"),
+      fetch("/api/staff"),
     ])
-    const allAssignments = await asgnsRes.json()
-    const allClasses = await classesRes.json()
-    const allSubjects = await subjectsRes.json()
-    setSubjects(allSubjects.filter((s: any) => mySubjectIds.includes(s.id)))
-    setItems(allAssignments.filter((a: any) => myClassIds.includes(a.classId)))
-    setClasses(allClasses.filter((c: any) => myClassIds.includes(c.id)))
-    if (form.classId === "" && myClassIds.length > 0) setForm((p) => ({ ...p, classId: myClassIds[0] }))
+    setItems(await asgnsRes.json())
+    setClasses(await classesRes.json())
+    setSubjects(await subjectsRes.json())
+    setStaff(await staffRes.json())
     setLoading(false)
   }
 
-  useEffect(() => {
-    if (!userId) return
-    fetch("/api/staff?userId=" + userId)
-      .then((r) => r.json())
-      .then((staffData) => {
-        const staffId = staffData?.id || ""
-        setMyStaffId(staffId)
-        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
-      })
-      .then((tas) => {
-        const data = Array.isArray(tas) ? (tas[0] || {}) : tas
-        setMyClassIds(data?.classIds || [])
-        setMySubjectIds(data?.subjectIds || [])
-      })
-      .catch(() => setLoading(false))
-  }, [userId])
-
-  useEffect(() => { fetchData().catch(() => setLoading(false)) }, [myClassIds])
+  useEffect(() => { fetchData() }, [])
 
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 
-  const handleGenerateDescription = () => {
-    if (!form.subject || !form.classId || !form.title) { toast.error("Set subject, class, and title first"); return }
-    setGeneratingDesc(true)
-    try {
-      const className = classes.find((c: any) => c.id === form.classId)?.name || ""
-      const desc = generateAssignmentDescription(form.subject, className, form.title, form.type)
-      update("description", desc)
-      toast.success("Description generated")
-    } catch { toast.error("Failed to generate description") }
-    setGeneratingDesc(false)
-  }
-
   const openCreate = () => {
     setEditing(null)
-    setForm({ title: "", subject: "", subjectId: "", classId: "", dueDate: "", type: "homework", description: "" })
+    setForm({ title: "", subject: "", subjectId: "", classId: "", dueDate: "", type: "homework", description: "", createdBy: "" })
     setSheetOpen(true)
   }
 
   const openEdit = (item: any) => {
     setEditing(item)
-    const subj = subjects.find((s: any) => s.name === item.subject)
-    setForm({ title: item.title, subject: item.subject, subjectId: subj?.id || "", classId: item.classId, dueDate: item.dueDate, type: item.type, description: item.description || "" })
+    const subj = subjects.find((s: any) => s.id === item.subjectId)
+    setForm({ title: item.title, subject: item.subject, subjectId: item.subjectId, classId: item.classId, dueDate: item.dueDate ? item.dueDate.split("T")[0] : "", type: item.type, description: item.description || "", createdBy: item.createdBy || "" })
     setSheetOpen(true)
   }
 
@@ -104,8 +66,7 @@ export default function AssignmentsPage() {
     e.preventDefault()
     const url = editing ? `/api/assignments/${editing.id}` : "/api/assignments"
     const method = editing ? "PUT" : "POST"
-    const payload = { ...form, createdBy: userId }
-    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
     if (res.ok) { toast.success(editing ? "Assignment updated" : "Assignment created"); setSheetOpen(false); fetchData() }
     else toast.error("Failed to save")
   }
@@ -121,31 +82,50 @@ export default function AssignmentsPage() {
     setConfirmDelete(null)
   }
 
-  const filtered = items.filter((a) => tab === "all" || a.status === tab)
-
   const getClassName = (id: string) => classes.find((c) => c.id === id)
+  const getCreatorName = (id: string) => {
+    if (!id) return "—"
+    const s = staff.find((s: any) => s.id === id)
+    return s ? `${s.firstName} ${s.lastName}` : "Unknown"
+  }
+
+  const filtered = items
+    .filter((a) => tab === "all" || a.status === tab)
+    .filter((a) => !search || a.title?.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="p-4 md:p-6">
-      <PageHeader title="Assignments" description={`${items.length} total`} actionLabel="New Assignment" onAction={openCreate} />
+      <PageHeader title="Assignments" description={`${items.length} total across all classes`} actionLabel="New Assignment" onAction={openCreate} />
       <ConfirmDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)} onConfirm={confirmDeleteItem}
         title="Delete Assignment" description={`Permanently delete ${confirmDelete?.title}? This cannot be undone.`} />
-      <Tabs value={tab} onValueChange={setTab} className="mb-4">
-        <TabsList className="flex flex-wrap w-full gap-1.5">
-          <TabsTrigger value="all" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">All</TabsTrigger>
-          <TabsTrigger value="active" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Active</TabsTrigger>
-          <TabsTrigger value="closed" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm">Closed</TabsTrigger>
-        </TabsList>
-      </Tabs>
+
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Search assignments..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 pl-9" />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <Tabs value={tab} onValueChange={setTab} className="shrink-0">
+          <TabsList className="flex h-10">
+            <TabsTrigger value="all" className="text-xs px-3">All</TabsTrigger>
+            <TabsTrigger value="active" className="text-xs px-3">Active</TabsTrigger>
+            <TabsTrigger value="closed" className="text-xs px-3">Closed</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
       {loading ? (
         <div className="space-y-3">{[1,2,3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <EmptyState title="No assignments" description="Create your first assignment" />
+        <EmptyState title="No assignments" description={search ? "Try a different search" : "Create the first assignment"} />
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
-              {filtered.map((item, i) => {
+            {filtered.map((item, i) => {
               const pct = item.total > 0 ? Math.round((item.submissions / item.total) * 100) : 0
               const due = item.dueDate ? new Date(item.dueDate) : null
               const overdue = due && due < new Date() && item.status !== "closed"
@@ -164,7 +144,8 @@ export default function AssignmentsPage() {
                               <span>{item.subject}</span>
                               <span>{getClassName(item.classId)?.name}{getClassName(item.classId)?.arm ? ` ${getClassName(item.classId).arm}` : ""}</span>
                               <span className="capitalize">{item.type}</span>
-                              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Due {item.dueDate}</span>
+                              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Due {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : "—"}</span>
+                              <span>By: {getCreatorName(item.createdBy)}</span>
                             </div>
                           </div>
                         </div>
@@ -242,12 +223,18 @@ export default function AssignmentsPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Description</Label>
-              <Button type="button" variant="ghost" size="sm" className="text-xs text-primary" onClick={handleGenerateDescription} disabled={generatingDesc}>
-                <ClipboardCheck className="h-3 w-3 mr-1" />{generatingDesc ? "Generating..." : "Generate"}
-              </Button>
-            </div>
+            <Label>Created By (Staff ID)</Label>
+            <Select value={form.createdBy} onValueChange={(v) => v && update("createdBy", v)}>
+              <SelectTrigger className="h-12"><SelectValue placeholder="Select staff" /></SelectTrigger>
+              <SelectContent>
+                {staff.filter((s: any) => s.role === "teacher").map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
             <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={4} className="resize-none" placeholder="Describe the assignment..." />
           </div>
           <Button type="submit" size="lg" className="animated-gradient w-full border-0 text-white shadow-lg shadow-primary/25">
@@ -259,6 +246,3 @@ export default function AssignmentsPage() {
     </div>
   )
 }
-
-
-

@@ -12,8 +12,11 @@ import { downloadCsv } from "@/lib/capture"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 export default function TeacherSessionsPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const [sessions, setSessions] = useState<any[]>([])
   const [exams, setExams] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -22,11 +25,24 @@ export default function TeacherSessionsPage() {
   const router = useRouter()
 
   const fetchData = async () => {
-    const [sRes, eRes] = await Promise.all([fetch("/api/exam-sessions"), fetch("/api/exams")])
-    setSessions(await sRes.json()); setExams(await eRes.json()); setLoading(false)
+    // Resolve teacherId first, then fetch scoped data
+    let teacherId = ""
+    try {
+      const staffRes = await fetch("/api/staff?userId=" + userId)
+      const staffData = await staffRes.json()
+      teacherId = staffData?.id || ""
+    } catch {}
+
+    const [sRes, eRes] = await Promise.all([
+      fetch("/api/exam-sessions?teacherId=" + teacherId),
+      fetch("/api/exams?teacherId=" + teacherId),
+    ])
+    setSessions(await sRes.json())
+    setExams(await eRes.json())
+    setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { if (userId) fetchData() }, [userId])
 
   const getExamTitle = (id: string) => exams.find((e) => e.id === id)?.title || "Unknown"
 

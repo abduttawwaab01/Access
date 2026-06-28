@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
@@ -35,48 +35,59 @@ export default function TeacherReportCardsPage() {
   const reportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!userId) return
-    Promise.all([
-      fetch("/api/staff?userId=" + userId).then((r) => r.json()),
-      fetch("/api/teacher-assignments").then((r) => r.json()),
-      fetch("/api/classes").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
-      fetch("/api/school").then((r) => r.json()),
-      fetch("/api/results").then((r) => r.json()),
-      fetch("/api/attendance-logs").then((r) => r.json()),
-      fetch("/api/terms").then((r) => r.json()),
-      fetch("/api/sessions").then((r) => r.json()),
-      fetch("/api/grading-config").then((r) => r.json()),
-    ]).then(([staffData, assignments, cls, stu, sch, res, att, trms, sess, gc]) => {
-      const staffId = staffData?.id || ""
-      const assigns = Array.isArray(assignments) ? assignments : []
-      const myAssignment = assigns.find((a: any) => a.teacherId === staffId)
-      const allClasses = Array.isArray(cls) ? cls : []
-      const allStudents = Array.isArray(stu) ? stu : []
-      const allTerms = Array.isArray(trms) ? trms : []
-      const allSessions = Array.isArray(sess) ? sess : []
+        if (!userId) return
+    let resolvedStaffId = ""
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        resolvedStaffId = staffData?.id || ""
+        return fetch("/api/teacher-assignments?teacherId=" + resolvedStaffId).then((r) => r.json())
+      })
+      .then((assignments) => {
+        const assigns = Array.isArray(assignments) ? assignments : []
+        const myAssignment = assigns.find((a: any) => a.teacherId === resolvedStaffId)
+        const assignedClassIds: string[] = myAssignment?.classIds || []
 
-      if (myAssignment) {
-        setClasses(allClasses.filter((c: any) => myAssignment.classIds?.includes(c.id)))
-        setStudents(allStudents.filter((s: any) => myAssignment.classIds?.includes(s.classId)))
-      } else {
+        return Promise.all([
+          Promise.resolve(assignedClassIds.length > 0 ? assignedClassIds : []),
+          assignedClassIds.length > 0
+            ? fetch("/api/classes").then((r) => r.json()).then((all) => all.filter((c: any) => assignedClassIds.includes(c.id)))
+            : Promise.resolve([]),
+          assignedClassIds.length > 0
+            ? fetch("/api/students").then((r) => r.json()).then((all) => all.filter((s: any) => assignedClassIds.includes(s.classId)))
+            : Promise.resolve([]),
+          fetch("/api/school").then((r) => r.json()),
+          assignedClassIds.length > 0
+            ? fetch("/api/results?teacherId=" + resolvedStaffId).then((r) => r.json())
+            : Promise.resolve([]),
+          assignedClassIds.length > 0
+            ? fetch("/api/attendance-logs?teacherId=" + resolvedStaffId).then((r) => r.json())
+            : Promise.resolve([]),
+          fetch("/api/terms").then((r) => r.json()),
+          fetch("/api/sessions").then((r) => r.json()),
+          fetch("/api/grading-config").then((r) => r.json()),
+        ])
+      })
+      .then(([assignedClassIds, cls, stu, sch, res, att, trms, sess, gc]) => {
+        const allClasses = Array.isArray(cls) ? cls : []
+        const allStudents = Array.isArray(stu) ? stu : []
+        const allTerms = Array.isArray(trms) ? trms : []
+        const allSessions = Array.isArray(sess) ? sess : []
+
         setClasses(allClasses)
         setStudents(allStudents)
-      }
+        setTerms(allTerms)
+        setSessions(allSessions)
+        setResults(Array.isArray(res) ? res : [])
+        setSchool(sch)
+        setAttendance(Array.isArray(att) ? att : [])
+        if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
 
-      const currentSess = allSessions.find((s: any) => s.isCurrent)
-      const currentTerm = allTerms.find((t: any) => t.isCurrent)
-      const defaultSessionName = currentSess?.name || currentSession()
-
-      setTerms(allTerms)
-      setSessions(allSessions)
-      setResults(Array.isArray(res) ? res : [])
-      setSchool(sch)
-      setAttendance(Array.isArray(att) ? att : [])
-      if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
-      setSelectedTermName(currentTerm?.name || (allTerms.length > 0 ? allTerms[0].name : ""))
-      setLoading(false)
-    }).catch(() => setLoading(false))
+        const currentSess = allSessions.find((s: any) => s.isCurrent)
+        const currentTerm = allTerms.find((t: any) => t.isCurrent)
+        setSelectedTermName(currentTerm?.name || (allTerms.length > 0 ? allTerms[0].name : ""))
+        setLoading(false)
+      }).catch(() => setLoading(false))
   }, [userId])
 
   const student = students.find((s: any) => s.id === selectedStudentId)
@@ -183,7 +194,7 @@ export default function TeacherReportCardsPage() {
     teacherName: teacherName || "",
     principalComment: "",
     nextTerm: "",
-    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "—",
+    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "â€”",
     totalStudents: students.filter((s: any) => s.classId === student?.classId).length || 0,
     generatedAt: new Date().toISOString(),
   } : null
@@ -279,7 +290,7 @@ export default function TeacherReportCardsPage() {
         <Card className="glass-card border-0">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Domains & Comment — {currentTerm}</h3>
+              <h3 className="text-sm font-semibold">Domains & Comment â€” {currentTerm}</h3>
               <Button size="sm" onClick={handleSaveEntry} disabled={savingEntry}>
                 {savingEntry ? "Saving..." : "Save"}
               </Button>
@@ -328,3 +339,4 @@ export default function TeacherReportCardsPage() {
     </div>
   )
 }
+

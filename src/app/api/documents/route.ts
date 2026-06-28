@@ -4,9 +4,15 @@ import { db } from "@/lib/prisma-store"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId") || undefined
+  const studentIds = searchParams.get("studentIds") || undefined
   const type = searchParams.get("type") || undefined
   if (type) return NextResponse.json(await db.documents.getByType(type))
-  return NextResponse.json(await db.documents.getAll(studentId))
+  const ids = studentIds ? studentIds.split(",").filter(Boolean) : studentId ? [studentId] : undefined
+  if (ids) {
+    const all = await Promise.all(ids.map((id: string) => db.documents.getAll(id)))
+    return NextResponse.json(all.flat())
+  }
+  return NextResponse.json(await db.documents.getAll())
 }
 
 export async function POST(request: Request) {

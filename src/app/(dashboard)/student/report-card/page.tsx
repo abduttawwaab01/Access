@@ -41,9 +41,10 @@ export default function StudentReportCardPage() {
       if (!sid) { setLoading(false); return }
       setStudentId(sid)
       setStudent(studentData)
+      const cid = studentData?.classId || ""
       const [res, stu, cls, sch, rc, att, gc] = await Promise.all([
         fetch(`/api/results?studentId=${sid}`).then((r) => r.json()),
-        fetch("/api/students").then((r) => r.json()),
+        fetch(`/api/students${cid ? `?classId=${cid}` : ""}`).then((r) => r.json()),
         fetch("/api/classes").then((r) => r.json()),
         fetch("/api/school").then((r) => r.json()),
         fetch(`/api/report-cards?studentId=${sid}`).then((r) => r.json()),

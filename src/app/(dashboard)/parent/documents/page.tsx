@@ -21,8 +21,12 @@ export default function ParentDocumentsPage() {
   useEffect(() => {
     if (childrenLoading || linkedStudentIds.length === 0) return
     setLoading(true)
-    Promise.all([fetch("/api/documents").then((r) => r.json()), fetch("/api/students").then((r) => r.json())])
-      .then(([d, s]) => { setDocuments(d.filter((doc: any) => linkedStudentIds.includes(doc.studentId))); setStudents(s); setLoading(false) })
+    const childIds = linkedStudentIds.join(",")
+    const classIds = [...new Set(children.map((c) => c.classId).filter(Boolean))].join(",")
+    Promise.all([
+      fetch(`/api/documents?studentIds=${childIds}`).then((r) => r.json()),
+      fetch(`/api/students?classIds=${classIds}`).then((r) => r.json()),
+    ]).then(([d, s]) => { setDocuments(Array.isArray(d) ? d : []); setStudents(Array.isArray(s) ? s : []); setLoading(false) })
       .catch(() => setLoading(false))
   }, [linkedStudentIds, childrenLoading])
 

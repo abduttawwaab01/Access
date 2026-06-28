@@ -10,17 +10,21 @@ export async function GET(request: NextRequest) {
   const pageRaw = searchParams.get("page")
   const pageSizeRaw = searchParams.get("pageSize")
 
+  const [tc, ts] = teacherId
+    ? await Promise.all([db.teacherClasses.getByTeacher(teacherId), db.teacherSubjects.getByTeacher(teacherId)])
+    : [null, null]
+  const cids = tc ? tc.map((t: any) => t.classId) : []
+  const sids = ts ? ts.map((t: any) => t.subjectId) : []
+
   if (pageRaw) {
     const page = parseInt(pageRaw, 10)
     const pageSize = parseInt(pageSizeRaw || "50", 10)
+    if (teacherId && cids.length === 0) {
+      return NextResponse.json({ data: [], total: 0, page, pageSize, totalPages: 0 }, cacheHeader())
+    }
     if (teacherId) {
-      const ta = await db.teacherAssignments.getByTeacher(teacherId)
-      if (!ta) {
-        return NextResponse.json({ data: [], total: 0, page, pageSize, totalPages: 0 }, cacheHeader())
-      }
-      const cids = (ta.classIds || []) as string[]
-      const sids = (ta.subjectIds || []) as string[]
-      const where: any = { classId: { in: cids }, subjectId: { in: sids } }
+      const where: any = { classId: { in: cids } }
+      if (sids.length > 0) where.subjectId = { in: sids }
       const result = await paginatedQuery(
         prisma.lessonNote,
         { where, orderBy: { createdAt: "desc" } },
@@ -41,14 +45,7 @@ export async function GET(request: NextRequest) {
   let result: any[]
   if (teacherId) {
     const allNotes = await db.lessonNotes.getAll()
-    const ta = await db.teacherAssignments.getByTeacher(teacherId)
-    if (ta) {
-      const cids = (ta.classIds || []) as string[]
-      const sids = (ta.subjectIds || []) as string[]
-      result = allNotes.filter((n: any) => cids.includes(n.classId) && sids.includes(n.subjectId))
-    } else {
-      result = []
-    }
+    result = allNotes.filter((n: any) => cids.includes(n.classId))
   } else {
     result = await db.lessonNotes.getAll(classId)
   }

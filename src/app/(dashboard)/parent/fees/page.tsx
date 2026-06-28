@@ -26,9 +26,10 @@ export default function ParentFeesPage() {
   useEffect(() => {
     if (childrenLoading || linkedStudentIds.length === 0) return
     setLoading(true)
+    const childIds = linkedStudentIds.join(",")
     Promise.all([
-      fetch("/api/payments").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
+      fetch(`/api/payments?studentIds=${childIds}`).then((r) => r.json()),
+      fetch(`/api/students?classIds=${children.map((c) => c.classId).filter(Boolean).join(",")}`).then((r) => r.json()),
       fetch("/api/fee-structures").then((r) => r.json()),
       fetch("/api/school/bank").then((r) => r.json()),
     ]).then(([p, s, fs, b]) => { setPayments(p); setStudents(s); setFeeStructures(fs); setBankDetails(b); setLoading(false) })

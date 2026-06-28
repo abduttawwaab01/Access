@@ -18,10 +18,12 @@ export default function TeacherAttendancePage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id || ""
   const [teacher, setTeacher] = useState<any>(null)
+  const [teacherId, setTeacherId] = useState("")
   const [activeTab, setActiveTab] = useState("mark")
   const [students, setStudents] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
+  const [myClassIds, setMyClassIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedClass, setSelectedClass] = useState("")
   const [search, setSearch] = useState("")
@@ -33,11 +35,13 @@ export default function TeacherAttendancePage() {
       .then((staffData) => {
         setTeacher(staffData)
         const staffId = staffData?.id || ""
+        setTeacherId(staffId)
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
         const ta = Array.isArray(tas) ? tas[0] : null
         const classIds: string[] = ta?.classIds || []
+        setMyClassIds(classIds)
         return Promise.all([
           fetch("/api/students").then((r) => r.json()),
           fetch("/api/attendance-logs").then((r) => r.json()),
@@ -46,10 +50,22 @@ export default function TeacherAttendancePage() {
         ])
       })
       .then(([s, l, c, classIds]) => {
-        setStudents(s)
-        setLogs(l)
-        setClasses(c)
-        const defaultClass = classIds.length > 0 ? classIds[0] : (c.length > 0 ? c[0].id : "")
+        const allStudents: any[] = Array.isArray(s) ? s : []
+        const allClasses: any[] = Array.isArray(c) ? c : []
+        const allLogs: any[] = Array.isArray(l) ? l : []
+        // Restrict to teacher's assigned classes only
+        const assignedClasses = classIds.length > 0
+          ? allClasses.filter((cls) => classIds.includes(cls.id))
+          : allClasses
+        const assignedStudentIds = new Set(
+          classIds.length > 0
+            ? allStudents.filter((stu) => classIds.includes(stu.classId)).map((stu) => stu.id)
+            : allStudents.map((stu) => stu.id)
+        )
+        setStudents(classIds.length > 0 ? allStudents.filter((stu) => classIds.includes(stu.classId)) : allStudents)
+        setLogs(allLogs.filter((log) => assignedStudentIds.has(log.userId)))
+        setClasses(assignedClasses)
+        const defaultClass = classIds.length > 0 ? classIds[0] : (allClasses.length > 0 ? allClasses[0].id : "")
         setSelectedClass(defaultClass)
         setLoading(false)
       })
@@ -68,7 +84,7 @@ export default function TeacherAttendancePage() {
     const res = await fetch("/api/attendance-logs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: studentId, userType: "student", date: today, time, status, method }),
+      body: JSON.stringify({ userId: studentId, userType: "student", date: today, time, status, method, createdBy: teacherId }),
     })
     if (res.ok) {
       const newLog = await res.json()
@@ -80,6 +96,10 @@ export default function TeacherAttendancePage() {
     if (res.status === 409) {
       playFailure()
       toast.error("Already marked today")
+    }
+    if (res.status === 403) {
+      playFailure()
+      toast.error("You are not assigned to this student's class")
     }
     return false
   }

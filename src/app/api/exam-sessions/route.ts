@@ -1,9 +1,33 @@
-import { NextResponse } from "next/server"
+﻿import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const examId = searchParams.get("examId") || undefined
+  const teacherId = searchParams.get("teacherId")
+  const studentId = searchParams.get("studentId") || undefined
+
+  if (studentId) {
+    const allSessions = await db.examSessions.getAll()
+    return NextResponse.json(allSessions.filter((s: any) => s.studentId === studentId))
+  }
+
+  // If teacherId provided, filter sessions by teacher's assigned classes' exams
+  if (teacherId) {
+    const tc = await db.teacherClasses.getByTeacher(teacherId)
+    const classIds = tc.map((t: any) => t.classId)
+    if (classIds.length === 0) return NextResponse.json([])
+
+    const allExams = await db.exams.getAll()
+    const myExamIds = allExams.filter((e: any) => classIds.includes(e.classId)).map((e: any) => e.id)
+    if (myExamIds.length === 0) return NextResponse.json([])
+
+    const allSessions = await db.examSessions.getAll()
+    const filtered = allSessions.filter((s: any) => myExamIds.includes(s.examId))
+    if (examId) return NextResponse.json(filtered.filter((s: any) => s.examId === examId))
+    return NextResponse.json(filtered)
+  }
+
   try {
     const sessions = await db.examSessions.getAll(examId)
     return NextResponse.json(sessions)

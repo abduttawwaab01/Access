@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
@@ -34,20 +34,21 @@ export default function TeacherExamsPage() {
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
   const [myClassIds, setMyClassIds] = useState<string[]>([])
+  const [teacherId, setTeacherId] = useState("")
   const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
 
   const fetchData = async () => {
     const [eRes, sRes, cRes] = await Promise.all([
-      fetch("/api/exams?type=regular"),
+      fetch("/api/exams?type=regular&teacherId=" + teacherId),
       fetch("/api/subjects"),
       fetch("/api/classes"),
     ])
     const allExams = await eRes.json()
     const allSubjects = await sRes.json()
     const allClasses = await cRes.json()
-    setItems(myClassIds.length > 0 ? allExams.filter((e: any) => myClassIds.includes(e.classId) && (mySubjectIds.length === 0 || mySubjectIds.includes(e.subjectId))) : allExams)
-    setSubjects(mySubjectIds.length > 0 ? allSubjects.filter((s: any) => mySubjectIds.includes(s.id)) : allSubjects)
-    setClasses(myClassIds.length > 0 ? allClasses.filter((c: any) => myClassIds.includes(c.id)) : allClasses)
+    setItems(allExams.filter((e: any) => myClassIds.includes(e.classId) && (mySubjectIds.length === 0 || mySubjectIds.includes(e.subjectId))))
+    setSubjects(allSubjects.filter((s: any) => mySubjectIds.includes(s.id)))
+    setClasses(allClasses.filter((c: any) => myClassIds.includes(c.id)))
     setLoading(false)
   }
 
@@ -57,6 +58,7 @@ export default function TeacherExamsPage() {
       .then((r) => r.json())
       .then((staffData) => {
         const staffId = staffData?.id || ""
+        setTeacherId(staffId)
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
@@ -78,7 +80,8 @@ export default function TeacherExamsPage() {
     e.preventDefault()
     const url = editing ? `/api/exams/${editing.id}` : "/api/exams"
     const method = editing ? "PUT" : "POST"
-    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
+    const body = editing ? form : { ...form, createdBy: userId }
+    const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     if (res.ok) { toast.success(editing ? "Exam updated" : "Exam created"); setSheetOpen(false); fetchData() }
     else toast.error("Failed to save")
   }
@@ -269,3 +272,9 @@ export default function TeacherExamsPage() {
     </div>
   )
 }
+
+
+
+
+
+

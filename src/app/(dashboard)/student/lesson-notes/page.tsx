@@ -16,8 +16,8 @@ import { getContentVersion, extractStudentContent } from "@/lib/content-generato
 export default function StudentLessonNotesPage() {
   const { data: session } = useSession()
   const userId = (session?.user as any)?.id || ""
-  const [students, setStudents] = useState<any[]>([])
-  const [classes, setClasses] = useState<any[]>([])
+  const [student, setStudent] = useState<any>(null)
+  const [studentClass, setStudentClass] = useState<any>(null)
   const [notes, setNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -34,9 +34,6 @@ export default function StudentLessonNotesPage() {
 
   const [studentId, setStudentId] = useState("")
 
-  const student = students.find((s) => s.id === studentId)
-  const studentClassId = student?.classId || ""
-
   useEffect(() => {
     if (!selectedClassId) return
     setLoading(true)
@@ -52,23 +49,24 @@ export default function StudentLessonNotesPage() {
   useEffect(() => {
     const fetchInitial = async () => {
       if (!userId) return
-      const [stuRes, clsRes] = await Promise.all([
-        fetch(`/api/students?userId=${userId}`),
-        fetch("/api/classes"),
-      ])
-      const student = stuRes.ok ? await stuRes.json() : null
-      const allClasses = await clsRes.json()
-      setClasses(Array.isArray(allClasses) ? allClasses : [])
-      if (student?.id) {
-        setStudentId(student.id)
-        if (student.classId) setSelectedClassId(student.classId)
+      const stuRes = await fetch(`/api/students?userId=${userId}`)
+      const s = stuRes.ok ? await stuRes.json() : null
+      if (s?.id) {
+        setStudent(s)
+        setStudentId(s.id)
+        if (s.classId) {
+          setSelectedClassId(s.classId)
+          const clsRes = await fetch(`/api/classes`)
+          const allClasses = await clsRes.json()
+          const cls = (Array.isArray(allClasses) ? allClasses : []).find((c: any) => c.id === s.classId)
+          if (cls) setStudentClass(cls)
+        }
       }
       setLoading(false)
     }
     fetchInitial()
   }, [userId])
 
-  const getClassName = (id: string) => classes.find((c) => c.id === id)
   const sortedNotes = [...notes].sort((a, b) => (a.week || 0) - (b.week || 0))
 
   const toggleExpand = (id: string) => {
@@ -175,8 +173,6 @@ export default function StudentLessonNotesPage() {
     hidden: { opacity: 0, y: 12 },
     visible: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 80, damping: 15 } },
   }
-
-  const filteredClasses = [...new Set(students.filter((s) => s.classId).map((s) => s.classId))]
 
   const renderQuizUI = (note: any) => {
     const questions = quizState?.questions || []
@@ -339,21 +335,14 @@ export default function StudentLessonNotesPage() {
         <p className="text-sm text-muted-foreground">Browse published lesson notes for your class. Read and study each note, then take the quiz.</p>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-          <Select value={selectedClassId} onValueChange={(v) => v && setSelectedClassId(v)}>
-            <SelectTrigger className="h-10 flex-1">
-              <SelectValue placeholder="Select a class..." />
-            </SelectTrigger>
-            <SelectContent>
-              {classes.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </motion.div>
+      {student?.classId && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Badge variant="secondary" className="text-sm px-3 py-1">{studentClass?.name || student.classId}</Badge>
+          </div>
+        </motion.div>
+      )}
 
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}</div>
@@ -400,7 +389,7 @@ export default function StudentLessonNotesPage() {
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
                               <span>{note.subject}</span>
                               <span>Week {note.week}</span>
-                              <span>{getClassName(note.classId)?.name}{getClassName(note.classId)?.arm ? ` ${getClassName(note.classId).arm}` : ""}</span>
+                              <span>{studentClass?.name || note.classId}</span>
                               <span>{note.term}</span>
                             </div>
                             <p className="text-xs text-muted-foreground/70 mt-1">

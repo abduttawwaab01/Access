@@ -34,7 +34,7 @@ export default function StudentCbtPage() {
 
       const [eRes, sRes, subRes] = await Promise.all([
         fetch(`/api/exams${sid ? `?studentId=${sid}` : ""}`),
-        fetch("/api/exam-sessions"),
+        fetch(`/api/exam-sessions${sid ? `?studentId=${sid}` : ""}`),
         fetch("/api/subjects"),
       ])
       const allExams = await eRes.json()

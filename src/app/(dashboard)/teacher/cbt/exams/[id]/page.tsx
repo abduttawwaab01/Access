@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
@@ -16,10 +16,16 @@ import { EmptyState } from "@/components/admin/EmptyState"
 import { ExamDownload } from "@/components/ExamDownload"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 const PAGE_SIZE = 20
 
 export default function TeacherExamDetailPage() {
+  const { data: session } = useSession()
+  const userId = (session?.user as any)?.id || ""
   const params = useParams()
+  const [teacherId, setTeacherId] = useState("")
+  const [myClassIds, setMyClassIds] = useState<string[]>([])
+  const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
   const [exam, setExam] = useState<any>(null)
   const [questions, setQuestions] = useState<any[]>([])
   const [allQuestions, setAllQuestions] = useState<any[]>([])
@@ -53,7 +59,7 @@ export default function TeacherExamDetailPage() {
 
   const fetchData = async () => {
     const [examRes, allQRes, sRes, tRes] = await Promise.all([
-      fetch(`/api/exams/${params.id}`), fetch("/api/questions"), fetch("/api/subjects"), fetch("/api/topics"),
+      fetch(`/api/exams/${params.id}`), fetch("/api/questions?teacherId=" + teacherId), fetch("/api/subjects"), fetch("/api/topics"),
     ])
     const examData = await examRes.json()
     setExam(examData)
@@ -68,7 +74,25 @@ export default function TeacherExamDetailPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [params.id])
+  // Resolve teacher identity
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/staff?userId=" + userId)
+      .then((r) => r.json())
+      .then((staffData) => {
+        const staffId = staffData?.id || ""
+        setTeacherId(staffId)
+        return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
+      })
+      .then((tas) => {
+        const ta = Array.isArray(tas) ? tas[0] : null
+        setMyClassIds(ta?.classIds || [])
+        setMySubjectIds(ta?.subjectIds || [])
+      })
+      .catch(() => {})
+  }, [userId])
+
+  useEffect(() => { if (teacherId) fetchData() }, [params.id, teacherId])
 
   const addQuestion = async () => {
     if (!selectedQ) return
@@ -87,7 +111,7 @@ export default function TeacherExamDetailPage() {
 
   const loadBankQuestions = async () => {
     try {
-      const res = await fetch(`/api/question-bank?subjectId=${exam.subjectId}&approved=true`)
+      const res = await fetch(`/api/question-bank?subjectId=${exam.subjectId}&approved=true&teacherId=${teacherId}`)
       const data = await res.json()
       const existingIds = new Set((exam.questions || []).map((q: any) => q.questionId))
       const filtered = data.filter((q: any) => !existingIds.has(q.id))
@@ -502,7 +526,7 @@ export default function TeacherExamDetailPage() {
                             onClick={() => { if (!selectedIds.has(q.id)) toggleSingle(q.id) }}
                           />
                         </td>
-                        <td className="p-2 text-xs text-muted-foreground hidden sm:table-cell truncate max-w-24">{q.topic || "—"}</td>
+                        <td className="p-2 text-xs text-muted-foreground hidden sm:table-cell truncate max-w-24">{q.topic || "â€”"}</td>
                       </tr>
                     )
                   })}
@@ -630,3 +654,8 @@ export default function TeacherExamDetailPage() {
     </div>
   )
 }
+
+
+
+
+
