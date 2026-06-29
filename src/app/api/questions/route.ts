@@ -2,6 +2,7 @@
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import { cacheHeader } from "@/lib/cache-header"
+import { requireAuth } from "@/lib/api-auth"
 
 function mapQuestion(q: any) {
   return {
@@ -86,6 +87,7 @@ export async function GET(request: Request) {
   if (classId) where.classId = classId
   if (approved === "true") where.approved = true
   else if (approved === "false") where.approved = false
+  else where.approved = true
 
   if (pageRaw) {
     const page = parseInt(pageRaw, 10)
@@ -114,6 +116,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   // Require createdBy
   if (!body.createdBy) {
@@ -124,6 +128,8 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const action = searchParams.get("action")
   const body = await request.json()
@@ -156,6 +162,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   if (!id) {

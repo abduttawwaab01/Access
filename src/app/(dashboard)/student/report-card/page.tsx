@@ -27,6 +27,7 @@ export default function StudentReportCardPage() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [entryData, setEntryData] = useState<any>(null)
+  const [classResults, setClassResults] = useState<any[]>([])
   const [gradeBoundaries, setGradeBoundaries] = useState<GradeBoundary[]>(DEFAULT_GRADE_BOUNDARIES)
   const reportRef = useRef<HTMLDivElement>(null)
 
@@ -58,6 +59,10 @@ export default function StudentReportCardPage() {
       setReportCards(Array.isArray(rc) ? rc : [])
       setAttendance(Array.isArray(att) ? att : [])
       if (gc?.gradeBoundaries) setGradeBoundaries(gc.gradeBoundaries)
+      // Fetch class-wide results for accurate position calculation
+      if (cid) {
+        fetch(`/api/results?classId=${cid}`).then((r) => r.json()).then((data) => setClassResults(Array.isArray(data) ? data : [])).catch(() => {})
+      }
       setLoading(false)
     }
     load()
@@ -99,7 +104,7 @@ export default function StudentReportCardPage() {
 
   const domains = entryData?.domains || {}
   const position = student && termResults.length > 0
-    ? computePosition(results, studentId, student.classId, currentTerm, session)
+    ? computePosition(classResults.length > 0 ? classResults : results, studentId, student.classId, currentTerm, session)
     : null
 
   const reportData = {

@@ -22,7 +22,7 @@ async function buildAdminContext(): Promise<ContextResult> {
   const parentLinks = await db.parentLinks.getAll()
   const teacherAssignments = await db.teacherAssignments.getAll()
 
-  const teachers = staff.filter((s: any) => s.role === "teacher")
+  const teachers = staff.filter((s: any) => s.user?.role === "teacher")
   const classEnrollments = classes.map((c: any) => ({
     name: c.name,
     students: students.filter((s: any) => s.classId === c.id).length,
@@ -82,7 +82,7 @@ async function buildAdminContext(): Promise<ContextResult> {
   const staffRoster = ["Teachers & Staff:"].concat(
     staff.map((s: any) => {
       const ta = assignmentMap[s.id]
-      if (s.role === "teacher" && ta) {
+      if (s.user?.role === "teacher" && ta) {
         const cns = (ta.classIds || []).map((id: string) => classMap.get(id) || id).join(", ")
         const sns = (ta.subjectIds || []).map((id: string) => {
           const sub = subjects.find((sb: any) => sb.id === id)
@@ -90,7 +90,7 @@ async function buildAdminContext(): Promise<ContextResult> {
         }).join(", ")
         return `  ${s.firstName} ${s.lastName} | Teacher | ${s.email || "—"} | Classes: ${cns || "—"} | Subjects: ${sns || "—"}`
       }
-      return `  ${s.firstName} ${s.lastName} | ${s.role} | ${s.department || "—"} | ${s.email || "—"}`
+      return `  ${s.firstName} ${s.lastName} | ${s.user?.role || "Staff"} | ${s.department || "—"} | ${s.email || "—"}`
     })
   ).join("\n")
 
@@ -231,7 +231,7 @@ async function buildSuperAdminContext(): Promise<ContextResult> {
     prisma.student.findMany(),
     prisma.class.findMany(),
     prisma.subject.findMany(),
-    prisma.staff.findMany(),
+    prisma.staff.findMany({ include: { user: { select: { role: true } } } }),
     prisma.result.findMany(),
     prisma.lessonNote.findMany(),
     prisma.user.findMany(),
@@ -247,8 +247,8 @@ async function buildSuperAdminContext(): Promise<ContextResult> {
     prisma.announcement.findMany(),
   ])
 
-  const teachers = staff.filter((s) => s.role === "teacher")
-  const admins = staff.filter((s) => s.role === "admin")
+  const teachers = staff.filter((s) => s.user?.role === "teacher")
+  const admins = staff.filter((s) => s.user?.role === "admin")
   const parents = users.filter((u) => u.role === "parent")
   const studentUsers = users.filter((u) => u.role === "student")
 
@@ -316,11 +316,11 @@ async function buildSuperAdminContext(): Promise<ContextResult> {
       return `  ${c.name} (${clsStudents.length}): ${clsStudents.map((s: any) => `${s.firstName} ${s.lastName} (${s.studentId})`).join(", ")}`
     }).filter(Boolean).join("\n")
 
-    const teachers = schoolStaff.filter((s) => s.role === "teacher")
-    const nonTeachers = schoolStaff.filter((s) => s.role !== "teacher" && s.role === "admin")
+    const teachers = schoolStaff.filter((s) => s.user?.role === "teacher")
+    const nonTeachers = schoolStaff.filter((s) => s.user?.role === "admin")
     const staffLines = [
       ...teachers.map((s: any) => `  ${s.firstName} ${s.lastName} | Teacher | ${s.email || "—"}`),
-      ...nonTeachers.map((s: any) => `  ${s.firstName} ${s.lastName} | ${s.role} | ${s.department || "—"} | ${s.email || "—"}`),
+      ...nonTeachers.map((s: any) => `  ${s.firstName} ${s.lastName} | ${s.user?.role || "Admin"} | ${s.department || "—"} | ${s.email || "—"}`),
     ].join("\n")
 
     const schoolParentLinks = parentLinks.filter((pl) => {

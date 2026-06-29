@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET() {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const data = await db.school.get()
   if (!data) {
     return NextResponse.json({
@@ -26,6 +29,8 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   await db.school.update(body)
   return NextResponse.json({ success: true })

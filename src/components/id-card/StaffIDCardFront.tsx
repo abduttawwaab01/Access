@@ -2,7 +2,7 @@
 
 import { QRCodeSVG } from "qrcode.react"
 
-interface StaffData { id?: string; firstName: string; lastName: string; staffId: string; role?: string; department?: string; phone?: string; email?: string; gender?: string; photo?: string }
+interface StaffData { id?: string; firstName: string; lastName: string; staffId: string; role?: string; department?: string; phone?: string; email?: string; gender?: string; photo?: string; user?: { role?: string } }
 interface SchoolData { name: string; shortName?: string; logo?: string; address?: string }
 interface Props { staff: StaffData; school: SchoolData; orientation?: "portrait" | "landscape" }
 
@@ -41,7 +41,7 @@ export function StaffIDCardFront({ staff, school, orientation = "portrait" }: Pr
               </div>
               <div>
                 <p className="text-lg font-bold text-gray-900">{staff.firstName} {staff.lastName}</p>
-                <p className="text-xs font-semibold text-indigo-600">{staff.role || "Staff"}</p>
+                <p className="text-xs font-semibold text-indigo-600">{staff.role || staff.user?.role || "Staff"}</p>
                 {staff.department && <p className="text-[11px] text-gray-500">{staff.department}</p>}
                 <p className="text-[9px] font-mono text-gray-500 mt-1">{staff.staffId}</p>
               </div>
@@ -96,7 +96,7 @@ export function StaffIDCardFront({ staff, school, orientation = "portrait" }: Pr
         </div>
         <div className="text-center mb-3">
           <p className="text-base font-bold text-gray-900">{staff.firstName} {staff.lastName}</p>
-          <p className="text-xs font-semibold text-indigo-600">{staff.role || "Staff"}</p>
+          <p className="text-xs font-semibold text-indigo-600">{staff.role || staff.user?.role || "Staff"}</p>
           {staff.department && <p className="text-[11px] text-gray-500">{staff.department}</p>}
           <p className="text-[10px] font-mono text-gray-500 mt-1">{staff.staffId}</p>
         </div>

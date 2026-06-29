@@ -227,7 +227,7 @@ export default function AdminAssignmentsPage() {
             <Select value={form.createdBy} onValueChange={(v) => v && update("createdBy", v)}>
               <SelectTrigger className="h-12"><SelectValue placeholder="Select staff" /></SelectTrigger>
               <SelectContent>
-                {staff.filter((s: any) => s.role === "teacher").map((s: any) => (
+                {staff.filter((s: any) => s.user?.role === "teacher").map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
                 ))}
               </SelectContent>

@@ -214,7 +214,7 @@ export default function TeacherSessionDetailPage() {
           <div ref={reportRef} className="bg-white rounded-2xl shadow-xl overflow-hidden border">
             <div className="bg-gradient-to-r from-primary via-primary/90 to-secondary p-6 text-white">
               <div className="text-center">
-                <p className="text-sm opacity-80 uppercase tracking-wider">{subjects.find((s) => s.id === exam?.subjectId)?.name || "Unknown"} - {exam?.title}</p>
+                <p className="text-sm opacity-80 uppercase tracking-wider">{(exam?.subjectIds || [exam?.subjectId]).filter(Boolean).map((sid: string) => subjects.find((s: any) => s.id === sid)?.name || "Unknown").join(", ")} - {exam?.title}</p>
                 <p className="text-sm opacity-80">{session.studentName}</p>
                 <div className="mt-4 flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
                   <div className="text-center"><p className="text-3xl font-bold">{totalPoints}/{maxPoints}</p><p className="text-xs opacity-80 mt-1">Total Score</p></div>

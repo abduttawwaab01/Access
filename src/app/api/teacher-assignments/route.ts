@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -28,6 +29,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { teacherId, classIds, subjectIds, isClassTeacher } = await request.json()
   const schoolId = (await db.staff.getById(teacherId))?.schoolId || ""
 

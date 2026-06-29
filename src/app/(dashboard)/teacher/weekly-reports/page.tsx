@@ -72,10 +72,9 @@ export default function TeacherWeeklyReportsPage() {
     if (!teacherId) return
     Promise.all([
       fetch("/api/classes").then((r) => r.json()),
-      fetch("/api/staff").then((r) => r.json()),
-      fetch("/api/teacher-assignments").then((r) => r.json()),
+      fetch("/api/teacher-assignments?teacherId=" + teacherId).then((r) => r.json()),
       fetch("/api/terms").then((r) => r.json()),
-    ]).then(([cls, staffList, assignments, termList]) => {
+    ]).then(([cls, ta, termList]) => {
       setClasses(cls)
       setTerms(termList)
       const current = termList.find((t: any) => t.isCurrent)
@@ -83,11 +82,9 @@ export default function TeacherWeeklyReportsPage() {
         setCurrentTerm(current)
         setSelectedTerm(current.name)
       }
-      const ta = assignments.find((a: any) => a.teacherId === teacherId)
-      if (ta) {
-        setMyClassIds(ta.classIds || [])
-        if (ta.classIds?.length > 0) setSelectedClassId(ta.classIds[0])
-      }
+      const cids = ta?.classIds || []
+      setMyClassIds(cids)
+      if (cids.length > 0) setSelectedClassId(cids[0])
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [teacherId])

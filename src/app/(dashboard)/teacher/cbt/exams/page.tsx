@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2, Play, Clock, FileText, Eye, Shield } from "lucide-react"
@@ -32,7 +33,7 @@ export default function TeacherExamsPage() {
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterType, setFilterType] = useState("all")
   const [editing, setEditing] = useState<any | null>(null)
-  const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
+  const [form, setForm] = useState({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectIds: [] as string[], classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 })
   const [myClassIds, setMyClassIds] = useState<string[]>([])
   const [teacherId, setTeacherId] = useState("")
   const [mySubjectIds, setMySubjectIds] = useState<string[]>([])
@@ -46,7 +47,7 @@ export default function TeacherExamsPage() {
     const allExams = await eRes.json()
     const allSubjects = await sRes.json()
     const allClasses = await cRes.json()
-    setItems(allExams.filter((e: any) => myClassIds.includes(e.classId) && (mySubjectIds.length === 0 || mySubjectIds.includes(e.subjectId))))
+    setItems(allExams.filter((e: any) => myClassIds.includes(e.classId) && (mySubjectIds.length === 0 || (e.subjectIds || [e.subjectId]).some((sid: string) => mySubjectIds.includes(sid)))))
     setSubjects(allSubjects.filter((s: any) => mySubjectIds.includes(s.id)))
     setClasses(allClasses.filter((c: any) => myClassIds.includes(c.id)))
     setLoading(false)
@@ -62,9 +63,9 @@ export default function TeacherExamsPage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        setMyClassIds(ta?.classIds || [])
-        setMySubjectIds(ta?.subjectIds || [])
+        const { classIds: myClassIds = [], subjectIds: mySubjectIds = [] } = tas || {}
+        setMyClassIds(myClassIds)
+        setMySubjectIds(mySubjectIds)
       })
       .catch(() => setLoading(false))
   }, [userId])
@@ -73,14 +74,15 @@ export default function TeacherExamsPage() {
 
   const update = (field: string, value: any) => setForm((prev) => ({ ...prev, [field]: value }))
 
-  const openCreate = () => { setEditing(null); setForm({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectId: "", classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 }); setSheetOpen(true) }
-  const openEdit = (item: any) => { setEditing(item); setForm({ title: item.title, description: item.description || "", duration: item.duration, shuffleQuestions: item.shuffleQuestions, showResults: item.showResults, subjectId: item.subjectId || "", classId: item.classId || "", type: item.type || "regular", requireFullscreen: item.requireFullscreen ?? true, tabSwitchLimit: item.tabSwitchLimit ?? 3, allowCopyPaste: item.allowCopyPaste ?? false, maxAttempts: item.maxAttempts ?? 0 }); setSheetOpen(true) }
+  const openCreate = () => { setEditing(null); setForm({ title: "", description: "", duration: 30, shuffleQuestions: false, showResults: true, subjectIds: [], classId: "", type: "regular", requireFullscreen: true, tabSwitchLimit: 3, allowCopyPaste: false, maxAttempts: 0 }); setSheetOpen(true) }
+  const openEdit = (item: any) => { setEditing(item); setForm({ title: item.title, description: item.description || "", duration: item.duration, shuffleQuestions: item.shuffleQuestions, showResults: item.showResults, subjectIds: item.subjectIds?.length ? item.subjectIds : [item.subjectId].filter(Boolean), classId: item.classId || "", type: item.type || "regular", requireFullscreen: item.requireFullscreen ?? true, tabSwitchLimit: item.tabSwitchLimit ?? 3, allowCopyPaste: item.allowCopyPaste ?? false, maxAttempts: item.maxAttempts ?? 0 }); setSheetOpen(true) }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!form.classId || form.subjectIds.length === 0) { toast.error("Select a class and at least one subject"); return }
     const url = editing ? `/api/exams/${editing.id}` : "/api/exams"
     const method = editing ? "PUT" : "POST"
-    const body = editing ? form : { ...form, createdBy: userId }
+    const body = editing ? { ...form, subjectId: form.subjectIds[0], subjectIds: form.subjectIds } : { ...form, subjectId: form.subjectIds[0], subjectIds: form.subjectIds, createdBy: userId }
     const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     if (res.ok) { toast.success(editing ? "Exam updated" : "Exam created"); setSheetOpen(false); fetchData() }
     else toast.error("Failed to save")
@@ -106,7 +108,7 @@ export default function TeacherExamsPage() {
   const getClassName = (id: string) => classes.find((c) => c.id === id)
 
   const filtered = items.filter((e) => {
-    if (filterSubject !== "all" && e.subjectId !== filterSubject) return false
+    if (filterSubject !== "all" && !(e.subjectIds || [e.subjectId]).includes(filterSubject)) return false
     if (filterStatus !== "all" && e.status !== filterStatus) return false
     if (filterType !== "all" && e.type !== filterType) return false
     return true
@@ -159,9 +161,11 @@ export default function TeacherExamsPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <Badge className={item.status === "published" ? "bg-green-500/15 text-green-600" : "bg-amber-500/15 text-amber-600"}>{item.status}</Badge>
-                            <Badge variant="outline">{getSubjectName(item.subjectId)}</Badge>
+                            {(item.subjectIds || [item.subjectId]).map((sid: string) => (
+                              <Badge key={sid} variant="outline">{getSubjectName(sid)}</Badge>
+                            ))}
                           </div>
                           <Link href={`/teacher/cbt/exams/${item.id}`} className="hover:underline"><h3 className="font-semibold">{item.title}</h3></Link>
                           {item.description && <p className="text-sm text-muted-foreground line-clamp-1">{item.description}</p>}
@@ -199,17 +203,40 @@ export default function TeacherExamsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Subject</Label>
-              <Select value={form.subjectId} onValueChange={(v) => update("subjectId", v)}>
-                <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {subjects.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Subjects</Label>
+              <div className="border rounded-lg p-3 space-y-1 max-h-48 overflow-y-auto">
+                {form.classId ? (
+                  subjects.filter(s => s.classId === form.classId).length > 0 ? subjects.filter(s => s.classId === form.classId).map((s) => (
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer py-1.5 px-1 rounded hover:bg-muted">
+                      <Checkbox checked={form.subjectIds.includes(s.id)}
+                        onCheckedChange={() => setForm(prev => ({
+                          ...prev,
+                          subjectIds: prev.subjectIds.includes(s.id)
+                            ? prev.subjectIds.filter(id => id !== s.id)
+                            : [...prev.subjectIds, s.id]
+                        }))} />
+                      <span className="text-sm">{s.name}</span>
+                    </label>
+                  )) : <p className="text-xs text-muted-foreground">No subjects for this class</p>
+                ) : <p className="text-xs text-muted-foreground">Select a class first</p>}
+              </div>
+              {form.subjectIds.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {form.subjectIds.map(id => (
+                    <Badge key={id} variant="secondary" className="text-xs">{subjects.find(s => s.id === id)?.name || id}</Badge>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Class</Label>
-              <Select value={form.classId} onValueChange={(v) => update("classId", v)}>
+              <Select value={form.classId} onValueChange={(v) => {
+                update("classId", v)
+                setForm(prev => ({
+                  ...prev,
+                  subjectIds: prev.subjectIds.filter(sid => subjects.find(s => s.id === sid && s.classId === v))
+                }))
+              }}>
                 <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>)}

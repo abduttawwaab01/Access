@@ -26,9 +26,10 @@ export async function paginatedQuery<T, A extends { where?: any; orderBy?: any; 
   return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
 }
 
-async function ensureSchoolId(): Promise<string> {
-  const school = await prisma.school.findFirst()
-  return school?.id || ""
+export async function ensureSchoolId(schoolId?: string): Promise<string> {
+  if (schoolId) return schoolId
+  if (!school) throw new Error('No school found. Please seed a school first.')
+  return school.id
 }
 
 export const db = {
@@ -142,7 +143,13 @@ export const db = {
       const settingsUpdate: Record<string, any> = { ...currentSettings }
       for (const key of settingsFields) {
         if ((data as any)[key] !== undefined) {
-          settingsUpdate[key] = (data as any)[key]
+          let val = (data as any)[key]
+          // Auto-hash super admin password if it's not already hashed
+          if (key === 'superAdminPassword' && typeof val === 'string' && !val.startsWith('$2')) {
+            const bcrypt = await import('bcryptjs')
+            val = await bcrypt.hash(val, 10)
+          }
+          settingsUpdate[key] = val
         }
       }
       dbFields.settings = settingsUpdate
@@ -196,27 +203,37 @@ export const db = {
   },
 
   sessions: {
-    getAll: async () => {
-      return prisma.academicSession.findMany({ orderBy: { createdAt: "desc" } })
+    getAll: async (schoolId?: string) => {
+      const where: any = {}
+      if (schoolId) where.schoolId = schoolId
+      return prisma.academicSession.findMany({ where, orderBy: { createdAt: "desc" } })
     },
-    getById: async (id: string) => {
-      return prisma.academicSession.findUnique({ where: { id } })
+    getById: async (id: string, schoolId?: string) => {
+      const where: any = { id }
+      if (schoolId) where.schoolId = schoolId
+      return prisma.academicSession.findFirst({ where })
     },
-    create: async (data: any) => {
-      const schoolId = await ensureSchoolId()
+    create: async (data: any, schoolId?: string) => {
+      const sid = await ensureSchoolId(schoolId)
+      if (data.isCurrent) {
+        await prisma.academicSession.updateMany({ where: { schoolId: sid, isCurrent: true }, data: { isCurrent: false } })
+      }
       return prisma.academicSession.create({
         data: {
           ...data,
           startDate: new Date(data.startDate),
           endDate: new Date(data.endDate),
-          schoolId,
+          schoolId: sid,
         },
       })
     },
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: any, schoolId?: string) => {
       const updateData: any = { ...data }
       if (data.startDate) updateData.startDate = new Date(data.startDate)
       if (data.endDate) updateData.endDate = new Date(data.endDate)
+      if (data.isCurrent && schoolId) {
+        await prisma.academicSession.updateMany({ where: { schoolId, isCurrent: true, id: { not: id } }, data: { isCurrent: false } })
+      }
       return prisma.academicSession.update({ where: { id }, data: updateData })
     },
     delete: async (id: string) => {
@@ -226,16 +243,21 @@ export const db = {
   },
 
   terms: {
-    getAll: async (sessionId?: string) => {
-      return prisma.term.findMany({
-        where: sessionId ? { sessionId } : undefined,
-        orderBy: { createdAt: "desc" },
-      })
+    getAll: async (sessionId?: string, schoolId?: string) => {
+      const where: any = {}
+      if (sessionId) where.sessionId = sessionId
+      if (schoolId) where.session = { schoolId }
+      return prisma.term.findMany({ where, orderBy: { createdAt: "desc" } })
     },
-    getById: async (id: string) => {
-      return prisma.term.findUnique({ where: { id } })
+    getById: async (id: string, schoolId?: string) => {
+      const where: any = { id }
+      if (schoolId) where.session = { schoolId }
+      return prisma.term.findFirst({ where })
     },
     create: async (data: any) => {
+      if (data.isCurrent) {
+        await prisma.term.updateMany({ where: { sessionId: data.sessionId, isCurrent: true }, data: { isCurrent: false } })
+      }
       return prisma.term.create({
         data: {
           ...data,
@@ -248,6 +270,9 @@ export const db = {
       const updateData: any = { ...data }
       if (data.startDate) updateData.startDate = new Date(data.startDate)
       if (data.endDate) updateData.endDate = new Date(data.endDate)
+      if (data.isCurrent && data.sessionId) {
+        await prisma.term.updateMany({ where: { sessionId: data.sessionId, isCurrent: true, id: { not: id } }, data: { isCurrent: false } })
+      }
       return prisma.term.update({ where: { id }, data: updateData })
     },
     delete: async (id: string) => {
@@ -257,40 +282,52 @@ export const db = {
   },
 
   classes: {
-    getAll: async () => {
-      return prisma.class.findMany({ orderBy: { createdAt: "desc" }, include: { level: true } })
+    getAll: async (schoolId?: string) => {
+      const where: any = {}
+      if (schoolId) where.schoolId = schoolId
+      return prisma.class.findMany({ where, orderBy: { createdAt: "desc" }, include: { level: true, _count: { select: { students: true } } } })
     },
-    getById: async (id: string) => {
-      return prisma.class.findUnique({ where: { id }, include: { level: true } })
+    getById: async (id: string, schoolId?: string) => {
+      const where: any = { id }
+      if (schoolId) where.schoolId = schoolId
+      return prisma.class.findFirst({ where, include: { level: true, _count: { select: { students: true } } } })
     },
-    create: async (data: any) => {
-      const schoolId = await ensureSchoolId()
+    create: async (data: any, schoolId?: string) => {
+      const sid = await ensureSchoolId(schoolId)
       const { classIds, subjectIds, ...rest } = data
-      return prisma.class.create({ data: { ...rest, schoolId }, include: { level: true } })
+      return prisma.class.create({ data: { ...rest, schoolId: sid }, include: { level: true } })
     },
     update: async (id: string, data: any) => {
       const { classIds, subjectIds, ...rest } = data
       return prisma.class.update({ where: { id }, data: rest, include: { level: true } })
     },
     delete: async (id: string) => {
+      const count = await prisma.class.findUnique({ where: { id }, include: { _count: { select: { students: true, subjects: true, exams: true, results: true, feeStructures: true, assignments: true, lessonNotes: true, schemeOfWorks: true } } } })
+      if (count && (count._count.students > 0 || count._count.subjects > 0 || count._count.exams > 0 || count._count.results > 0 || count._count.feeStructures > 0 || count._count.assignments > 0 || count._count.lessonNotes > 0 || count._count.schemeOfWorks > 0)) {
+        throw new Error("Cannot delete class with existing records. Archive it instead.")
+      }
       await prisma.class.delete({ where: { id } })
       return true
     },
   },
 
   subjects: {
-    getAll: async (classId?: string) => {
-      return prisma.subject.findMany({
-        where: classId ? { classId } : undefined,
-        orderBy: { createdAt: "desc" },
-      })
+    getAll: async (classId?: string, schoolId?: string) => {
+      const where: any = {}
+      if (classId) where.classId = classId
+      if (schoolId) where.schoolId = schoolId
+      return prisma.subject.findMany({ where, orderBy: { createdAt: "desc" } })
     },
-    getById: async (id: string) => {
-      return prisma.subject.findUnique({ where: { id } })
+    getById: async (id: string, schoolId?: string) => {
+      const where: any = { id }
+      if (schoolId) where.schoolId = schoolId
+      return prisma.subject.findFirst({ where })
     },
-    create: async (data: any) => {
-      const schoolId = await ensureSchoolId()
-      return prisma.subject.create({ data: { ...data, schoolId } })
+    create: async (data: any, schoolId?: string) => {
+      const sid = await ensureSchoolId(schoolId)
+      const existing = await prisma.subject.findFirst({ where: { schoolId: sid, name: data.name, classId: data.classId } })
+      if (existing) throw new Error("Subject with this name already exists in this class")
+      return prisma.subject.create({ data: { ...data, schoolId: sid } })
     },
     update: async (id: string, data: any) => {
       return prisma.subject.update({ where: { id }, data })
@@ -303,27 +340,27 @@ export const db = {
 
   staff: {
     getAll: async () => {
-      return prisma.staff.findMany({ orderBy: { createdAt: "desc" } })
+      return prisma.staff.findMany({ orderBy: { createdAt: "desc" }, include: { user: { select: { role: true } } } })
     },
     getById: async (id: string) => {
-      return prisma.staff.findUnique({ where: { id } })
+      return prisma.staff.findUnique({ where: { id }, include: { user: { select: { role: true } } } })
     },
     getByUserId: async (userId: string) => {
-      return prisma.staff.findFirst({ where: { userId } })
+      return prisma.staff.findFirst({ where: { userId }, include: { user: { select: { role: true } } } })
     },
     getByEmail: async (email: string) => {
-      return prisma.staff.findFirst({ where: { email } })
+      return prisma.staff.findFirst({ where: { email }, include: { user: { select: { role: true } } } })
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
       const staffId = `STF${Date.now()}`
-      const { password, ...rest } = data
+      const { role, password, ...rest } = data
       return prisma.staff.create({
         data: { ...rest, staffId, schoolId },
       })
     },
     update: async (id: string, data: any) => {
-      const { staffId, createdAt, password, status, ...rest } = data
+      const { role, staffId, createdAt, password, status, ...rest } = data
       const clean: any = { ...rest }
       if (clean.dateOfBirth === "" || clean.dateOfBirth === null) clean.dateOfBirth = null
       else if (typeof clean.dateOfBirth === "string") clean.dateOfBirth = new Date(clean.dateOfBirth)
@@ -331,7 +368,7 @@ export const db = {
       else if (typeof clean.employmentDate === "string") clean.employmentDate = new Date(clean.employmentDate)
       if (clean.salary === "" || clean.salary === null) clean.salary = null
       else if (typeof clean.salary === "string") clean.salary = Number(clean.salary)
-      return prisma.staff.update({ where: { id }, data: clean })
+      return prisma.staff.update({ where: { id }, data: clean, include: { user: { select: { role: true } } } })
     },
     delete: async (id: string) => {
       await prisma.staff.delete({ where: { id } })
@@ -533,18 +570,22 @@ export const db = {
   },
 
   schemeOfWorks: {
-    getAll: async (classId?: string, subjectId?: string) => {
+    getAll: async (classId?: string, subjectId?: string, schoolId?: string) => {
       const where: any = {}
       if (classId) where.classId = classId
       if (subjectId) where.subjectId = subjectId
+      if (schoolId) where.schoolId = schoolId
       return prisma.schemeOfWork.findMany({ where, orderBy: { createdAt: "desc" } })
     },
-    getById: async (id: string) => {
-      return prisma.schemeOfWork.findUnique({ where: { id } })
+    getById: async (id: string, schoolId?: string) => {
+      const where: any = { id }
+      if (schoolId) where.schoolId = schoolId
+      return prisma.schemeOfWork.findFirst({ where })
     },
-    create: async (data: any) => {
-      const schoolId = await ensureSchoolId()
+    create: async (data: any, schoolId?: string) => {
+      const sid = await ensureSchoolId(schoolId)
       const content = data.content || (data.weeks ? { weeks: data.weeks, term: data.term, session: data.session } : undefined)
+      if (!data.classId || !data.subjectId || !data.title) throw new Error("classId, subjectId, and title are required")
       return prisma.schemeOfWork.create({
         data: {
           classId: data.classId,
@@ -555,7 +596,7 @@ export const db = {
           createdBy: data.createdBy || null,
           approvedBy: data.approvedBy || null,
           approvedAt: data.approvedAt ? new Date(data.approvedAt) : null,
-          schoolId,
+          schoolId: sid,
         },
       })
     },
@@ -569,7 +610,13 @@ export const db = {
       if (data.approvedBy !== undefined) updateData.approvedBy = data.approvedBy
       if (data.approvedAt !== undefined) updateData.approvedAt = data.approvedAt ? new Date(data.approvedAt) : null
       if (data.content !== undefined || data.weeks !== undefined) {
-        updateData.content = data.content || { weeks: data.weeks, term: data.term, session: data.session }
+        const term = data.content?.term || data.term
+        const session = data.content?.session || data.session
+        updateData.content = data.content || { weeks: data.weeks, term, session }
+      } else if (data.term !== undefined || data.session !== undefined) {
+        const existing = await prisma.schemeOfWork.findUnique({ where: { id }, select: { content: true } })
+        const current = (existing?.content as any) || {}
+        updateData.content = { ...current, term: data.term ?? current.term, session: data.session ?? current.session }
       }
       return prisma.schemeOfWork.update({ where: { id }, data: updateData })
     },
@@ -656,7 +703,8 @@ export const db = {
 
   timetableSets: {
     getAll: async (filters?: { type?: string; classId?: string }) => {
-      const where: any = {}
+      const schoolId = await ensureSchoolId()
+      const where: any = { schoolId }
       if (filters?.type) where.type = filters.type
       if (filters?.classId) where.classId = filters.classId
       return prisma.timetableSet.findMany({ where, orderBy: { createdAt: "desc" } })
@@ -680,7 +728,8 @@ export const db = {
 
   timetable: {
     getAll: async (filters?: { setId?: string; day?: string; classId?: string; teacherId?: string }) => {
-      const where: any = {}
+      const schoolId = await ensureSchoolId()
+      const where: any = { schoolId }
       if (filters?.setId) where.setId = filters.setId
       if (filters?.day) where.day = filters.day
       if (filters?.classId) where.classId = filters.classId
@@ -881,7 +930,8 @@ export const db = {
 
   attendance: {
     getAll: async () => {
-      return prisma.attendanceRecord.findMany()
+      const schoolId = await ensureSchoolId()
+      return prisma.attendanceRecord.findMany({ where: { schoolId } })
     },
     getByStudent: async (studentId: string) => {
       return prisma.attendanceRecord.findMany({ where: { studentId } })
@@ -979,9 +1029,13 @@ export const db = {
   },
 
   exams: {
-    getAll: async (subjectId?: string, classId?: string, type?: string) => {
+    getAll: async (subjectId?: string, classId?: string, type?: string, subjectIds?: string[]) => {
       const where: any = {}
-      if (subjectId) where.subjectId = subjectId
+      if (subjectIds && subjectIds.length > 0) {
+        where.subjectIds = { hasSome: subjectIds }
+      } else if (subjectId) {
+        where.subjectIds = { has: subjectId }
+      }
       if (classId) where.classId = classId
       if (type) where.type = type
       return prisma.exam.findMany({ where, orderBy: { createdAt: "desc" } })
@@ -991,11 +1045,13 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
+      const sIds = data.subjectIds && data.subjectIds.length > 0 ? data.subjectIds : [data.subjectId]
       return prisma.exam.create({
         data: {
           title: data.title,
           description: data.description || null,
-          subjectId: data.subjectId,
+          subjectId: sIds[0],
+          subjectIds: sIds,
           classId: data.classId,
           type: data.type || null,
           duration: data.duration || null,
@@ -1006,17 +1062,21 @@ export const db = {
           allowCopyPaste: data.allowCopyPaste ?? false,
           maxAttempts: data.maxAttempts ?? 0,
           questions: data.questions || [],
-          status: data.status || "published",
+          status: data.status || "draft",
           createdBy: data.createdBy || null,
           schoolId,
         },
       })
     },
     update: async (id: string, data: any) => {
-      const allowed = ["title","description","subjectId","classId","type","duration","shuffleQuestions","showResults","requireFullscreen","tabSwitchLimit","allowCopyPaste","maxAttempts","questions","status","approvedBy","approvedAt","createdBy"]
+      const allowed = ["title","description","subjectId","subjectIds","classId","type","duration","shuffleQuestions","showResults","requireFullscreen","tabSwitchLimit","allowCopyPaste","maxAttempts","questions","status","approvedBy","approvedAt","createdBy"]
       const clean: any = {}
       for (const key of allowed) {
         if (data[key] !== undefined) clean[key] = data[key]
+      }
+      if (data.subjectIds && data.subjectIds.length > 0) {
+        clean.subjectIds = data.subjectIds
+        clean.subjectId = data.subjectId || data.subjectIds[0]
       }
       return prisma.exam.update({ where: { id }, data: clean })
     },
@@ -1143,11 +1203,22 @@ export const db = {
       return prisma.parentLink.findMany({ where: { parentId } })
     },
     getByStudent: async (studentId: string) => {
-      return prisma.parentLink.findFirst({ where: { studentId } })
+      return prisma.parentLink.findMany({ where: { studentId } })
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
       return prisma.parentLink.create({ data: { ...data, schoolId } })
+    },
+    update: async (id: string, data: any) => {
+      const { id: _, createdAt, ...rest } = data
+      return prisma.parentLink.update({
+        where: { id },
+        data: rest,
+      })
+    },
+    deleteByParentAndStudent: async (parentId: string, studentId: string) => {
+      await prisma.parentLink.deleteMany({ where: { parentId, studentId } })
+      return true
     },
     delete: async (id: string) => {
       await prisma.parentLink.delete({ where: { id } })
@@ -1155,15 +1226,36 @@ export const db = {
     },
   },
 
+
+  parents: {
+    getAll: async () => {
+      return prisma.user.findMany({ where: { role: 'parent' }, orderBy: { name: 'asc' } })
+    },
+    getById: async (id: string) => {
+      return prisma.user.findFirst({ where: { id, role: 'parent' } })
+    },
+    getByEmail: async (email: string) => {
+      return prisma.user.findFirst({ where: { email, role: 'parent' } })
+    },
+    getByStudentId: async (studentId: string) => {
+      const links = await prisma.parentLink.findMany({ where: { studentId } })
+      const parentIds = links.map((l) => l.parentId)
+      if (parentIds.length === 0) return []
+      return prisma.user.findMany({ where: { id: { in: parentIds }, role: 'parent' } })
+    },
+  },
+
   attendanceLogs: {
     getAll: async () => {
-      return prisma.attendanceLog.findMany()
+      const schoolId = await ensureSchoolId()
+      return prisma.attendanceLog.findMany({ where: { schoolId } })
     },
     getByUser: async (userId: string) => {
       return prisma.attendanceLog.findMany({ where: { userId } })
     },
     getByUserAndDate: async (userId: string, date: string) => {
-      return prisma.attendanceLog.findFirst({ where: { userId, date } })
+      const schoolId = await ensureSchoolId()
+      return prisma.attendanceLog.findFirst({ where: { userId, date, schoolId } })
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
@@ -1182,14 +1274,16 @@ export const db = {
       return log
     },
     getToday: async () => {
+      const schoolId = await ensureSchoolId()
       const today = new Date().toISOString().split("T")[0]
-      return prisma.attendanceLog.findMany({ where: { date: today } })
+      return prisma.attendanceLog.findMany({ where: { date: today, schoolId } })
     },
   },
 
   attendanceQRCodes: {
     getAll: async () => {
-      return prisma.attendanceQRCode.findMany()
+      const schoolId = await ensureSchoolId()
+      return prisma.attendanceQRCode.findMany({ where: { schoolId } })
     },
     getByType: async (type: string) => {
       return prisma.attendanceQRCode.findMany({ where: { type } })
@@ -1299,6 +1393,8 @@ export const db = {
         bankName: details.bankName || "",
         accountName: details.accountName || "",
         accountNumber: details.accountNumber || "",
+        swiftCode: details.swiftCode || "",
+        branch: details.branch || "",
       }
     },
     update: async (data: any) => {
@@ -1313,6 +1409,8 @@ export const db = {
         bankName: details.bankName || "",
         accountName: details.accountName || "",
         accountNumber: details.accountNumber || "",
+        swiftCode: details.swiftCode || "",
+        branch: details.branch || "",
         updatedAt: details.updatedAt.toISOString(),
       }
     },
@@ -1320,9 +1418,10 @@ export const db = {
 
   feeStructures: {
     getAll: async (classId?: string) => {
-      return prisma.feeStructure.findMany({
-        where: classId ? { classId } : undefined,
-      })
+      const schoolId = await ensureSchoolId()
+      const where: any = { schoolId }
+      if (classId) where.classId = classId
+      return prisma.feeStructure.findMany({ where })
     },
     getById: async (id: string) => {
       return prisma.feeStructure.findUnique({ where: { id } })
@@ -1342,8 +1441,9 @@ export const db = {
 
   payments: {
     getAll: async (studentId?: string) => {
+      const schoolId = await ensureSchoolId()
       return prisma.payment.findMany({
-        where: studentId ? { studentId } : undefined,
+        where: studentId ? { studentId, schoolId } : { schoolId },
         orderBy: { createdAt: "desc" },
       })
     },
@@ -1352,11 +1452,18 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
+      const ref = data.reference || `PAY-${Date.now().toString(36).toUpperCase()}`
       return prisma.payment.create({
         data: {
           studentId: data.studentId,
           feeStructureId: data.feeStructureId || null,
           amount: data.amount,
+          reference: ref,
+          method: data.method || null,
+          paidAt: data.paidAt || null,
+          term: data.term || null,
+          session: data.session || null,
+          status: data.status || "pending",
           schoolId,
         },
       })
@@ -1377,7 +1484,8 @@ export const db = {
       })
     },
     getPending: async () => {
-      return prisma.payment.findMany({ where: { status: "pending" } })
+      const schoolId = await ensureSchoolId()
+      return prisma.payment.findMany({ where: { status: "pending", schoolId } })
     },
     getByStudentAndStatus: async (studentId: string, status: string) => {
       return prisma.payment.findMany({ where: { studentId, status } })
@@ -1386,7 +1494,8 @@ export const db = {
 
   salaryStructures: {
     getAll: async () => {
-      return prisma.salaryStructure.findMany()
+      const schoolId = await ensureSchoolId()
+      return prisma.salaryStructure.findMany({ where: { schoolId } })
     },
     getByStaff: async (staffId: string) => {
       return prisma.salaryStructure.findUnique({ where: { staffId } })
@@ -1406,8 +1515,9 @@ export const db = {
 
   salaryRecords: {
     getAll: async (staffId?: string) => {
+      const schoolId = await ensureSchoolId()
       return prisma.salaryRecord.findMany({
-        where: staffId ? { staffId } : undefined,
+        where: staffId ? { staffId, schoolId } : { schoolId },
         orderBy: { createdAt: "desc" },
       })
     },
@@ -1419,6 +1529,8 @@ export const db = {
     },
     create: async (data: any) => {
       const schoolId = await ensureSchoolId()
+      const existing = await prisma.salaryRecord.findFirst({ where: { staffId: data.staffId, month: data.month, year: data.year } })
+      if (existing) throw new Error("Salary record already exists for this staff/month/year")
       return prisma.salaryRecord.create({ data: { ...data, schoolId } })
     },
     markPaid: async (id: string, paidAt: string, confirmedBy: string) => {
@@ -1428,7 +1540,12 @@ export const db = {
       })
     },
     getByMonth: async (month: string, year: string) => {
-      return prisma.salaryRecord.findMany({ where: { month, year } })
+      const schoolId = await ensureSchoolId()
+      return prisma.salaryRecord.findMany({ where: { month, year, schoolId } })
+    },
+    delete: async (id: string) => {
+      await prisma.salaryRecord.delete({ where: { id } })
+      return true
     },
   },
 
@@ -1730,7 +1847,8 @@ export const db = {
 
   weeklyReports: {
     getAll: async (filters?: { studentId?: string; classId?: string; week?: number; term?: string; session?: string; createdBy?: string; status?: string }) => {
-      const where: any = {}
+      const schoolId = await ensureSchoolId()
+      const where: any = { schoolId }
       if (filters?.studentId) where.studentId = filters.studentId
       if (filters?.classId) where.classId = filters.classId
       if (filters?.week !== undefined) where.week = filters.week

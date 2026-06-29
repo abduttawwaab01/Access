@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { cacheHeader } from "@/lib/cache-header"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -59,16 +60,24 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
+  if (!body.title || !body.classId) {
+    return NextResponse.json({ error: "title and classId are required" }, { status: 400 })
+  }
   const item = await db.lessonNotes.create(body)
   return NextResponse.json(item, { status: 201 })
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
-  const { action, id, data, approvedBy, status } = body
+  const { action, id, data, status } = body
   if (action === "approve" || status === "approved") {
-    return NextResponse.json(await db.lessonNotes.approve(id, approvedBy || action === "approve" ? approvedBy : "4"))
+    const userId = (auth.user as any)?.id
+    return NextResponse.json(await db.lessonNotes.approve(id, userId || "unknown"))
   }
   if (action === "reject" || status === "rejected") {
     return NextResponse.json(await db.lessonNotes.reject(id))
@@ -80,6 +89,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })

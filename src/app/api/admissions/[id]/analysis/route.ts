@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { id } = await params
   try {
     const app = await db.admissionApplications.getById(id)

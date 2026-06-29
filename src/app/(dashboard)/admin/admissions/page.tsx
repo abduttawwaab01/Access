@@ -857,7 +857,7 @@ export default function AdminAdmissionsPage() {
                         <tr key={e.id} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
                           <td className="px-3 py-2 text-muted-foreground text-xs">{i + 1}</td>
                           <td className="px-3 py-2 font-medium text-xs">{e.title}</td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground hidden md:table-cell">{subjects.find((s: any) => s.id === e.subjectId)?.name || "N/A"}</td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground hidden md:table-cell">{(e.subjectIds || [e.subjectId]).filter(Boolean).map((sid: string) => subjects.find((s: any) => s.id === sid)?.name || "N/A").join(", ")}</td>
                           <td className="px-3 py-2 text-center text-xs hidden sm:table-cell">{e.duration || "—"}m</td>
                           <td className="px-3 py-2 text-center text-xs hidden sm:table-cell">{e.questions?.length || 0}</td>
                           <td className="px-3 py-2 text-center">

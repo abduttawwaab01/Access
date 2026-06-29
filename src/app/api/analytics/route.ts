@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cacheHeader } from "@/lib/cache-header"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const schoolId = request.headers.get("x-school-id") || ""
 
@@ -16,10 +19,11 @@ export async function GET(request: Request) {
     prisma.exam.count({ where }),
   ])
 
-  const [activeStudents, activeTerms, currentSessions] = await Promise.all([
+  const [activeStudents, activeTerms, currentSessions, attendanceRecords] = await Promise.all([
     prisma.student.count({ where: { status: "active" } }),
     prisma.academicSession.count({ where: { isCurrent: true } }),
     prisma.examSession.count({ where: { status: "in_progress" } }),
+    prisma.attendanceRecord.findMany({ where: { schoolId }, select: { id: true, studentId: true, status: true, date: true } }),
   ])
 
   const monthStats = await prisma.$queryRaw<any[]>`
@@ -75,6 +79,7 @@ export async function GET(request: Request) {
     },
     monthStats,
     termStats,
+    attendanceRecords,
     subjectPerformance: performanceWithNames,
   }, cacheHeader(60))
 }

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { id } = await params
   const item = await db.timetableSets.getById(id)
   if (!item) return NextResponse.json({ error: "Timetable set not found" }, { status: 404 })
@@ -10,6 +13,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
+  const user = auth.user as any
+  if (user.role !== "admin") {
+    return NextResponse.json({ error: "Only admins can update timetable sets" }, { status: 403 })
+  }
   const { id } = await params
   const body = await request.json()
   const item = await db.timetableSets.update(id, body)
@@ -18,6 +27,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
+  const user = auth.user as any
+  if (user.role !== "admin") {
+    return NextResponse.json({ error: "Only admins can delete timetable sets" }, { status: 403 })
+  }
   const { id } = await params
   const ok = await db.timetableSets.delete(id)
   if (!ok) return NextResponse.json({ error: "Timetable set not found" }, { status: 404 })

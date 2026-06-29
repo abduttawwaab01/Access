@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { id } = await params
   const item = await db.questions.getById(id)
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -9,6 +12,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { id } = await params
   const body = await request.json()
   const item = await db.questions.update(id, body)
@@ -17,6 +22,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { id } = await params
   const ok = await db.questions.delete(id)
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 })

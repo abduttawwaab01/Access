@@ -72,9 +72,9 @@ export default function AdminAttendancePage() {
         if (staffMember) return { type: "staff", id: staffMember.id, name: `${staffMember.firstName} ${staffMember.lastName}` }
       }
     } catch {}
-    const qr = qrCodes.find((q) => q.code === code)
+    const qr = qrCodes.find((q) => (q.data || q.code) === code)
     if (qr) {
-      if (qr.type === "school_entry") return { type: "staff", id: null, name: "Staff Entry" }
+      if (qr.type === "school_attendance" || qr.type === "school_entry") return { type: "staff", id: null, name: "Staff Entry" }
       const student = students.find((s) => `STU-${s.firstName.toUpperCase()}-${s.id.padStart(3, "0")}` === code)
       if (student) return { type: "student", id: student.id, name: `${student.firstName} ${student.lastName}`, user: student }
     }

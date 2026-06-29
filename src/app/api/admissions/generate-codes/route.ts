@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 function generateEntranceCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -12,11 +13,21 @@ function generateEntranceCode(): string {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const { examId, classId, count, maxUses, expiresAt } = await request.json()
 
     if (!examId || !classId) {
       return NextResponse.json({ error: "examId and classId are required" }, { status: 400 })
+    }
+
+    // Validate expiresAt format if provided
+    if (expiresAt) {
+      const expiresDate = new Date(expiresAt)
+      if (isNaN(expiresDate.getTime())) {
+        return NextResponse.json({ error: "Invalid expiresAt date format" }, { status: 400 })
+      }
     }
 
     const numCodes = Math.min(Math.max(count || 1, 1), 100)

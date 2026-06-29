@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server"
+﻿import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-
-async function getSchoolId(): Promise<string> {
-  const school = await prisma.school.findFirst()
-  return school?.id || ""
-}
+import { requireRole } from "@/lib/api-auth"
 
 export async function GET() {
+  const auth = await requireRole("admin", "superadmin")
+  if (auth instanceof Response) return auth
+  
   const parents = await db.users.getAll("parent")
   const links = await db.parentLinks.getAll()
   const studentIds = links.map((l: any) => l.studentId)
@@ -27,22 +26,33 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRole("admin", "superadmin")
+  if (auth instanceof Response) return auth
+  
   const body = await request.json()
   const { name, email, phone, password, studentId } = body
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 })
   }
+  if (password.length < 6) {
+    return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 })
+  }
   const existing = await db.users.getByEmail(email)
   if (existing) {
     return NextResponse.json({ error: "A user with this email already exists" }, { status: 400 })
   }
-  const schoolId = await getSchoolId()
+  const school = await prisma.school.findFirst()
+  const schoolId = school?.id || ""
   const hashed = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
     data: { name, email, phone: phone || null, password: hashed, role: "parent", schoolId },
   })
   if (studentId) {
-    await db.parentLinks.create({ parentId: user.id, studentId })
+    // Validate student exists before creating link
+    const student = await prisma.student.findUnique({ where: { id: studentId } })
+    if (student) {
+      await db.parentLinks.create({ parentId: user.id, studentId })
+    }
   }
   return NextResponse.json({ ...user, linkedStudents: studentId ? [{ id: studentId }] : [] }, { status: 201 })
 }

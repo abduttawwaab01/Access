@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId") || undefined
   const studentIds = searchParams.get("studentIds") || undefined
@@ -16,12 +19,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   const item = await db.documents.create(body)
   return NextResponse.json(item, { status: 201 })
 }
 
 export async function PUT(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   const { id, ...data } = body
   if (!id) return NextResponse.json({ error: "Document ID is required" }, { status: 400 })

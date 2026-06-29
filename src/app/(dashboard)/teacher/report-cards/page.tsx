@@ -194,7 +194,7 @@ export default function TeacherReportCardsPage() {
     teacherName: teacherName || "",
     principalComment: "",
     nextTerm: "",
-    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "â€”",
+    position: position ? `${position}${position === 1 ? "st" : position === 2 ? "nd" : position === 3 ? "rd" : "th"}` : "\u2014",
     totalStudents: students.filter((s: any) => s.classId === student?.classId).length || 0,
     generatedAt: new Date().toISOString(),
   } : null
@@ -290,7 +290,7 @@ export default function TeacherReportCardsPage() {
         <Card className="glass-card border-0">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Domains & Comment â€” {currentTerm}</h3>
+              <h3 className="text-sm font-semibold">Domains & Comment — {currentTerm}</h3>
               <Button size="sm" onClick={handleSaveEntry} disabled={savingEntry}>
                 {savingEntry ? "Saving..." : "Save"}
               </Button>

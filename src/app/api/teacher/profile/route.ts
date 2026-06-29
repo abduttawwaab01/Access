@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 async function resolveStaff(userId: string) {
   let staff = await db.staff.getByUserId(userId)
@@ -8,6 +9,8 @@ async function resolveStaff(userId: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const userId = request.nextUrl.searchParams.get("userId") || ""
     if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 })
@@ -18,7 +21,7 @@ export async function GET(request: NextRequest) {
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
       email: user.email || "",
       phone: user.phone || "",
-      role: user.role || "teacher"
+      role: user.user?.role || "teacher"
     })
   } catch (error) {
     console.error("Error fetching teacher profile:", error)
@@ -27,6 +30,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const body = await request.json()
     const id = body.id || ""
@@ -46,7 +51,7 @@ export async function PUT(request: NextRequest) {
       name: `${updated.firstName || ""} ${updated.lastName || ""}`.trim(),
       email: updated.email || "",
       phone: updated.phone || "",
-      role: updated.role || "teacher"
+      role: updated.user?.role || "teacher"
     })
   } catch (error) {
     console.error("Error updating teacher profile:", error)

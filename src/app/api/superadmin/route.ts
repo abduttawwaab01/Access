@@ -1,8 +1,15 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { createSuperAdminToken, isSuperAdminAuthorized, hashSuperAdminPassword, verifySuperAdminPassword } from "@/lib/superadmin-auth"
 
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action")
+  
+  // All GET actions require auth except we validate via a query param token
+  // For backward compat, allow token in query param for GET requests
+  const token = request.nextUrl.searchParams.get("token") || ""
+  const isAuth = verifySuperAdminToken(token) !== null
+
   if (action === "dashboard") {
     const [students, staff, classes, exams, settings, pendingApplications, announcements, feedback] = await Promise.all([
       db.students.getAll(),
@@ -14,9 +21,11 @@ export async function GET(request: NextRequest) {
       db.superAnnouncements.getAll(),
       db.feedbackTickets.getAll(),
     ])
+    // Strip password from settings response
+    const safeSettings = { ...settings, superAdminPassword: undefined }
     return NextResponse.json({
       stats: { students: students.length, staff: staff.length, classes: classes.length, exams: exams.length, pendingApplications: pendingApplications.length },
-      settings, pendingApplications, announcements,
+      settings: safeSettings, pendingApplications, announcements,
       feedbackTickets: feedback.filter((t: any) => t.status !== "resolved"),
       allFeedback: feedback,
     })
@@ -35,6 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(await db.announcementReviews.getAll())
   }
   if (action === "updateFeedback") {
+    if (!isAuth) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     const body = await request.json()
     const { id, subject, message, priority } = body
     const ticket = await db.feedbackTickets.getById(id)
@@ -45,6 +55,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: { ticket: updated } })
   }
   if (action === "deleteFeedback") {
+    if (!isAuth) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     const body = await request.json()
     const { id, from } = body
     const success = await db.feedbackTickets.delete(id, from)
@@ -58,37 +69,61 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { action, token } = body
+  const { action } = body
 
-  if (action !== "login" && token !== "superadmin-authenticated") {
+  // Login is the only action that doesn't require a token
+  if (action !== "login" && !isSuperAdminAuthorized(body)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
 
   switch (action) {
     case "login": {
       const settings = await db.school.get()
-      if (body.password === settings.superAdminPassword) {
-        return NextResponse.json({ success: true, token: "superadmin-authenticated" })
+      const storedHash = settings.superAdminPassword
+      
+      // If the password is not yet hashed (plaintext from old system), hash it now
+      let hash = storedHash
+      if (storedHash && !storedHash.startsWith("$2")) {
+        hash = await hashSuperAdminPassword(storedHash)
+        await db.school.update({ superAdminPassword: hash })
+      }
+      
+      // Default password fallback
+      const defaultPassword = "successor"
+      const defaultHash = await hashSuperAdminPassword(defaultPassword)
+      
+      const passwordValid = hash
+        ? await verifySuperAdminPassword(body.password, hash)
+        : await verifySuperAdminPassword(body.password, defaultHash)
+      
+      if (passwordValid) {
+        const token = createSuperAdminToken()
+        return NextResponse.json({ success: true, token })
       }
       return NextResponse.json({ success: false, error: "Invalid password" })
     }
     case "toggleLogin": {
       const settings = await db.school.get()
       const updated = await db.school.update({ loginEnabled: !settings.loginEnabled })
-      return NextResponse.json({ success: true, data: { settings: updated }, message: `Login ${updated.loginEnabled ? "enabled" : "disabled"}` })
+      const safeSettings = { ...updated, superAdminPassword: undefined }
+      return NextResponse.json({ success: true, data: { settings: safeSettings }, message: `Login ${updated.loginEnabled ? "enabled" : "disabled"}` })
     }
     case "setExpiration": {
       if (!body.expirationDate) return NextResponse.json({ success: false, error: "Date required" })
       const updated = await db.school.update({ expirationDate: body.expirationDate })
-      return NextResponse.json({ success: true, data: { settings: updated }, message: "Expiration date set" })
+      const safeSettings = { ...updated, superAdminPassword: undefined }
+      return NextResponse.json({ success: true, data: { settings: safeSettings }, message: "Expiration date set" })
     }
     case "clearExpiration": {
       const updated = await db.school.update({ expirationDate: null })
-      return NextResponse.json({ success: true, data: { settings: updated }, message: "Expiration cleared" })
+      const safeSettings = { ...updated, superAdminPassword: undefined }
+      return NextResponse.json({ success: true, data: { settings: safeSettings }, message: "Expiration cleared" })
     }
     case "changeAdminPassword": {
       if (!body.newPassword) return NextResponse.json({ success: false, error: "Password required" })
-      await db.school.update({ superAdminPassword: body.newPassword })
+      if (body.newPassword.length < 6) return NextResponse.json({ success: false, error: "Password must be at least 6 characters" })
+      const hashed = await hashSuperAdminPassword(body.newPassword)
+      await db.school.update({ superAdminPassword: hashed })
       return NextResponse.json({ success: true, message: "Admin password updated" })
     }
     case "acceptApplication": {
@@ -100,8 +135,8 @@ export async function POST(request: NextRequest) {
       const bcrypt = (await import("bcryptjs")).default
       const schoolId = app.schoolId
 
-      // Create User for student with default password
-      const studentPassword = "student123"
+      // Create User for student with secure random password
+      const studentPassword = Math.random().toString(36).substring(2, 14)
       const hashedStudentPassword = await bcrypt.hash(studentPassword, 10)
       const studentEmail = app.email || `${app.firstName.toLowerCase()}.${app.lastName.toLowerCase()}@school.com`
 
@@ -141,7 +176,9 @@ export async function POST(request: NextRequest) {
         const parentEmail = app.email ? `parent.${app.email}` : `${app.firstName.toLowerCase()}.parent@school.com`
         let parentUser = await prisma.user.findFirst({ where: { email: parentEmail } })
         if (!parentUser) {
-          const hashedParent = await bcrypt.hash("parent123", 10)
+          const randomPass = () => Math.random().toString(36).substring(2, 14)
+          const parentPassword = randomPass()
+          const hashedParent = await bcrypt.hash(parentPassword, 10)
           parentUser = await prisma.user.create({
             data: {
               name: app.parentName || `${app.firstName}'s Parent`,
@@ -168,7 +205,6 @@ export async function POST(request: NextRequest) {
         success: true,
         data: { pendingApplications },
         message: `Application accepted. Student credentials: ${studentEmail} / ${studentPassword}`,
-        credentials: { email: studentEmail, password: studentPassword },
       })
     }
     case "rejectApplication": {
@@ -251,7 +287,8 @@ export async function POST(request: NextRequest) {
     case "renewSchool": {
       if (!body.newExpirationDate) return NextResponse.json({ success: false, error: "Date required" })
       const updated = await db.school.update({ expirationDate: body.newExpirationDate, loginEnabled: true })
-      return NextResponse.json({ success: true, message: "School renewed", data: { settings: updated } })
+      const safeSettings = { ...updated, superAdminPassword: undefined }
+      return NextResponse.json({ success: true, message: "School renewed", data: { settings: safeSettings } })
     }
     default:
       return NextResponse.json({ success: false, error: "Unknown action" })

@@ -164,6 +164,8 @@ model AcademicSession {
   updatedAt DateTime @updatedAt
   school    School   @relation(fields: [schoolId], references: [id])
   terms     Term[]
+
+  @@index([schoolId])
 }
 
 model Term {
@@ -175,7 +177,9 @@ model Term {
   sessionId String
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
-  session   AcademicSession @relation(fields: [sessionId], references: [id])
+  session   AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model Class {
@@ -183,6 +187,7 @@ model Class {
   name           String
   arm            String?
   section        String?
+  isActive       Boolean        @default(true)
   schoolId       String
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -202,6 +207,7 @@ model Class {
   weeklyReports  WeeklyReport[]
 
   @@index([levelId])
+  @@index([schoolId])
 }
 
 model Subject {
@@ -222,6 +228,10 @@ model Subject {
   school          School           @relation(fields: [schoolId], references: [id])
   teacherSubjects TeacherSubject[]
   topics          Topic[]
+
+  @@unique([schoolId, name, classId])
+  @@index([schoolId])
+  @@index([classId])
 }
 
 model Student {
@@ -272,7 +282,6 @@ model Staff {
   firstName        String
   lastName         String
   staffId          String           @unique
-  role             String           @default("teacher")
   department       String?
   qualification    String?
   dateOfBirth      DateTime?
@@ -478,6 +487,7 @@ model Result {
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject   Subject  @relation(fields: [subjectId], references: [id])
 
+  @@unique([schoolId, studentId, subjectId, classId, term, session])
   @@index([schoolId, studentId, classId, term, session])
 }
 
@@ -516,12 +526,15 @@ model ParentLink {
   id        String   @id @default(cuid())
   parentId  String
   studentId String
+  relationship String? @default("parent")
   schoolId  String
   createdAt DateTime @default(now())
   school    School   @relation(fields: [schoolId], references: [id])
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([schoolId, parentId, studentId])
+  @@index([parentId])
+  @@index([studentId])
 }
 
 model AttendanceLog {
@@ -643,6 +656,7 @@ model Exam {
   title             String
   description       String?
   subjectId         String
+  subjectIds        String[]          @default([])
   classId           String
   type              String?
   duration          Int?
@@ -666,7 +680,7 @@ model Exam {
   examSessions      ExamSession[]
   results           Result[]
 
-  @@index([schoolId, classId, subjectId, status])
+  @@index([schoolId, classId, status])
 }
 
 model ExamSession {
@@ -707,6 +721,7 @@ model Submission {
   school       School     @relation(fields: [schoolId], references: [id])
   student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@unique([assignmentId, studentId])
   @@index([schoolId, assignmentId, studentId, status])
 }
 
@@ -716,6 +731,8 @@ model BankDetails {
   bankName      String?
   accountName   String?
   accountNumber String?
+  swiftCode     String?
+  branch        String?
   updatedAt     DateTime @updatedAt
   school        School   @relation(fields: [schoolId], references: [id])
 }
@@ -734,6 +751,8 @@ model FeeStructure {
   updatedAt   DateTime @updatedAt
   class       Class    @relation(fields: [classId], references: [id])
   school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId, classId])
 }
 
 model Payment {
@@ -741,6 +760,11 @@ model Payment {
   studentId      String
   feeStructureId String?
   amount         Float
+  reference      String?
+  method         String?
+  paidAt         String?
+  term           String?
+  session        String?
   status         String    @default("pending")
   confirmedAt    DateTime?
   confirmedBy    String?

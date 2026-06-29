@@ -32,7 +32,7 @@ export default function ParentReportCardPage() {
       fetch(`/api/results?studentId=${activeChildId}`).then((r) => r.json()),
       fetch("/api/classes").then((r) => r.json()),
       fetch("/api/school").then((r) => r.json()),
-      fetch("/api/attendance-logs").then((r) => r.json()),
+      fetch(`/api/attendance-records?studentId=${activeChildId}`).then((r) => r.json()),
       fetch("/api/grading-config").then((r) => r.json()),
     ]).then(([res, cls, sch, att, gc]) => {
       setResults(Array.isArray(res) ? res : [])
@@ -68,8 +68,7 @@ export default function ParentReportCardPage() {
   const session = termResults[0]?.session || currentSession()
 
   const studentClass = classes.find((c) => c.id === activeChild.classId)
-  const childAttendance = attendance.filter((a: any) => a.userId === activeChildId)
-  const allLogs = childAttendance.filter((l: any) => l.userType === "student" || !l.userType)
+  const childAttendance = attendance.filter((a: any) => a.studentId === activeChildId)
 
   const totalStudents = children.reduce((sum: number, child: any) => {
     return child.classId === activeChild.classId ? sum + 1 : sum
@@ -126,10 +125,10 @@ export default function ParentReportCardPage() {
       max: d.max,
     })),
     attendance: {
-      present: allLogs.filter((l: any) => l.status === "present").length,
-      absent: allLogs.filter((l: any) => l.status === "absent").length,
-      late: allLogs.filter((l: any) => l.status === "late").length,
-      total: allLogs.length,
+      present: childAttendance.filter((a: any) => a.status === "present").length,
+      absent: childAttendance.filter((a: any) => a.status === "absent").length,
+      late: childAttendance.filter((a: any) => a.status === "late").length,
+      total: childAttendance.length,
     },
     teacherComment: entryData?.teacherComment || "",
     teacherName: entryData?.teacherName || "",

@@ -30,7 +30,9 @@ export default function StudentLessonNotesPage() {
   const [quizResult, setQuizResult] = useState<any>(null)
   const [existingResult, setExistingResult] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [readingProgress, setReadingProgress] = useState<Record<string, boolean>>({})
+  const [readingProgress, setReadingProgress] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("lesson_notes_read") || "{}") } catch { return {} }
+  })
 
   const [studentId, setStudentId] = useState("")
 
@@ -161,7 +163,11 @@ export default function StudentLessonNotesPage() {
   }
 
   const handleMarkAsRead = (noteId: string) => {
-    setReadingProgress((prev) => ({ ...prev, [noteId]: true }))
+    setReadingProgress((prev) => {
+      const next = { ...prev, [noteId]: true }
+      localStorage.setItem("lesson_notes_read", JSON.stringify(next))
+      return next
+    })
     toast.success("Marked as read")
   }
 

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Building, Wallet, CheckCircle2, Clock, AlertTriangle, Copy, ExternalLink } from "lucide-react"
+import { Building, Wallet, CheckCircle2, Clock, AlertTriangle, Copy, ExternalLink, Send, Banknote, CalendarDays } from "lucide-react"
 import { EmptyState } from "@/components/admin/EmptyState"
 import { useParentChildren } from "@/hooks/useParentChildren"
 
@@ -48,6 +48,38 @@ export default function ParentFeesPage() {
 
   const getStudentName = (id: string) => { const s = students.find((s) => s.id === id); return s ? `${s.firstName} ${s.lastName}` : id }
 
+  const [selectedChild, setSelectedChild] = useState("")
+  const [payForm, setPayForm] = useState({ amount: "", method: "bank transfer", paidAt: new Date().toISOString().split("T")[0], reference: "" })
+  const [submitting, setSubmitting] = useState(false)
+
+  const submitPayment = async () => {
+    if (!selectedChild || !payForm.amount) return
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId: selectedChild,
+          amount: Number(payForm.amount),
+          method: payForm.method,
+          paidAt: payForm.paidAt ? new Date(payForm.paidAt).toISOString() : undefined,
+          reference: payForm.reference || undefined,
+          status: "pending",
+        }),
+      })
+      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Failed to submit") }
+      toast.success("Payment submitted for admin confirmation")
+      setPayForm({ amount: "", method: "bank transfer", paidAt: new Date().toISOString().split("T")[0], reference: "" })
+      setSelectedChild("")
+      const childIds = linkedStudentIds.join(",")
+      const p = await fetch(`/api/payments?studentIds=${childIds}`).then((r) => r.json())
+      setPayments(p)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit payment")
+    } finally { setSubmitting(false) }
+  }
+
   const pct = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0
 
   if (loading || childrenLoading) return <div className="p-4 md:p-6 space-y-4">{["h-32", "h-48", "h-32"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
@@ -75,6 +107,7 @@ export default function ParentFeesPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList className="flex flex-wrap w-full gap-1.5">
           <TabsTrigger value="overview" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Wallet className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
+          <TabsTrigger value="pay" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Send className="h-4 w-4 mr-1" /> Make Payment</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-3 md:px-4 py-2 text-xs md:text-sm"><Clock className="h-4 w-4 mr-1" /> History</TabsTrigger>
         </TabsList>
       </Tabs>
@@ -101,6 +134,63 @@ export default function ParentFeesPage() {
           )}
         </CardContent></Card>
       </div>
+      )}
+
+      {activeTab === "pay" && (
+        <div className="mt-4">
+          <Card className="border-0 glass-card"><CardContent className="p-4 space-y-5">
+            <h3 className="font-semibold">Submit Payment Details</h3>
+            <p className="text-xs text-muted-foreground">Submit payment details for admin confirmation. Transfer to the school bank account below.</p>
+
+            {bankDetails?.bankName && (
+              <div className="rounded-xl bg-primary/5 p-4 space-y-1.5 border border-primary/10">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Bank Details</p>
+                <p className="text-sm font-semibold">{bankDetails.bankName}</p>
+                <p className="text-sm">{bankDetails.accountName} — <span className="font-mono font-bold">{bankDetails.accountNumber}</span></p>
+                {bankDetails.swiftCode && <p className="text-xs text-muted-foreground">Swift: {bankDetails.swiftCode} {bankDetails.branch ? `| Branch: ${bankDetails.branch}` : ""}</p>}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Child</label>
+                <select className="w-full rounded-xl border bg-background px-3 py-2 text-sm" value={selectedChild} onChange={(e) => setSelectedChild(e.target.value)}>
+                  <option value="">Select child</option>
+                  {children.map((c) => (
+                    <option key={c.id} value={c.id}>{c.firstName} {c.lastName} — {c.className || c.classId}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Amount (₦)</label>
+                <Input type="number" min={1} placeholder="50000" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Payment Method</label>
+                  <select className="w-full rounded-xl border bg-background px-3 py-2 text-sm" value={payForm.method} onChange={(e) => setPayForm({ ...payForm, method: e.target.value })}>
+                    <option value="bank transfer">Bank Transfer</option>
+                    <option value="cash">Cash</option>
+                    <option value="pos">POS</option>
+                    <option value="check">Cheque</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block">Payment Date</label>
+                  <Input type="date" value={payForm.paidAt} onChange={(e) => setPayForm({ ...payForm, paidAt: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Transaction Reference / Receipt No.</label>
+                <Input placeholder="e.g. Txn123456" value={payForm.reference} onChange={(e) => setPayForm({ ...payForm, reference: e.target.value })} />
+              </div>
+              <Button className="w-full" disabled={submitting || !selectedChild || !payForm.amount} onClick={submitPayment}>
+                {submitting ? "Submitting..." : "Submit Payment for Confirmation"}
+              </Button>
+            </div>
+          </CardContent></Card>
+        </div>
       )}
 
       {activeTab === "history" && (

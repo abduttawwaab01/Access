@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { buildLessonSystemPrompt } from "@/lib/ai-lesson-prompt"
+import { requireAuth } from "@/lib/api-auth"
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -21,6 +22,8 @@ function extractJson(text: string): any {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const { subject, topic, className, term, week } = await request.json()
 

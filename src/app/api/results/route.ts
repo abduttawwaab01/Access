@@ -2,8 +2,25 @@
 import { cacheHeader } from "@/lib/cache-header"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
+
+async function validateScores(body: any[] | any): Promise<string | null> {
+  const gc = await db.gradingConfig.get()
+  const caMax = gc?.caMax ?? 40
+  const examMax = gc?.examMax ?? 60
+  const items = Array.isArray(body) ? body : [body]
+  for (const item of items) {
+    const ca = Number(item.caScore) || 0
+    const exam = Number(item.examScore) || 0
+    if (ca < 0 || ca > caMax) return `CA score must be between 0 and ${caMax}`
+    if (exam < 0 || exam > examMax) return `Exam score must be between 0 and ${examMax}`
+  }
+  return null
+}
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId")
   const classId = searchParams.get("classId")
@@ -96,7 +113,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
+  const validationError = await validateScores(body)
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 })
+  }
   if (Array.isArray(body)) {
     // For bulk upsert, validate teacher if createdBy present in first item
     if (body.length > 0 && body[0].createdBy) {
@@ -123,7 +146,13 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
+  const validationError = await validateScores(body)
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 })
+  }
   if (body.id) {
     const item = await db.results.update(body.id, body)
     if (!item) return NextResponse.json({ error: "Result not found" }, { status: 404 })
@@ -133,6 +162,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   const all = searchParams.get("all")

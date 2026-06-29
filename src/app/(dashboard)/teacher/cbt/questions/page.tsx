@@ -47,9 +47,9 @@ export default function TeacherQuestionsPage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        setMyClassIds(ta?.classIds || [])
-        setMySubjectIds(ta?.subjectIds || [])
+        const { classIds: myClassIds = [], subjectIds: mySubjectIds = [] } = tas || {}
+        setMyClassIds(myClassIds)
+        setMySubjectIds(mySubjectIds)
       })
       .catch(() => {})
   }, [userId])

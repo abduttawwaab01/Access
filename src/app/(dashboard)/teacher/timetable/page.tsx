@@ -55,8 +55,7 @@ export default function TimetablePage() {
       })
       .then(([s, c, sch, teacherEntries, tas]) => {
         const allSets = Array.isArray(s) ? s : []
-        const ta = Array.isArray(tas) ? tas[0] : null
-        const classIds: string[] = ta?.classIds || []
+        const { classIds = [] } = tas || {}
         // Also fetch entries by classId for classes the teacher is assigned to
         const classPromises = classIds.map((cid: string) =>
           fetch(`/api/timetable?classId=${cid}`).then((r) => r.json()).catch(() => [])

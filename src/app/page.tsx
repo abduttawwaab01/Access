@@ -8,6 +8,8 @@ import {
   Trophy, Lightbulb, Heart, Globe, Star, ChevronRight, ExternalLink, Menu, X,
 } from "lucide-react"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -137,11 +139,21 @@ function TiltCard({ children, className = "" }: { children: React.ReactNode; cla
 }
 
 export default function LandingPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [navOpen, setNavOpen] = useState(false)
   const heroRef = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll()
   const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 60])
   const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0.6])
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const role = (session.user as any)?.role
+      const routes: Record<string, string> = { admin: "/admin", teacher: "/teacher", student: "/student", parent: "/parent" }
+      router.replace(routes[role] || "/admin")
+    }
+  }, [status, session, router])
 
   return (
     <>

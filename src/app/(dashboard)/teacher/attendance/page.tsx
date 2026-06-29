@@ -39,8 +39,7 @@ export default function TeacherAttendancePage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        const classIds: string[] = ta?.classIds || []
+        const { classIds = [] } = tas || {}
         setMyClassIds(classIds)
         return Promise.all([
           fetch("/api/students").then((r) => r.json()),

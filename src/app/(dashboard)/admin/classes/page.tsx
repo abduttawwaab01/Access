@@ -110,7 +110,7 @@ export default function ClassesPage() {
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                                   {item.level?.name && <span>{item.level.name}</span>}
                                   {item.section && <span>{item.section}</span>}
-                                  <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.studentCount || 0} students</span>
+                                  <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item._count?.students ?? 0} students</span>
                                 </div>
                               </div>
                             </div>

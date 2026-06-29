@@ -42,6 +42,8 @@ export default function AdminLessonNotes() {
   const [sessions, setSessions] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -57,7 +59,7 @@ export default function AdminLessonNotes() {
   const update = (f: string, v: any) => setForm((p) => ({ ...p, [f]: v }))
 
   const addQuestion = () => {
-    setQuiz([...quiz, { id: Math.random().toString(36).substring(2, 11), questionText: "", type: "MCQ", options: ["", "", "", ""], correctAnswer: "", points: 1 }])
+    setQuiz([...quiz, { id: crypto.randomUUID(), questionText: "", type: "MCQ", options: ["", "", "", ""], correctAnswer: "", points: 1 }])
   }
   const removeQuestion = (id: string) => setQuiz(quiz.filter((q) => q.id !== id))
   const updateQuestion = (id: string, field: string, value: any) => {
@@ -77,7 +79,7 @@ export default function AdminLessonNotes() {
   const approve = async (id: string) => {
     const res = await fetch("/api/lesson-notes", {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "approve", id, approvedBy: "4" }),
+      body: JSON.stringify({ action: "approve", id }),
     })
     if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "published" } : n))); toast.success("Approved") }
   }
@@ -88,6 +90,16 @@ export default function AdminLessonNotes() {
       body: JSON.stringify({ action: "reject", id }),
     })
     if (res.ok) { setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, status: "rejected" } : n))); toast.success("Rejected") }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    const res = await fetch(`/api/lesson-notes?id=${deleteId}`, { method: "DELETE" })
+    if (res.ok) { setNotes((prev) => prev.filter((n) => n.id !== deleteId)); toast.success("Deleted") }
+    else { toast.error("Failed to delete") }
+    setDeleting(false)
+    setDeleteId(null)
   }
 
   const getContentValue = (item: any, type: "student" | "plan"): string => {
@@ -238,7 +250,7 @@ export default function AdminLessonNotes() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader title="Lesson Notes" description={`${notes.length} notes from teachers`} />
-      <ConfirmDialog open={false} onOpenChange={() => {}} onConfirm={() => {}} title="" description="" />
+      <ConfirmDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null) }} onConfirm={handleDelete} title="Delete Lesson Note" description="Are you sure you want to delete this lesson note? This action cannot be undone." confirmLabel="Delete" loading={deleting} />
 
       <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="relative flex-1">
@@ -321,6 +333,9 @@ export default function AdminLessonNotes() {
                             <XCircle className="h-3.5 w-3.5" />
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(item.id)} title="Delete">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                     {expanded === item.id && (
@@ -394,7 +409,7 @@ export default function AdminLessonNotes() {
               <Select value={form.createdBy} onValueChange={(v) => v && update("createdBy", v)}>
                 <SelectTrigger className="h-12"><SelectValue placeholder="Select teacher" /></SelectTrigger>
                 <SelectContent>
-                  {staff.filter((s: any) => s.role === "teacher").map((t: any) => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}
+                  {staff.filter((s: any) => s.user?.role === "teacher").map((t: any) => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

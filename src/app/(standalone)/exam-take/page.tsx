@@ -67,7 +67,16 @@ export default function ExamTakeLanding() {
           examType: "entrance",
         }),
       })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to start exam" }))
+        toast.error(err.error || "Failed to start exam")
+        setStarting(false)
+        return
+      }
       const session = await res.json()
+      const storedIds = JSON.parse(sessionStorage.getItem("exam_sessions") || "[]")
+      storedIds.push(session.id)
+      sessionStorage.setItem("exam_sessions", JSON.stringify(storedIds))
       router.push(`/exam-take/${session.id}`)
     } catch {
       toast.error("Failed to start exam")
@@ -118,7 +127,7 @@ export default function ExamTakeLanding() {
                     >
                       <div className="font-medium text-sm">{exam.title}</div>
                       <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        <span>{getSubjectName(exam.subjectId)}</span>
+                        <span>{(exam.subjectIds || [exam.subjectId]).filter(Boolean).map((sid: string) => getSubjectName(sid)).join(", ")}</span>
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{exam.duration} min</span>
                         <span>{(exam.questions || []).length} questions</span>
                         {exam.maxAttempts > 0 && studentName.trim() && (

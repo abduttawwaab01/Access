@@ -334,7 +334,7 @@ export default function AdminIDCardsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{s.firstName} {s.lastName}</p>
                       <p className="text-xs text-muted-foreground truncate">{s.staffId}</p>
-                      <p className="text-[10px] text-muted-foreground">{s.role || s.department || "Staff"}</p>
+                      <p className="text-[10px] text-muted-foreground">{s.user?.role || s.department || "Staff"}</p>
                     </div>
                     <QrCode className="h-5 w-5 text-indigo-400/40" />
                   </CardContent>

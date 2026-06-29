@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Plus, Pencil, Trash2, Calendar, CheckCircle, XCircle } from "lucide-react"
+import { Plus, Pencil, Trash2, Calendar, CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react"
 import { PageHeader } from "@/components/admin/PageHeader"
 import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
@@ -20,6 +20,48 @@ export default function SessionsPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
   const [form, setForm] = useState({ name: "", startDate: "", endDate: "", isCurrent: false })
+  const [expandedSession, setExpandedSession] = useState<string | null>(null)
+  const [terms, setTerms] = useState<any[]>([])
+  const [termForm, setTermForm] = useState({ name: "", startDate: "", endDate: "", isCurrent: false })
+  const [editingTerm, setEditingTerm] = useState<any | null>(null)
+  const [showTermForm, setShowTermForm] = useState(false)
+
+  const fetchTerms = async (sessionId: string) => {
+    const res = await fetch(`/api/terms?sessionId=${sessionId}`)
+    setTerms(await res.json())
+  }
+
+  const toggleSession = (id: string) => {
+    if (expandedSession === id) { setExpandedSession(null); return }
+    setExpandedSession(id)
+    fetchTerms(id)
+  }
+
+  const handleTermSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!expandedSession) return
+    const url = editingTerm ? `/api/terms/${editingTerm.id}` : "/api/terms"
+    const method = editingTerm ? "PUT" : "POST"
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...termForm, sessionId: expandedSession }),
+    })
+    if (res.ok) {
+      toast.success(editingTerm ? "Term updated" : "Term created")
+      setShowTermForm(false)
+      setEditingTerm(null)
+      setTermForm({ name: "", startDate: "", endDate: "", isCurrent: false })
+      fetchTerms(expandedSession)
+    } else {
+      toast.error("Failed to save term")
+    }
+  }
+
+  const deleteTerm = async (term: any) => {
+    const res = await fetch(`/api/terms/${term.id}`, { method: "DELETE" })
+    if (res.ok) { toast.success("Term deleted"); if (expandedSession) fetchTerms(expandedSession) }
+  }
 
   const fetchItems = async () => {
     const res = await fetch("/api/sessions")
@@ -86,7 +128,7 @@ export default function SessionsPage() {
                 <Card className={`glass-card border-0 overflow-hidden ${item.isCurrent ? "ring-1 ring-primary/30" : ""}`}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => toggleSession(item.id)}>
                         <div className="flex items-center gap-2">
                           <p className="font-semibold">{item.name}</p>
                           {item.isCurrent && <Badge className="bg-primary/10 text-primary text-[10px] border-0">Current</Badge>}
@@ -103,8 +145,60 @@ export default function SessionsPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-danger" onClick={() => handleDelete(item)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleSession(item.id)}>
+                          {expandedSession === item.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
                       </div>
                     </div>
+                    {expandedSession === item.id && (
+                      <div className="mt-4 pt-3 border-t border-border/50 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium">Terms</h4>
+                          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setEditingTerm(null); setTermForm({ name: "", startDate: "", endDate: "", isCurrent: false }); setShowTermForm(!showTermForm) }}>
+                            <Plus className="h-3 w-3 mr-1" />Add Term
+                          </Button>
+                        </div>
+                        {showTermForm && (
+                          <form onSubmit={handleTermSubmit} className="space-y-2 p-3 rounded-xl bg-muted/30">
+                            <Input placeholder="Term name (e.g. First Term)" value={termForm.name} onChange={(e) => setTermForm({ ...termForm, name: e.target.value })} className="h-9 text-sm" required />
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input type="date" value={termForm.startDate} onChange={(e) => setTermForm({ ...termForm, startDate: e.target.value })} className="h-9 text-sm" required />
+                              <Input type="date" value={termForm.endDate} onChange={(e) => setTermForm({ ...termForm, endDate: e.target.value })} className="h-9 text-sm" required />
+                            </div>
+                            <label className="flex items-center gap-2 text-xs">
+                              <input type="checkbox" checked={termForm.isCurrent} onChange={(e) => setTermForm({ ...termForm, isCurrent: e.target.checked })} />
+                              Current term
+                            </label>
+                            <div className="flex gap-2">
+                              <Button type="submit" size="sm" className="h-8 text-xs">{editingTerm ? "Update" : "Create"}</Button>
+                              <Button type="button" size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setShowTermForm(false)}>Cancel</Button>
+                            </div>
+                          </form>
+                        )}
+                        {terms.length === 0 ? (
+                          <p className="text-xs text-muted-foreground py-2">No terms yet</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {terms.map((t) => (
+                              <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{t.name}</span>
+                                  {t.isCurrent && <Badge className="bg-green-500/10 text-green-600 text-[10px] border-0">Current</Badge>}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setEditingTerm(t); setTermForm({ name: t.name, startDate: t.startDate?.split("T")[0] || "", endDate: t.endDate?.split("T")[0] || "", isCurrent: t.isCurrent }); setShowTermForm(true) }}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-danger" onClick={() => deleteTerm(t)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>

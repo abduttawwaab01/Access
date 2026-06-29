@@ -135,8 +135,10 @@ export default function StudentCbtPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline">{getSubjectName(exam.subjectId)}</Badge>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {(exam.subjectIds || [exam.subjectId]).map((sid: string) => (
+                              <Badge key={sid} variant="outline">{getSubjectName(sid)}</Badge>
+                            ))}
                             {done && <Badge className="bg-green-500/15 text-green-600">Completed</Badge>}
                           </div>
                           <h4 className="font-semibold">{exam.title}</h4>

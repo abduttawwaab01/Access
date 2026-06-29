@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const studentId = searchParams.get("studentId")
   const classId = searchParams.get("classId")
@@ -25,7 +28,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
+  const user = auth.user as any
   const body = await request.json()
+  if (!body.studentId || !body.classId || body.week == null) {
+    return NextResponse.json({ error: "studentId, classId, and week are required" }, { status: 400 })
+  }
+  body.createdBy = body.createdBy || user.id
   const item = await db.weeklyReports.create(body)
   return NextResponse.json(item, { status: 201 })
 }

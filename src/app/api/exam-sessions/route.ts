@@ -1,7 +1,11 @@
 ﻿import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const examId = searchParams.get("examId") || undefined
   const teacherId = searchParams.get("teacherId")
@@ -49,6 +53,30 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Server-side maxAttempts enforcement
+    const exam = await prisma.exam.findUnique({ where: { id: body.examId } })
+    if (!exam) {
+      return NextResponse.json({ error: "Exam not found" }, { status: 404 })
+    }
+
+    const maxAttempts = exam.maxAttempts ?? 0
+    if (maxAttempts > 0) {
+      const existingSessions = await prisma.examSession.count({
+        where: {
+          examId: body.examId,
+          studentId: body.studentId || body.studentName || "entrance-applicant",
+          status: "completed",
+        },
+      })
+      if (existingSessions >= maxAttempts) {
+        return NextResponse.json(
+          { error: `You have used all ${maxAttempts} attempt(s) for this exam` },
+          { status: 403 }
+        )
+      }
+    }
+
     const item = await db.examSessions.create(body)
     return NextResponse.json(item, { status: 201 })
   } catch (error) {

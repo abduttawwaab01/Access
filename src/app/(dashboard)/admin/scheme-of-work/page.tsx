@@ -18,7 +18,7 @@ import { FormSheet } from "@/components/admin/FormSheet"
 import { EmptyState } from "@/components/admin/EmptyState"
 
 interface Week {
-  weekNumber: number
+  week: number
   topic: string
   objectives: string
   content: string
@@ -99,7 +99,7 @@ export default function SchemeOfWorkPage() {
   const openCreate = () => {
     setEditing(null)
     setForm({ title: "", subjectId: "", classId: "", term: "", session: "" })
-    setWeeks([{ weekNumber: 1, topic: "", objectives: "", content: "", resources: "" }])
+    setWeeks([{ week: 1, topic: "", objectives: "", content: "", resources: "" }])
     setSheetOpen(true)
   }
 
@@ -112,18 +112,18 @@ export default function SchemeOfWorkPage() {
       term: item.term,
       session: item.session,
     })
-    setWeeks(item.weeks?.length > 0 ? item.weeks : [{ weekNumber: 1, topic: "", objectives: "", content: "", resources: "" }])
+    setWeeks(item.weeks?.length > 0 ? item.weeks : [{ week: 1, topic: "", objectives: "", content: "", resources: "" }])
     setSheetOpen(true)
   }
 
   const addWeek = () => {
-    setWeeks((prev) => [...prev, { weekNumber: prev.length + 1, topic: "", objectives: "", content: "", resources: "" }])
+    setWeeks((prev) => [...prev, { week: prev.length + 1, topic: "", objectives: "", content: "", resources: "" }])
   }
 
   const removeWeek = (index: number) => {
     setWeeks((prev) => {
       const updated = prev.filter((_, i) => i !== index)
-      return updated.map((w, i) => ({ ...w, weekNumber: i + 1 }))
+      return updated.map((w, i) => ({ ...w, week: i + 1 }))
     })
   }
 
@@ -371,9 +371,9 @@ export default function SchemeOfWorkPage() {
                                 </div>
                               </div>
                             {item.weeks?.length > 0 ? item.weeks.map((week) => (
-                              <Card key={week.weekNumber} className="border border-border/40 bg-muted/30">
+                              <Card key={week.week} className="border border-border/40 bg-muted/30">
                                 <CardHeader className="p-3 pb-1">
-                                  <CardTitle className="text-sm font-semibold">Week {week.weekNumber}: {week.topic}</CardTitle>
+                                  <CardTitle className="text-sm font-semibold">Week {week.week}: {week.topic}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-3 pt-1 text-xs space-y-1">
                                   {week.objectives && <p><span className="font-medium text-foreground">Objectives:</span> {week.objectives}</p>}
@@ -461,7 +461,7 @@ export default function SchemeOfWorkPage() {
             {weeks.map((week, index) => (
               <Card key={index} className="border border-border/40">
                 <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-semibold">Week {week.weekNumber}</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Week {week.week}</CardTitle>
                   {weeks.length > 1 && (
                     <Button type="button" variant="ghost" size="icon-sm" className="h-7 w-7 text-danger" onClick={() => removeWeek(index)}>
                       <Trash2 className="h-3.5 w-3.5" />

@@ -45,9 +45,7 @@ export default function TeacherAnalyticsPage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json()).then((tas) => ({ tas, staffId }))
       })
       .then(({ tas, staffId }) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        const classIds: string[] = ta?.classIds || []
-        const subjectIds: string[] = ta?.subjectIds || []
+        const { classIds = [], subjectIds = [] } = tas || {}
         return Promise.all([
           classIds.length > 0 ? fetch(`/api/students?classId=${classIds[0]}`).then((r) => r.json()) : Promise.resolve([]),
           classIds.length > 0 ? fetch(`/api/classes`).then((r) => r.json()).then((all) => all.filter((c: any) => classIds.includes(c.id))) : Promise.resolve([]),

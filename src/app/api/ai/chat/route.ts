@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { buildContext } from "@/lib/ai-context"
+import { requireAuth } from "@/lib/api-auth"
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -11,6 +12,8 @@ const MODELS = [
 ]
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const { prompt, role, teacherId, messages: history } = await request.json()
 

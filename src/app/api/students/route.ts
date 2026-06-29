@@ -3,6 +3,7 @@ import { cacheHeader } from "@/lib/cache-header"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { requireAuth } from "@/lib/api-auth"
 
 async function resolveStudent(userId: string) {
   let student = await db.students.getByUserId(userId)
@@ -26,6 +27,8 @@ async function resolveStudent(userId: string) {
 }
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
   const classIds = searchParams.get("classIds") || undefined
@@ -63,6 +66,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   const item = await db.students.create(body)
 

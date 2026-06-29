@@ -117,7 +117,7 @@ export default function AdminSalaryPage() {
                         <Avatar className="h-10 w-10 shrink-0"><AvatarFallback>{s.firstName[0]}{s.lastName[0]}</AvatarFallback></Avatar>
                         <div className="min-w-0">
                           <p className="font-medium truncate">{s.firstName} {s.lastName}</p>
-                          <p className="text-xs text-muted-foreground truncate">{s.role} • {s.department}</p>
+                          <p className="text-xs text-muted-foreground truncate">{s.user?.role || "Staff"} • {s.department}</p>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => startEdit(s.id)} className="shrink-0"><Edit3 className="h-4 w-4" /></Button>

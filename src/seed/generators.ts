@@ -989,7 +989,7 @@ export function generateWeeklyReports(
   const reports: any[] = []
   const terms = ["First Term", "Second Term", "Third Term"]
   const session = "2024/2025"
-  const teacherIds = staff.filter((s) => s.role === "teacher").map((s) => s.id)
+  const teacherIds = staff.filter((s) => s.user?.role === "teacher").map((s) => s.id)
 
   const comments = [
     "A good week overall. The student is progressing well and showing consistent effort in all subjects.",

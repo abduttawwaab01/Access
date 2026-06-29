@@ -130,7 +130,7 @@ export default function SessionDetailPage() {
 
   const pieData = [{ name: "Correct", value: correct, color: "#22c55e" }, { name: "Partial", value: partial, color: "#f59e0b" }, { name: "Wrong", value: wrong, color: "#ef4444" }].filter((d) => d.value > 0)
 
-  const subjectName = subjects.find((s) => s.id === exam?.subjectId)?.name || "Unknown"
+  const subjectName = (exam?.subjectIds || [exam?.subjectId]).filter(Boolean).map((sid: string) => subjects.find((s: any) => s.id === sid)?.name || "Unknown").join(", ") || "Unknown"
   const timeTaken = session.startTime && session.endTime ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) : null
 
   const handleExportCSV = () => {

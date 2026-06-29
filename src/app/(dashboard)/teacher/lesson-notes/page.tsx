@@ -76,9 +76,9 @@ export default function LessonNotesPage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        setMyClassIds(ta?.classIds || [])
-        setMySubjectIds(ta?.subjectIds || [])
+        const { classIds: myClassIds = [], subjectIds: mySubjectIds = [] } = tas || {}
+        setMyClassIds(myClassIds)
+        setMySubjectIds(mySubjectIds)
       })
       .catch(() => setLoading(false))
   }, [userId])
@@ -100,7 +100,7 @@ export default function LessonNotesPage() {
   }
 
   const addQuestion = () => {
-    setQuiz([...quiz, { id: Math.random().toString(36).substring(2, 11), questionText: "", type: "MCQ", options: ["", "", "", ""], correctAnswer: "", points: 1 }])
+    setQuiz([...quiz, { id: crypto.randomUUID(), questionText: "", type: "MCQ", options: ["", "", "", ""], correctAnswer: "", points: 1 }])
   }
   const removeQuestion = (id: string) => setQuiz(quiz.filter((q) => q.id !== id))
   const updateQuestion = (id: string, field: string, value: any) => {
@@ -197,7 +197,7 @@ export default function LessonNotesPage() {
       update("lessonPlan", result.lessonPlan)
       if (result.questions.length > 0) {
         setQuiz(result.questions.map((q: any) => ({
-          id: Math.random().toString(36).substring(2, 11),
+          id: crypto.randomUUID(),
           questionText: q.questionText,
           type: q.type,
           options: q.options,

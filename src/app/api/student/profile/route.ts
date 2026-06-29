@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 async function resolveStudent(userId: string) {
   let student = await db.students.getByUserId(userId)
@@ -24,6 +25,8 @@ async function resolveStudent(userId: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const userId = request.nextUrl.searchParams.get("userId") || ""
     if (!userId) {
@@ -50,6 +53,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   try {
     const body = await request.json()
     const userId = body.id || ""

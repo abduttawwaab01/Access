@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { cacheHeader } from "@/lib/cache-header"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 function mapQuestion(q: any) {
   return {
@@ -24,6 +25,8 @@ function mapQuestion(q: any) {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const classId = searchParams.get("classId") || undefined
   const subjectId = searchParams.get("subjectId") || undefined
@@ -91,12 +94,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   const item = await db.questions.create(body)
   return NextResponse.json(mapQuestion(item), { status: 201 })
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { action, ids, approvedBy, questionId, data } = await request.json()
   if (action === "approve" && questionId) {
     return NextResponse.json(await db.questions.approve(questionId, approvedBy))
@@ -112,6 +119,8 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })

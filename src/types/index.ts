@@ -9,6 +9,15 @@ export interface User {
   phone?: string
 }
 
+export interface Parent {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  image?: string
+  linkedStudents?: ChildSummary[]
+}
+
 export interface School {
   id: string
   name: string
@@ -26,7 +35,7 @@ export interface ChildSummary {
   id: string
   name: string
   class: string
-  grade: string
+  className?: string
   attendance: number
   performance: number
   image?: string
@@ -112,32 +121,93 @@ export interface ParentStudentLink {
   id: string
   parentId: string
   studentId: string
-  relationship: string
+  schoolId: string
+  relationship?: string
+  createdAt?: string
 }
 
 // Extended Exam types
 export type ExamCategory = "school_test" | "entrance" | "term_exam" | "quiz"
 
-// Attendance QR
-export interface AttendanceQR {
-  id: string
-  type: "student_id" | "school_entry"
-  code: string
-  schoolId: string
-  createdAt: string
-  expiresAt?: string
-}
-
-// Attendance Record extended
+// Attendance types (maps to Prisma schema exactly)
 export interface AttendanceRecord {
   id: string
-  userId: string
-  userType: "student" | "staff"
+  studentId: string
   date: string
-  time: string
   status: "present" | "absent" | "late"
-  method: "qr" | "face" | "manual"
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AttendanceLog {
+  id: string
+  userId: string
+  userType?: string
+  date: string
+  time?: string
+  status?: "present" | "late"
+  method?: "qr" | "manual"
   timestamp: string
+  schoolId: string
+  createdAt: string
+}
+
+export interface AttendanceQRCode {
+  id: string
+  type: string
+  data: string
+  schoolId: string
+  createdAt: string
+}
+
+// Weekly Report types
+export interface WeeklyReport {
+  id: string
+  studentId: string
+  classId: string
+  week: number
+  term?: string
+  session?: string
+  content?: Record<string, unknown>
+  status: "draft" | "published"
+  createdBy?: string
+  publishedAt?: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Timetable types
+export interface TimetableSet {
+  id: string
+  name: string
+  type?: string
+  classId?: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+  entries?: TimetableEntry[]
+}
+
+export interface TimetableEntry {
+  id: string
+  setId?: string
+  day: string
+  period?: string
+  startTime?: string
+  endTime?: string
+  subjectId?: string
+  subjectName?: string
+  classId: string
+  teacherId?: string
+  teacherName?: string
+  room?: string
+  isBreak: boolean
+  date?: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
 }
 
 // Report Card
@@ -394,6 +464,105 @@ export interface HandwritingTemplate {
   tags: string[]
 }
 
+// Financial types
+export interface FeeStructure {
+  id: string
+  classId: string
+  type: string
+  amount: number
+  dueDate?: string
+  description?: string
+  term?: string
+  session?: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Payment {
+  id: string
+  studentId: string
+  feeStructureId?: string
+  amount: number
+  reference?: string
+  method?: string
+  paidAt?: string
+  term?: string
+  session?: string
+  status: "pending" | "confirmed" | "rejected"
+  confirmedAt?: string
+  confirmedBy?: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BankDetails {
+  id: string
+  schoolId: string
+  bankName?: string
+  accountName?: string
+  accountNumber?: string
+  swiftCode?: string
+  branch?: string
+}
+
+export interface SalaryStructure {
+  id: string
+  staffId: string
+  amount: number
+  schoolId: string
+  updatedAt: string
+}
+
+export interface SalaryRecord {
+  id: string
+  staffId: string
+  month: string
+  year: string
+  amount: number
+  status: "pending" | "paid"
+  paidAt?: string
+  confirmedAt?: string
+  confirmedBy?: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ReceiptData {
+  studentName: string
+  studentId: string
+  studentClass: string
+  amount: number
+  paid: number
+  balance: number
+  term: string
+  session: string
+  method: string
+  createdAt: string
+  reference: string
+  schoolName: string
+  schoolAddress?: string
+  schoolLogo?: string
+  bankName?: string
+  accountName?: string
+  accountNumber?: string
+}
+
+export interface PayslipData {
+  staffName: string
+  staffId: string
+  staffRole: string
+  month: string
+  year: string
+  amount: number
+  paidAt?: string
+  schoolName: string
+  schoolAddress?: string
+  schoolLogo?: string
+}
+
 export const DEFAULT_HANDWRITING_CONFIG: HandwritingConfig = {
   templateId: "classic-ruled",
   sheetTitle: "Handwriting Practice",
@@ -426,6 +595,87 @@ export const LINE_SPACING_MAP: Record<HandwritingLineSpacing, number> = {
   narrow: 24,
   medium: 36,
   wide: 48,
+}
+
+export interface Subject {
+  id: string
+  name: string
+  code?: string | null
+  classId: string
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AcademicSession {
+  id: string
+  name: string
+  startDate: string
+  endDate: string
+  isCurrent: boolean
+  schoolId: string
+  termCount?: number
+}
+
+export interface Term {
+  id: string
+  name: string
+  startDate: string
+  endDate: string
+  isCurrent: boolean
+  sessionId: string
+}
+
+export interface SoWWeekEntry {
+  weekNumber?: number
+  week?: number
+  topic: string
+  objectives?: string
+  content?: string
+  resources?: string
+}
+
+export interface SchemeOfWork {
+  id: string
+  classId: string
+  subjectId: string
+  title: string
+  content?: { weeks?: SoWWeekEntry[]; term?: string; session?: string } | null
+  status: "draft" | "pending" | "published"
+  createdBy?: string | null
+  approvedBy?: string | null
+  approvedAt?: string | null
+  schoolId: string
+  createdAt: string
+  updatedAt: string
+  weeks?: SoWWeekEntry[]
+  term?: string
+  session?: string
+  subjectName?: string
+  className?: string
+  creatorName?: string
+  approverName?: string | null
+}
+
+export interface Class {
+  id: string
+  name: string
+  arm?: string | null
+  section?: string | null
+  isActive: boolean
+  schoolId: string
+  levelId?: string | null
+  createdAt: string
+  updatedAt: string
+  studentCount?: number
+  level?: { id: string; name: string } | null
+}
+
+export interface Level {
+  id: string
+  name: string
+  slug: string
+  sortOrder: number
 }
 
 export const HANDWRITING_LETTERS = [

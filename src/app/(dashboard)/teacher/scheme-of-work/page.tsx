@@ -96,9 +96,9 @@ export default function SchemeOfWorkPage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        setMyClassIds(ta?.classIds || [])
-        setMySubjectIds(ta?.subjectIds || [])
+        const { classIds: myClassIds, subjectIds: mySubjectIds } = tas || {}
+        setMyClassIds(myClassIds || [])
+        setMySubjectIds(mySubjectIds || [])
       })
       .catch(() => setLoading(false))
   }, [userId])
@@ -386,10 +386,10 @@ export default function SchemeOfWorkPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Select value={form.subject} onValueChange={(v) => { if (v) updateForm("subject", v) }}>
+              <Select value={form.subjectId} onValueChange={(v) => { if (v) { const sub = subjects.find((s: any) => s.id === v); updateForm("subjectId", v); if (sub) updateForm("subject", sub.name) } }}>
                 <SelectTrigger className="h-12"><SelectValue placeholder="Select subject" /></SelectTrigger>
                 <SelectContent>
-                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                  {subjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

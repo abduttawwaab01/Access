@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -23,7 +24,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
+  if (!body.lessonNoteId || !body.studentId) {
+    return NextResponse.json({ error: "lessonNoteId and studentId are required" }, { status: 400 })
+  }
   const item = await db.lessonQuizResults.create(body)
   return NextResponse.json(item, { status: 201 })
 }

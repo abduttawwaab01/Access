@@ -63,6 +63,12 @@ export default function ExamTakePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Ownership check: verify sessionId matches stored value
+        const storedIds = JSON.parse(sessionStorage.getItem("exam_sessions") || "[]")
+        if (!storedIds.includes(sessionId)) {
+          router.replace("/exam-take?error=unauthorized")
+          return
+        }
         const sRes = await fetch(`/api/exam-sessions/${sessionId}`)
         if (!sRes.ok) {
           throw new Error(`Failed to fetch exam session: ${sRes.status}`)
@@ -83,13 +89,13 @@ export default function ExamTakePage() {
           setTimeLeft((eData.duration || 30) * 60)
 
           const examQuestions = Array.isArray(eData.questions) ? eData.questions : []
-          const qRes = await fetch("/api/questions")
+          const qIds = examQuestions.map((q: any) => q.questionId).filter(Boolean)
+          const qRes = await fetch(`/api/exam-sessions/${sessionId}/questions`)
           if (!qRes.ok) {
             throw new Error(`Failed to fetch questions: ${qRes.status}`)
           }
-          const allQ = await qRes.json()
-          const qIds = examQuestions.map((q: any) => q.questionId).filter(Boolean)
-          let qs = allQ.filter((q: any) => q.id && qIds.includes(q.id))
+          const fetchedQuestions = await qRes.json()
+          let qs = Array.isArray(fetchedQuestions) ? fetchedQuestions : []
           if (eData.shuffleQuestions) qs = qs.sort(() => Math.random() - 0.5)
           setQuestions(qs)
 
@@ -130,26 +136,15 @@ export default function ExamTakePage() {
     }))
 
     const maxScore = exam?.questions?.reduce((s: number, q: any) => s + (q.points || 0), 0) || 0
-    let totalScore = 0
-    const gradedAnswers = answerArray.map((a) => {
-      const q = questions.find((qq) => qq.id === a.questionId)
-      const eq = q ? getEffectiveQ(q) : q
-      if (eq && (eq.type === "mcq" || eq.type === "true_false") && eq.correctAnswer) {
-        const correct = a.answer?.trim().toLowerCase() === eq.correctAnswer.trim().toLowerCase()
-        const pts = correct ? (exam.questions.find((exq: any) => exq.questionId === eq.id)?.points || eq.points) : 0
-        if (correct) totalScore += pts
-        return { ...a, score: pts }
-      }
-      return { ...a, score: 0 }
-    })
 
     try {
       const response = await fetch(`/api/exam-sessions/${sessionId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          answers: gradedAnswers,
-          totalScore,
+          answers: answerArray,
+          examId: session?.examId,
+          startTime: session?.startTime,
           maxScore,
           endTime: new Date().toISOString(),
           status: "completed",
@@ -160,8 +155,9 @@ export default function ExamTakePage() {
       if (!response.ok) {
         throw new Error(`Failed to submit exam: ${response.status}`)
       }
+      const updated = await response.json()
       setSubmitted(true)
-      setResult({ totalScore, maxScore, answers: gradedAnswers, flagged })
+      setResult({ totalScore: updated.totalScore || 0, maxScore, answers: answerArray, flagged })
       toast.success("Exam submitted successfully!")
     } catch (error) {
       console.error("Error submitting exam:", error)

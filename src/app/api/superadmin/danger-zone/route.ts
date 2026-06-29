@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { isSuperAdminAuthorized } from "@/lib/superadmin-auth"
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { action, token, categories } = body
+  const { action } = body
 
-  if (token !== "superadmin-authenticated") {
+  if (!isSuperAdminAuthorized(body)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
 
@@ -15,10 +16,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "delete") {
-    if (!Array.isArray(categories) || categories.length === 0) {
+    if (!Array.isArray(body.categories) || body.categories.length === 0) {
       return NextResponse.json({ success: false, error: "No categories selected" })
     }
-    const result = await db.dangerZone.deleteAll(categories)
+    const result = await db.dangerZone.deleteAll(body.categories)
     return NextResponse.json(result)
   }
 

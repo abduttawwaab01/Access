@@ -10,7 +10,10 @@ const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Credentials",
-      credentials: {},
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
       async authorize(credentials) {
         const settings = await db.school.get()
         if (!settings.loginEnabled) throw new Error("School login is currently disabled")
@@ -24,27 +27,30 @@ const handler = NextAuth({
         if (!isValid) throw new Error("Invalid credentials")
         const roleMap: Record<string, string> = { admin: "admin", teacher: "teacher", student: "student", parent: "parent" }
         const role = roleMap[user.role] || user.role
-        return { id: user.id, name: user.name, email: user.email, role }
+        const schoolId = user.schoolId || (await db.school.get())?.id || ""
+        return { id: user.id, name: user.name, email: user.email, role, schoolId }
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        ;(token as any).role = (user as any).role
-        ;(token as any).id = user.id
+        token.id = user.id
+        token.role = user.role
+        token.schoolId = user.schoolId
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        ;(session.user as any).role = (token as any).role
-        ;(session.user as any).id = (token as any).id
+        session.user.id = token.id as string
+        session.user.role = token.role as string
+        session.user.schoolId = token.schoolId as string
       }
       return session
     },
   },
-  pages: { signIn: "/login", error: "/login" },
+  pages: { signIn: "/auth/login", error: "/auth/login" },
   session: { strategy: "jwt" },
 })
 

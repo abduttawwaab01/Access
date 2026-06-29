@@ -58,15 +58,22 @@ export default function TeacherExamDetailPage() {
   const [editForm, setEditForm] = useState({ text: "", type: "mcq", options: ["", "", "", ""], answer: "", difficulty: "medium", topic: "", points: 5 })
 
   const fetchData = async () => {
-    const [examRes, allQRes, sRes, tRes] = await Promise.all([
-      fetch(`/api/exams/${params.id}`), fetch("/api/questions?teacherId=" + teacherId), fetch("/api/subjects"), fetch("/api/topics"),
+    const [examRes, sRes, tRes] = await Promise.all([
+      fetch(`/api/exams/${params.id}`), fetch("/api/subjects"), fetch("/api/topics"),
     ])
     const examData = await examRes.json()
     setExam(examData)
-    const allQ = await allQRes.json()
-    setAllQuestions(allQ)
     setSubjects(await sRes.json())
     setAllTopics(await tRes.json())
+
+    // Only load questions from the exam's selected subjects
+    const subjectIds = (examData.subjectIds?.length ? examData.subjectIds : [examData.subjectId]).filter(Boolean)
+    const qPromises = subjectIds.map((sid: string) =>
+      fetch(`/api/questions?subjectId=${sid}&teacherId=${teacherId}`).then(r => r.json())
+    )
+    const allQ = (await Promise.all(qPromises)).flat()
+    setAllQuestions(allQ)
+
     if (examData.questions) {
       const qIds = examData.questions.map((q: any) => q.questionId)
       setQuestions(allQ.filter((q: any) => qIds.includes(q.id)))
@@ -85,9 +92,9 @@ export default function TeacherExamDetailPage() {
         return fetch("/api/teacher-assignments?teacherId=" + staffId).then((r) => r.json())
       })
       .then((tas) => {
-        const ta = Array.isArray(tas) ? tas[0] : null
-        setMyClassIds(ta?.classIds || [])
-        setMySubjectIds(ta?.subjectIds || [])
+        const { classIds: myClassIds = [], subjectIds: mySubjectIds = [] } = tas || {}
+        setMyClassIds(myClassIds)
+        setMySubjectIds(mySubjectIds)
       })
       .catch(() => {})
   }, [userId])
@@ -111,10 +118,13 @@ export default function TeacherExamDetailPage() {
 
   const loadBankQuestions = async () => {
     try {
-      const res = await fetch(`/api/question-bank?subjectId=${exam.subjectId}&approved=true&teacherId=${teacherId}`)
-      const data = await res.json()
+      const subjectIds = (exam.subjectIds?.length ? exam.subjectIds : [exam.subjectId]).filter(Boolean)
+      const results = await Promise.all(subjectIds.map((sid: string) =>
+        fetch(`/api/question-bank?subjectId=${sid}&approved=true&teacherId=${teacherId}`).then(r => r.json())
+      ))
+      const allData = results.flat()
       const existingIds = new Set((exam.questions || []).map((q: any) => q.questionId))
-      const filtered = data.filter((q: any) => !existingIds.has(q.id))
+      const filtered = allData.filter((q: any) => !existingIds.has(q.id))
       setBankQuestions(filtered)
       const topics = [...new Set(filtered.map((q: any) => q.topic).filter(Boolean))] as string[]
       setBankTopics(topics)
@@ -258,13 +268,14 @@ export default function TeacherExamDetailPage() {
   const totalPages = Math.max(1, Math.ceil(filteredBank.length / PAGE_SIZE))
   const paginated = filteredBank.slice((browsePage - 1) * PAGE_SIZE, browsePage * PAGE_SIZE)
 
-  const examFormTopics = allTopics.filter((t: any) => t.subjectId === exam?.subjectId)
+  const examSubjectIds = (exam?.subjectIds?.length ? exam.subjectIds : [exam?.subjectId]).filter(Boolean)
+  const examFormTopics = allTopics.filter((t: any) => examSubjectIds.includes(t.subjectId))
   const getSubjectName = (id: string) => subjects.find((s) => s.id === id)?.name || "Unknown"
 
   if (loading) return <div className="p-4 md:p-6 space-y-4">{["h-12", "h-32", "h-20", "h-20"].map((h, i) => <div key={i} className={`${h} rounded-xl bg-muted animate-pulse`} />)}</div>
   if (!exam) return <div className="p-4 md:p-6"><EmptyState title="Not found" /></div>
 
-  const availableQuestions = allQuestions.filter((q: any) => q.subjectId === exam.subjectId && q.approved && !(exam.questions || []).find((eq: any) => eq.questionId === q.id))
+  const availableQuestions = allQuestions.filter((q: any) => examSubjectIds.includes(q.subjectId) && q.approved && !(exam.questions || []).find((eq: any) => eq.questionId === q.id))
 
   return (
     <div className="p-4 md:p-6">
@@ -280,8 +291,8 @@ export default function TeacherExamDetailPage() {
                   <Badge variant="outline" className={exam.type === "entrance" ? "bg-red-500/15 text-red-600" : "bg-blue-500/15 text-blue-600"}>{exam.type === "entrance" ? "Entrance" : "Regular"}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{exam.description}</p>
-                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                  <span>{getSubjectName(exam.subjectId)}</span>
+                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                  <span>{(exam.subjectIds || [exam.subjectId]).filter(Boolean).map((sid: string) => getSubjectName(sid)).join(", ")}</span>
                   <span className={exam.type === "entrance" ? "text-red-600" : "text-blue-600"}>Type: {exam.type === "entrance" ? "Entrance Exam" : "Regular Exam"}</span>
                   <span>{exam.duration} min</span>
                   <span>{(exam.questions || []).length} questions</span>
@@ -295,10 +306,10 @@ export default function TeacherExamDetailPage() {
       <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
         <h3 className="font-semibold text-lg">Questions</h3>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={openAuto} disabled={!exam.classId || !exam.subjectId}>
+          <Button size="sm" variant="outline" onClick={openAuto} disabled={!exam.classId || examSubjectIds.length === 0}>
             <Shuffle className="h-4 w-4 mr-1" /> Auto-populate
           </Button>
-          <Button size="sm" variant="outline" onClick={openBrowse} disabled={!exam.classId || !exam.subjectId}>
+          <Button size="sm" variant="outline" onClick={openBrowse} disabled={!exam.classId || examSubjectIds.length === 0}>
             <Filter className="h-4 w-4 mr-1" /> Browse Bank
           </Button>
           <Button size="sm" onClick={() => setAddOpen(!addOpen)} className="animated-gradient border-0 text-white shadow-lg shadow-primary/25">

@@ -52,7 +52,7 @@ export default function AdminAnalyticsPage() {
   }, [])
 
   const totalStudents = students.length
-  const totalTeachers = staff.filter((s) => s.role === "teacher").length
+  const totalTeachers = staff.filter((s) => s.user?.role === "teacher").length
   const totalClasses = classes.length
 
   const subjectAvgScores = subjects.map((sub) => {

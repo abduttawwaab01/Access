@@ -21,6 +21,12 @@ import {
   HelpCircle,
   Award,
   BotMessageSquare,
+  MessageSquare,
+  Wallet,
+  Download,
+  Star,
+  PenLine,
+  QrCode,
   type LucideIcon,
 } from "lucide-react"
 
@@ -42,6 +48,12 @@ const iconMap: Record<string, LucideIcon> = {
   HelpCircle,
   Award,
   BotMessageSquare,
+  MessageSquare,
+  Wallet,
+  Download,
+  Star,
+  PenLine,
+  QrCode,
 }
 
 interface NavItem {

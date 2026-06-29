@@ -3,8 +3,11 @@ import { cacheHeader } from "@/lib/cache-header"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get("userId")
   const pageRaw = searchParams.get("page")
@@ -23,6 +26,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
   const { classIds, subjectIds, isClassTeacher, ...staffData } = body
   const item = await db.staff.create(staffData)
@@ -55,6 +60,7 @@ export async function POST(request: Request) {
     await Promise.all([
       db.teacherClasses.setAssignments(item.id, classIds || [], isClassTeacher || false),
       db.teacherSubjects.setAssignments(item.id, subjectIds || []),
+      db.teacherAssignments.upsert(item.id, { classIds: classIds || [], subjectIds: subjectIds || [], isClassTeacher: isClassTeacher || false }),
     ])
   }
 

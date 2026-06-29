@@ -56,7 +56,7 @@ async function main() {
             name: `${s.firstName} ${s.lastName}`,
             email: s.email,
             password: hashed,
-            role: s.role === "admin" ? "admin" : "teacher",
+            role: "teacher",
             schoolId,
           },
         })
@@ -83,7 +83,6 @@ async function main() {
             lastName,
             staffId,
             email: u.email,
-            role: u.role === "admin" ? "admin" : "teacher",
             schoolId,
             userId: u.id,
           },

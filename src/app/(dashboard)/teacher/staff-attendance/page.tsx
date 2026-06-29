@@ -30,7 +30,7 @@ export default function StaffAttendanceCheckInPage() {
         if (staffData?.id) {
           setStaffId(staffData.id)
           setStaffName(`${staffData.firstName} ${staffData.lastName}`)
-          setStaffRole(staffData.role || "Staff")
+          setStaffRole(staffData.user?.role || "Staff")
         }
         setLoadingStaff(false)
       })

@@ -148,7 +148,7 @@ export default function TeachersPage() {
       email: item.email || "", phone: item.phone || "",
       dateOfBirth: item.dateOfBirth ? item.dateOfBirth.split("T")[0] : "",
       gender: item.gender || "", address: item.address || "",
-      role: item.role || "teacher", department: item.department || "",
+      role: item.user?.role || "teacher", department: item.department || "",
       qualification: item.qualification || "",
       employmentDate: item.employmentDate ? item.employmentDate.split("T")[0] : "",
       salary: item.salary?.toString() || "", passportPhoto: item.passportPhoto || "",
@@ -193,7 +193,7 @@ export default function TeachersPage() {
 
   const openEdit = (item: any) => {
     setEditing(item)
-    setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", role: item.role || "teacher", department: item.department || "", password: "" })
+    setForm({ firstName: item.firstName, lastName: item.lastName, email: item.email || "", role: item.user?.role || "teacher", department: item.department || "", password: "" })
     setSheetOpen(true)
   }
 
@@ -263,7 +263,7 @@ export default function TeachersPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate">{item.firstName} {item.lastName}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="capitalize">{item.role}</span>
+                          <span className="capitalize">{item.user?.role}</span>
                           {item.department && <span>· {item.department}</span>}
                           {item.status && (
                             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", item.status === "active" ? "text-success border-success/30" : "text-muted-foreground")}>

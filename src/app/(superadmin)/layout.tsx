@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, createContext, useContext } from "react"
 import { useRouter, usePathname } from "next/navigation"
@@ -69,6 +69,30 @@ export const SuperAdminContext = createContext<{
 
 export const useSuperAdmin = () => useContext(SuperAdminContext)
 
+/**
+ * Simple client-side JWT decoder (no secret needed, just reads payload).
+ * Returns null if token is invalid or expired.
+ */
+function decodeToken(token: string): { role: string; exp: number } | null {
+  try {
+    const parts = token.split(".")
+    if (parts.length !== 3) return null
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")))
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null
+    return payload
+  } catch {
+    return null
+  }
+}
+
+function isTokenValid(): boolean {
+  if (typeof window === "undefined") return false
+  const token = localStorage.getItem("sa_token")
+  if (!token) return false
+  const payload = decodeToken(token)
+  return payload !== null && payload.role === "superadmin"
+}
+
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -77,8 +101,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("sa_token")
-    if (!token && pathname !== "/superadmin/login") {
+    if (!isTokenValid() && pathname !== "/superadmin/login") {
+      localStorage.removeItem("sa_token")
       router.push("/superadmin/login")
       return
     }

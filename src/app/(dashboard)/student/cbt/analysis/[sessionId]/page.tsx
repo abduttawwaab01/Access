@@ -92,7 +92,7 @@ export default function ExamAnalysisPage() {
   const pct = session.maxScore > 0 ? Math.round(((session.score ?? session.totalScore) / session.maxScore) * 100) : 0
   const grade = getGrade(pct)
 
-  const subjectName = subjects.find((s) => s.id === exam.subjectId)?.name || "Unknown"
+  const subjectName = (exam.subjectIds || [exam.subjectId]).filter(Boolean).map((sid: string) => subjects.find((s: any) => s.id === sid)?.name || "Unknown").join(", ") || "Unknown"
 
   const enrichedAnswers = (session.answers || []).map((a: any) => {
     const q = questions.find((q) => q.id === a.questionId)

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { FileText, CheckCircle2, Clock, Download, Printer, Search, Eye, Star, Send, DownloadCloud, ChevronDown, ChevronRight } from "lucide-react"
+import { FileText, CheckCircle2, Clock, Download, Printer, Search, Eye, Star, Send, DownloadCloud, ChevronDown, ChevronRight, Plus } from "lucide-react"
 import { currentSession } from "@/lib/utils"
 import { captureElement } from "@/lib/capture"
 import { PageHeader } from "@/components/admin/PageHeader"
@@ -31,6 +31,7 @@ export default function AdminWeeklyReportsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [classes, setClasses] = useState<any[]>([])
+  const [levels, setLevels] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [subjects, setSubjects] = useState<any[]>([])
@@ -38,6 +39,7 @@ export default function AdminWeeklyReportsPage() {
   const [terms, setTerms] = useState<any[]>([])
 
   const [selectedClassId, setSelectedClassId] = useState("all")
+  const [selectedLevelId, setSelectedLevelId] = useState("all")
   const [selectedWeek, setSelectedWeek] = useState<number | undefined>(undefined)
   const [selectedTerm, setSelectedTerm] = useState("")
   const [selectedTeacher, setSelectedTeacher] = useState("all")
@@ -68,11 +70,13 @@ export default function AdminWeeklyReportsPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/classes").then((r) => r.json()),
+      fetch("/api/levels").then((r) => r.json()),
       fetch("/api/staff").then((r) => r.json()),
       fetch("/api/terms").then((r) => r.json()),
-    ]).then(([cls, staffList, termList]) => {
+    ]).then(([cls, lvls, staffList, termList]) => {
       setClasses(cls)
-      setTeachers(staffList.filter((s: any) => s.role === "teacher"))
+      setLevels(lvls)
+      setTeachers(staffList.filter((s: any) => s.user?.role === "teacher"))
       setTerms(termList)
       const current = termList.find((t: any) => t.isCurrent)
       if (current) setSelectedTerm(current.name)
@@ -103,7 +107,10 @@ export default function AdminWeeklyReportsPage() {
     })
   }, [selectedClassId])
 
-  const myClasses = selectedClassId === "all" ? classes : classes.filter((c) => c.id === selectedClassId)
+  const filteredByLevel = selectedLevelId === "all"
+    ? classes
+    : classes.filter((c) => c.levelId === selectedLevelId)
+  const myClasses = selectedClassId === "all" ? filteredByLevel : filteredByLevel.filter((c) => c.id === selectedClassId)
 
   const uniqueTeachers = [...new Set(reports.map((r) => r.createdBy))]
   const staffMap = Object.fromEntries(teachers.map((t) => [t.id, t]))
@@ -318,14 +325,26 @@ export default function AdminWeeklyReportsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+        <Select value={selectedLevelId} onValueChange={(v) => { if (v) { setSelectedLevelId(v); setSelectedClassId("all") } }}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="All Levels" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            {levels.map((sl: any) => (
+              <SelectItem key={sl.id} value={sl.levelId}>{sl.level.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select value={selectedClassId} onValueChange={(v) => { if (v) setSelectedClassId(v) }}>
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="All Classes" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Classes</SelectItem>
-            {classes.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            {filteredByLevel.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}{c.arm ? ` ${c.arm}` : ""}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -365,6 +384,44 @@ export default function AdminWeeklyReportsPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {selectedClassId !== "all" && selectedClassId && (
+        <div>
+          <h3 className="text-sm font-semibold mb-2">Students in {filteredByLevel.find((c) => c.id === selectedClassId)?.name || "Selected Class"}</h3>
+          <div className="space-y-1.5 mb-4">
+            {students.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">No students found in this class.</p>
+            ) : (
+              students.map((student) => {
+                const report = reports.find((r) => r.studentId === student.id)
+                return (
+                  <div key={student.id} className="flex items-center justify-between p-2.5 rounded-lg bg-card border hover:shadow-sm transition-shadow">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback className="text-[10px]">{student.firstName?.[0]}{student.lastName?.[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{student.firstName} {student.lastName}</p>
+                        <p className="text-[10px] text-muted-foreground">{student.studentId}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {report ? (
+                        <Badge className={report.status === "published" ? "bg-green-500/15 text-green-600 text-[10px]" : "bg-amber-500/15 text-amber-600 text-[10px]"}>
+                          {report.status === "published" ? <><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> Published</> : <><Clock className="h-2.5 w-2.5 mr-0.5" /> Draft</>}
+                        </Badge>
+                      ) : null}
+                      <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openForm(student, report || undefined)}>
+                        {report ? "Edit" : <><Plus className="h-3 w-3 mr-0.5" /> Create</>}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
 
       {reports.length === 0 ? (
         <EmptyState title="No reports found" description="Try adjusting your filters or create a new report from the teacher portal." />

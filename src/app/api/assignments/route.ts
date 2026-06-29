@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -20,7 +21,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
+  if (!body.title || !body.classId) {
+    return NextResponse.json({ error: "title and classId are required" }, { status: 400 })
+  }
   // Require createdBy for teacher-created assignments
   if (body.createdBy && body.classId) {
     const tc = await db.teacherClasses.getByTeacher(body.createdBy)

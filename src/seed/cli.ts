@@ -80,7 +80,6 @@ async function main() {
           lastName: u.name.split(" ").slice(1).join(" "),
           email: u.email,
           staffId: u.role === "admin" ? "ADM001" : `STF${Math.floor(1000 + Math.random() * 9000)}`,
-          role: u.role,
           department: u.role === "admin" ? "Administration" : "Academic",
           phone: "+234 800 000 0000",
           schoolId: school.id,

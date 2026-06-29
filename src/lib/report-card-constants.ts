@@ -70,6 +70,7 @@ export function computeCumulativeResults(
   results: any[],
   studentId: string,
   session: string,
+  boundaries: GradeBoundary[] = DEFAULT_GRADE_BOUNDARIES,
 ): { termResults: Record<string, any[]>; subjectAverages: { subject: string; score: number; total: number; grade: string; remark: string }[]; totalScore: number; totalMax: number; average: number } {
   const studentResults = results.filter((r) => r.studentId === studentId && r.session === session)
   const termNames = [...new Set(studentResults.map((r) => r.term))] as string[]
@@ -92,7 +93,7 @@ export function computeCumulativeResults(
 
   const subjectAverages = Object.entries(subjectGroups).map(([subject, g]) => {
     const pct = g.totalMax > 0 ? (g.totalScore / g.totalMax) * 100 : 0
-    const grade = getGradeFromBoundaries(pct, DEFAULT_GRADE_BOUNDARIES)
+    const grade = getGradeFromBoundaries(pct, boundaries)
     return {
       subject,
       score: Math.round(g.totalScore / g.count),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { cacheHeader } from "@/lib/cache-header"
 import { db, paginatedQuery } from "@/lib/prisma-store"
 import { prisma } from "@/lib/prisma"
+import { requireAuth } from "@/lib/api-auth"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -29,7 +30,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuth()
+  if (auth instanceof Response) return auth
   const body = await request.json()
+  if (!body.assignmentId || !body.studentId) {
+    return NextResponse.json({ error: "assignmentId and studentId are required" }, { status: 400 })
+  }
   const item = await db.submissions.create(body)
   return NextResponse.json(item, { status: 201 })
 }
