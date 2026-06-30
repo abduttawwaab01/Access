@@ -28,6 +28,7 @@ export async function paginatedQuery<T, A extends { where?: any; orderBy?: any; 
 
 export async function ensureSchoolId(schoolId?: string): Promise<string> {
   if (schoolId) return schoolId
+  const school = await prisma.school.findFirst()
   if (!school) throw new Error('No school found. Please seed a school first.')
   return school.id
 }

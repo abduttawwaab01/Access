@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  serverExternalPackages: ["pg", "@prisma/adapter-pg"],
   images: {
     remotePatterns: [{ protocol: "https", hostname: "**" }],
     formats: ["image/avif", "image/webp"],

@@ -1,6 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/prisma-store"
-import { createSuperAdminToken, isSuperAdminAuthorized, hashSuperAdminPassword, verifySuperAdminPassword } from "@/lib/superadmin-auth"
+import { createSuperAdminToken, verifySuperAdminToken, isSuperAdminAuthorized, hashSuperAdminPassword, verifySuperAdminPassword } from "@/lib/superadmin-auth"
 
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get("action")

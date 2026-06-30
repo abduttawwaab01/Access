@@ -35,17 +35,19 @@ const handler = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.schoolId = user.schoolId
+        token.id = (user as any).id
+        token.role = (user as any).role
+        token.schoolId = (user as any).schoolId
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.schoolId = token.schoolId as string
+        const t = token as Record<string, unknown>
+        const u = session.user as Record<string, unknown>
+        u.id = t.id
+        u.role = t.role
+        u.schoolId = t.schoolId
       }
       return session
     },

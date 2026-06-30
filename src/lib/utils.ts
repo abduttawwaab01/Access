@@ -40,23 +40,3 @@ export function currentSession(): string {
   if (month >= 8) return `${year}/${year + 1}`
   return `${year - 1}/${year}`
 }
-
-export async function getCurrentSessionFromDb(schoolId?: string): Promise<{ id: string; name: string } | null> {
-  try {
-    const where: any = { isCurrent: true }
-    if (schoolId) where.schoolId = schoolId
-    const { prisma } = await import("@/lib/prisma")
-    const session = await prisma.academicSession.findFirst({ where, select: { id: true, name: true } })
-    return session
-  } catch { return null }
-}
-
-export async function getCurrentTermFromDb(sessionId?: string): Promise<{ id: string; name: string } | null> {
-  try {
-    const where: any = { isCurrent: true }
-    if (sessionId) where.sessionId = sessionId
-    const { prisma } = await import("@/lib/prisma")
-    const term = await prisma.term.findFirst({ where, select: { id: true, name: true } })
-    return term
-  } catch { return null }
-}

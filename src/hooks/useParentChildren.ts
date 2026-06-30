@@ -68,7 +68,7 @@ export function useParentChildren() {
       const studentsMap = new Map<string, Student>((students as Student[]).map((s) => [s.id, s]))
       const classesMap = new Map<string, Class>((classes as Class[]).map((c) => [c.id, c]))
 
-      const childrenList: ChildInfo[] = myLinks
+      const childrenList = myLinks
         .map((link) => {
           const student = studentsMap.get(link.studentId)
           if (!student) return null
@@ -89,7 +89,7 @@ export function useParentChildren() {
             dateOfBirth: student.dateOfBirth || "",
           }
         })
-        .filter((c): c is ChildInfo => c !== null)
+        .filter(Boolean) as ChildInfo[]
 
       setChildren(childrenList)
       if (childrenList.length > 0 && !activeChildId) {
