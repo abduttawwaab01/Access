@@ -11,10 +11,10 @@ async function main() {
     console.log(" ", u.id.slice(0, 8), "|", u.role, "|", u.email, "|", u.name)
   }
 
-  const allStaff = await prisma.staff.findMany({ orderBy: { createdAt: "desc" } })
+  const allStaff = await prisma.staff.findMany({ orderBy: { createdAt: "desc" }, include: { user: { select: { role: true } } } })
   console.log("\n=== STAFF (" + allStaff.length + ") ===")
   for (const s of allStaff) {
-    console.log(" ", s.id.slice(0, 8), "|", s.role, "|", s.email, "|", s.firstName, s.lastName, "|", s.staffId)
+    console.log(" ", s.id.slice(0, 8), "|", s.user?.role || "?", "|", s.email, "|", s.firstName, s.lastName, "|", s.staffId)
   }
 
   const allStudents = await prisma.student.findMany({ orderBy: { createdAt: "desc" } })
